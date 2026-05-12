@@ -1,0 +1,10 @@
+export const radius = {
+    xs:   2,
+    sm:   4,
+    md:   8,
+    lg:   12,
+    xl:   16,
+    '2xl': 20,
+    '3xl': 24,
+    full: 9999,  // 완전 원형
+} as const;
