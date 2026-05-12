@@ -48,8 +48,14 @@ export default function HomeScreen(){
                 ref={mapRef}
                 isShowLocationButton={false}   // 기본 위치 버튼 숨김 (커스텀 버튼 사용)
                 onInitialized={() => {
-                    // 지도 초기화 완료 후 현재 위치 추적 모드 설정
-                    mapRef.current?.setLocationTrackingMode('Follow');
+                    console.log('[Map] onInitialized');
+                    setTimeout(() => {
+                        console.log('[Map] setLocationTrackingMode Follow');
+                        mapRef.current?.setLocationTrackingMode('Follow');
+                    }, 300);
+                }}
+                onOptionChanged={(params) => {
+                    console.log('[Map] onOptionChanged:', params.locationTrackingMode);
                 }}
             />
 

@@ -18,7 +18,8 @@ export function useSearchPlaces() {
 
         try {
             const data = await searchPlaces(keyword); // API 호출
-            setPlaces(data.places);                   // 결과 저장
+            console.log('검색 응답:', JSON.stringify(data));
+            setPlaces(data.places ?? []);             // 결과 저장
         } catch (e: any) {
             const status = e?.response?.status;
             const msg = e?.response?.data?.message || e?.message || '검색 중 오류가 발생했습니다.';

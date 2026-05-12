@@ -5,7 +5,7 @@ import {SearchHistoryResponse} from '../types/search';
 
 // 장소 검색 API → GET /api/places/search?keyword=...
 export async function searchPlaces(keyword: string): Promise<PlaceResponse> {
-  const response = await apiClient.get<PlaceResponse>('/api/places/search', {
+  const response = await apiClient.get<PlaceResponse>('/api/search', {
     params: {keyword},
   });
   return response.data;
@@ -30,7 +30,7 @@ export async function deleteAllSearchHistory(): Promise<void> {
 // 검색 자동완성 API → GET /api/places/search/autocomplete?keyword=...
 export async function fetchAutocomplete(keyword: string): Promise<AutocompleteResponse> {
   const response = await apiClient.get<AutocompleteResponse>(
-    '/api/places/search/autocomplete',
+    '/api/search/autocomplete',
     {params: {keyword}},
   );
   return response.data;
