@@ -3,7 +3,6 @@ export type AuthStackParamList = {
   Login: undefined;
   Terms: undefined;
   ProfileSetup: undefined;
-  InterestCategory: undefined;
   SignupComplete: undefined;
 };
 
