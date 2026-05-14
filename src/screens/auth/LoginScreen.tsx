@@ -62,6 +62,11 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const handleKakaoLogin = async () => {
+      // 테스트용: 로그인 없이 바로 약관 화면으로 이동
+      // 서버 연동 완료 후 이 부분은 제거
+      navigation.navigate('Terms');
+      return;
+
   try {
     setIsLoginLoading(true);
 

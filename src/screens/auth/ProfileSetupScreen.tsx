@@ -38,7 +38,7 @@ const ProfileSetupScreen = ({navigation}: Props) => {
     // TODO: 나중에 API 연결할 때 여기서 nickname 저장
     // await updateProfile({ nickname });
 
-    navigation.navigate('InterestCategory');
+    navigation.navigate('SignupComplete');
   };
 
   return (

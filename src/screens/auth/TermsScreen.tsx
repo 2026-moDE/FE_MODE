@@ -14,6 +14,10 @@ import type {AuthStackParamList} from '../../types/navigation';
 import {colors} from '../../constants/colors';
 import {fontFamily, fontSize} from '../../constants/typography';
 
+// api 연결시 삭제
+// const [terms, setTerms] = useState<TermItem[]>([]); 얘로 수정
+import {termsMock} from '../../mocks/termsMock';
+
 const appliedFontFamily = fontFamily ?? {
   bold: 'Pretendard-Bold',
   regular: 'Pretendard-Regular',
@@ -24,25 +28,30 @@ const logo = require('../../assets/image/logo_navy.png');
 type Props = NativeStackScreenProps<AuthStackParamList, 'Terms'>;
 
 export default function TermsScreen({navigation}: Props) {
-  const [serviceChecked, setServiceChecked] = useState(false);
-  const [locationChecked, setLocationChecked] = useState(false);
-  const [privacyChecked, setPrivacyChecked] = useState(false);
-  const [marketingChecked, setMarketingChecked] = useState(false);
+  const [checkedTerms, setCheckedTerms] = useState<number[]>([]);
+  
+  // termsMock 쓰던 부분은 api 연결 후 terms로 수정
+  const requiredChecked = termsMock
+    .filter(term => term.required)
+    .every(term => checkedTerms.includes(term.id));
 
-  const requiredChecked = serviceChecked && locationChecked;
-
-  const allChecked =
-    serviceChecked && locationChecked && privacyChecked && marketingChecked;
+  const allChecked = checkedTerms.length === termsMock.length;
 
   const handleAllCheck = () => {
-    const nextValue = !allChecked;
-
-    setServiceChecked(nextValue);
-    setLocationChecked(nextValue);
-    setPrivacyChecked(nextValue);
-    setMarketingChecked(nextValue);
+    if (allChecked) {
+      setCheckedTerms([]);
+    } else {
+      setCheckedTerms(termsMock.map(term => term.id));
+    }
   };
 
+  const handleTermCheck = (id: number) => {
+    setCheckedTerms(prev =>
+      prev.includes(id)
+        ? prev.filter(termId => termId !== id)
+        : [...prev, id],
+    );
+  };
   const handleNext = () => {
     if (!requiredChecked) {
       return;
@@ -77,29 +86,15 @@ export default function TermsScreen({navigation}: Props) {
             </Pressable>
 
             <View style={styles.termList}>
-              <TermRow
-                text="[필수] 모잉 서비스 이용약관"
-                checked={serviceChecked}
-                onPress={() => setServiceChecked(prev => !prev)}
-              />
-
-              <TermRow
-                text="[필수] 모잉 위치기반서비스 이용약관"
-                checked={locationChecked}
-                onPress={() => setLocationChecked(prev => !prev)}
-              />
-
-              <TermRow
-                text="[선택] 개인정보 수집 및 이용"
-                checked={privacyChecked}
-                onPress={() => setPrivacyChecked(prev => !prev)}
-              />
-
-              <TermRow
-                text="[선택] 버블이 행동경로 위치정보 제공"
-                checked={marketingChecked}
-                onPress={() => setMarketingChecked(prev => !prev)}
-              />
+              {termsMock.map(term => (
+                <TermRow
+                  key={term.id}
+                  text={`[${term.required ? '필수' : '선택'}] ${term.title}`}
+                  checked={checkedTerms.includes(term.id)}
+                  onPress={() => handleTermCheck(term.id)}
+                />
+              ))}
+            </View>
             </View>
           </View>
         </View>
@@ -113,7 +108,6 @@ export default function TermsScreen({navigation}: Props) {
           disabled={!requiredChecked}>
           <Text style={styles.bottomButtonText}>동의하기</Text>
         </Pressable>
-      </View>
     </SafeAreaView>
   );
 }
