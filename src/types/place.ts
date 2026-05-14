@@ -44,3 +44,17 @@ export type HomeMiniCardProps = {
     images?: string[];
 };
 
+// 현위치 기준 주변 장소 조회 API 응답 타입 (GET /api/places)
+export type NearbyPlace = {
+    id: number;
+    name: string;
+    latitude: number;
+    longitude: number;
+    congestion_level: string;
+    thumbnail_url: string;
+};
+
+export type NearbyPlaceResponse = {
+    places: NearbyPlace[];
+};
+

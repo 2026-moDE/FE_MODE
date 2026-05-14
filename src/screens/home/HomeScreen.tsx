@@ -1,4 +1,4 @@
-import React, {useRef, useEffect, /*useState,*/ useCallback} from "react";
+import React, {useRef, useEffect, useState, useCallback} from "react";
 import {View, StyleSheet} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
@@ -9,6 +9,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
+import { useLocation } from "../../context/LocationContext";
+import { fetchNearbyPlaces } from "../../api/place";
+import { NearbyPlace } from "../../types/place";
 import IconLogo from "../../assets/icons/IconLogo";
 import { colors } from '../../constants/colors';
 import IconMapBell from "../../assets/icons/IconMapBell";
@@ -31,10 +34,26 @@ export default function HomeScreen(){
     // 커스텀 훅에서 권한 요청 함수 가져오기
     const { requestPermission } = useLocationPermission();
 
+    // 현재 위치
+    const { location } = useLocation();
+
+    // 주변 장소 목록
+    const [places, setPlaces] = useState<NearbyPlace[]>([]);
+
     // 컴포넌트가 처음 마운트될 때 위치 권한 요청
     useEffect(() => {
         requestPermission();
     }, []);
+
+    // 위치 들어오면 주변 장소 조회
+    useEffect(() => {
+        if (!location) return;
+        fetchNearbyPlaces({
+            latitude: location.latitude,
+            longitude: location.longitude,
+            radius: 1500,
+        }).then(res => setPlaces(res.places));
+    }, [location]);
 
     // 검색창 클릭 시 → SearchScreen으로 이동
     const handleSearchFocus = useCallback(() => {
