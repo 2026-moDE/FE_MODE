@@ -37,13 +37,6 @@ export type PlaceDetail = {
     review_count: number;
 };
 
-// HomeMiniCard 컴포넌트 Props 타입
-export type HomeMiniCardProps = {
-    place: PlaceDetail;
-    distance?: string;
-    images?: string[];
-};
-
 // 현위치 기준 주변 장소 조회 API 응답 타입 (GET /api/places)
 export type NearbyPlace = {
     id: number;

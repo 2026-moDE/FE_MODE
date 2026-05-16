@@ -1,11 +1,6 @@
 import React, {createContext, useContext, useState, useEffect} from 'react';
 import Geolocation from '@react-native-community/geolocation';
-
-// 내 현위치(GPS)
-type Location = {
-    latitude: number;
-    longitude: number;
-};
+import {Location} from '../types/location';
 
 type LocationContextType = {
     location: Location | null;
