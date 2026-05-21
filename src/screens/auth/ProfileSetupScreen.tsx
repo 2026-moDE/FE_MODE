@@ -12,10 +12,14 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-
+import {useRoute} from '@react-navigation/native';
+import type {RouteProp} from '@react-navigation/native';
+import {onboardingApi} from '../../api/onboardingApi';
 import type {AuthStackParamList} from '../../types/navigation';
+
 import {fontFamily, fontSize} from '../../constants/typography';
 import {colors} from '../../constants/colors';
+
 const pencilIcon = require('../../assets/image/pencil.png');
 
 const appliedFontFamily = fontFamily ?? {
@@ -24,22 +28,39 @@ const appliedFontFamily = fontFamily ?? {
 };
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ProfileSetup'>;
+type ProfileSetupRouteProp = RouteProp<AuthStackParamList, 'ProfileSetup'>;
 
 const ProfileSetupScreen = ({navigation}: Props) => {
+  const route = useRoute<ProfileSetupRouteProp>();
   const [nickname, setNickname] = useState('');
 
   const isActive = nickname.trim().length > 0;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!isActive) {
       return;
     }
 
-    // TODO: 나중에 API 연결할 때 여기서 nickname 저장
-    // await updateProfile({ nickname });
+    try {
+      const body = {
+        nickname: nickname.trim(),
+        terms_agreed: route.params.terms_agreed,
+        location_terms_agreed: route.params.location_terms_agreed,
+        privacy_agreed: route.params.privacy_agreed,
+        marketing_agreed: route.params.marketing_agreed,
+      };
 
-    navigation.navigate('SignupComplete');
-  };
+      console.log('온보딩 요청 body:', body);
+
+      const result = await onboardingApi(body);
+
+      console.log('온보딩 성공:', result);
+
+      navigation.navigate('SignupComplete');
+    } catch (error: any) {
+      console.log('온보딩 실패:', error.message);
+    }
+};
 
   return (
     <SafeAreaView style={styles.container}>

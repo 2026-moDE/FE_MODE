@@ -62,55 +62,51 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const handleKakaoLogin = async () => {
-      // 테스트용: 로그인 없이 바로 약관 화면으로 이동
-      // 서버 연동 완료 후 이 부분은 제거
-      navigation.navigate('Terms');
-      return;
+    try {
+      setIsLoginLoading(true);
 
-  try {
-    setIsLoginLoading(true);
+      console.log('[1] 카카오 로그인 시작');
 
-    console.log('[1] 카카오 로그인 시작');
-    const kakaoToken = await loginWithKakaoAccount();
-    console.log('[2] 카카오 토큰 획득:', kakaoToken.accessToken);
-    const kakaoAccessToken = kakaoToken.accessToken;
+      const kakaoToken = await loginWithKakaoAccount();
+      console.log('[2] 카카오 토큰 획득:', kakaoToken.accessToken);
 
-    console.log('[3] 백엔드 API 호출 시작');
-    const result = await socialLoginApi({
-      provider: 'KAKAO',
-      accessToken: kakaoAccessToken,
-    });
-    console.log('[4] 백엔드 응답:', JSON.stringify(result));
+      const result = await socialLoginApi({
+        provider: 'KAKAO',
+        accessToken: kakaoToken.accessToken,
+      });
 
-    if (!result.success || !result.data) {
-      throw new Error(result.message || '로그인 응답이 올바르지 않습니다.');
+      console.log('[3] 백엔드 응답:', JSON.stringify(result));
+
+      if (!result.success || !result.data) {
+        throw new Error(result.message || '로그인 응답이 올바르지 않습니다.');
+      }
+
+      const {access_token, refresh_token, is_new_user, user} = result.data;
+
+      await saveTokens(access_token, refresh_token);
+
+      console.log('[4] 토큰 저장 완료');
+      console.log('[5] 신규 유저 여부:', is_new_user);
+      console.log('[6] 유저 정보:', user);
+
+      if (is_new_user) {
+        navigation.navigate('Terms');
+        return;
+      }
+
+      setIsLoggedIn(true);
+    } catch (error: any) {
+      console.log('[ERROR] message:', error?.message);
+
+      Alert.alert(
+        '로그인 실패',
+        error?.message || '로그인 중 문제가 발생했습니다.',
+      );
+    } finally {
+      setIsLoginLoading(false);
     }
+  };
 
-    const {access_token, refresh_token, is_new_user, user} = result.data;
-
-    await saveTokens(access_token, refresh_token);
-    console.log('[5] 토큰 저장 완료, 신규유저:', is_new_user, '유저:', user);
-
-    if (is_new_user) {
-      navigation.navigate('Terms');
-      return;
-    }
-
-    setIsLoggedIn(true);
-  } catch (error: any) {
-    console.log('[ERROR] 에러 객체 전체:', JSON.stringify(error));
-    console.log('[ERROR] response:', error?.response?.data);
-    console.log('[ERROR] message:', error?.message);
-    console.log('[ERROR] code:', error?.code);
-
-    Alert.alert(
-      '로그인 실패',
-      error?.response?.data?.message || error?.message || '로그인 중 문제가 발생했습니다.',
-    );
-  } finally {
-    setIsLoginLoading(false);
-  }
-};
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
