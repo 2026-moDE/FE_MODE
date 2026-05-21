@@ -14,6 +14,10 @@ export const saveTokens = async (
   }
 };
 
+export const saveAccessToken = async (accessToken: string) => {
+  await AsyncStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+};
+
 export const getAccessToken = async () => {
   return await AsyncStorage.getItem(ACCESS_TOKEN_KEY);
 };

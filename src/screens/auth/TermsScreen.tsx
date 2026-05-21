@@ -57,7 +57,12 @@ export default function TermsScreen({navigation}: Props) {
       return;
     }
 
-    navigation.navigate('ProfileSetup');
+    navigation.navigate('ProfileSetup', {
+      terms_agreed: checkedTerms.includes(1),
+      location_terms_agreed: checkedTerms.includes(2),
+      privacy_agreed: checkedTerms.includes(3),
+      marketing_agreed: checkedTerms.includes(4),
+    });
   };
 
   return (
