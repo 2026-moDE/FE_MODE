@@ -19,6 +19,7 @@ export function LocationProvider({children}: {children: React.ReactNode}) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // 실시간 위치 추적하려면 getCurrentPosition -> watchPosition
     useEffect(() => {
         Geolocation.getCurrentPosition(
             position => {

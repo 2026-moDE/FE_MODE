@@ -4,18 +4,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";
 import SearchBar from "../../components/search/SearchBar";
+import LiveBubble from "../../components/home/LiveBubble";
 import { useNavigation, CompositeNavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
-import { fetchNearbyPlaces } from "../../api/place";
-import { NearbyPlace } from "../../types/place";
+import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews } from "../../api/place";
+import { NearbyPlace, PlaceDetail } from "../../types/place";
 import IconLogo from "../../assets/icons/IconLogo";
 import { colors } from '../../constants/colors';
 import IconMapBell from "../../assets/icons/IconMapBell";
 import IconCurrentLocation from "../../assets/icons/IconCurrentLocation";
+import HomeMiniCard from "../../components/home/HomeMiniCard";
+import { getDistance, formatDistance } from "../../utils/distance";
+
 
 // 탭 안에 있지만 스택 화면(Search)으로도 이동해야 해서 두 타입을 합침
 type NavigationProp = CompositeNavigationProp<
@@ -40,6 +44,15 @@ export default function HomeScreen(){
     // 주변 장소 목록
     const [places, setPlaces] = useState<NearbyPlace[]>([]);
 
+    // 선택된 장소 목록
+    const[selectedPlace, setSelectedPlace] = useState<NearbyPlace| null>(null);
+
+    // 장소 미니 카드 정보
+    const [placeDetail, setPlaceDetail] = useState<PlaceDetail| null>(null);
+
+    // 미니 카드에 표시할 리뷰 이미지 URL 목록
+    const [reviewImages, setReviewImages] = useState<string[]>([]);
+
     // 컴포넌트가 처음 마운트될 때 위치 권한 요청
     useEffect(() => {
         requestPermission();
@@ -48,11 +61,14 @@ export default function HomeScreen(){
     // 위치 들어오면 주변 장소 조회
     useEffect(() => {
         if (!location) return;
+
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
             radius: 1500,
-        }).then(res => setPlaces(res.places));
+        })
+            .then(res => setPlaces(res.places))
+            .catch(error => console.error('주변 장소 조회 실패:', error));
     }, [location]);
 
     // 검색창 클릭 시 → SearchScreen으로 이동
@@ -60,12 +76,44 @@ export default function HomeScreen(){
         navigation.navigate('Search');
     }, [navigation]);
 
+    // 장소 버블 클릭 시 → 장소 미니 카드
+    const handlePlacePress = useCallback(async (place: NearbyPlace) => {
+        setSelectedPlace(place);
+
+        try {
+            // 상세 + 현재 리뷰 동시 호출
+            const [detail, reviews] = await Promise.all([
+                fetchPlaceDetail(place.id),
+                fetchCurrentReviews(place.id, {limit: 5}),
+            ]);
+            setPlaceDetail(detail);
+            // 현재 리뷰에서 이미지 URL만 추출해서 카드에 표시
+            setReviewImages(reviews.reviews.map(r => r.image_url));
+        } catch (error) {
+            console.error('장소 상세/리뷰 조회 실패:', error);
+        }
+    }, []);
+
+    // 장소 미니 카드 닫을 때
+    const handleCloseCard = useCallback(()=>{
+        setSelectedPlace(null);
+        setPlaceDetail(null);
+        setReviewImages([]);
+    },[]);
+
+    // 거리 텍스트 계산 (내 위치 + 선택된 장소 둘 다 있을 때만)
+    const distanceText = location && selectedPlace
+        ? `내 위치에서 ${formatDistance(getDistance(location, selectedPlace))}`
+        : undefined;
+
+
     return(
         <View style={styles.container}>
 
             <MapView
                 ref={mapRef}
                 isShowLocationButton={false}   // 기본 위치 버튼 숨김 (커스텀 버튼 사용)
+                onTapMap={handleCloseCard}
                 onInitialized={() => {
                     console.log('[Map] onInitialized');
                     setTimeout(() => {
@@ -75,8 +123,17 @@ export default function HomeScreen(){
                 }}
                 onOptionChanged={(params) => {
                     console.log('[Map] onOptionChanged:', params.locationTrackingMode);
-                }}
-            />
+                }}>
+
+                {/* 근처 라이브 버블 표시 */}
+                {places.map(place => (
+                    <LiveBubble
+                        key={place.id}
+                        place={place}
+                        onPress={handlePlacePress}
+                    />
+                ))}
+            </MapView>
 
             {/* 커스텀 현위치 버튼 */}
             <IconCurrentLocation
@@ -96,6 +153,17 @@ export default function HomeScreen(){
                 />
                 <IconMapBell size={18} color={colors.icon.basic} />
             </View>
+
+
+            {placeDetail && (
+                <View style={styles.cardWrapper}>
+                    <HomeMiniCard
+                        place={placeDetail}
+                        distance={distanceText}
+                        images={reviewImages}
+                    />
+                </View>
+            )}
 
         </View>
     );
@@ -117,5 +185,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: 16,
         bottom: 120,                // 탭바 위에 위치
+    },
+    cardWrapper: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
     },
 });
