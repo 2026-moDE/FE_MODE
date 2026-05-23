@@ -19,7 +19,7 @@ export function useSearchHistory() {
 
         try {
             const data = await fetchSearchHistory();
-            setHistory(data.history);
+            setHistory(data?.history ?? []);
         } catch (e: any) {
             const msg = e?.response?.data?.message || e?.message || '최근 검색어를 불러오지 못했습니다.';
             setError(msg);

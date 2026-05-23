@@ -24,6 +24,7 @@ allprojects {
         mavenCentral()
         maven { url 'https://repository.map.naver.com/archive/maven' }
         maven { url 'https://devrepo.kakao.com/nexus/repository/kakaocdn-public/' }
+        maven { url 'https://www.jitpack.io' }
     }
 }
 

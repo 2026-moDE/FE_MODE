@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, ImageBackground, StyleSheet, ScrollView} from 'react-native';
-import {CATEGORY_LABEL, HomeMiniCardProps} from '../../types/place';
+import {CATEGORY_LABEL, PlaceDetail} from '../../types/place';
 import IconBellOff from '../../assets/icons/IconBellOff';
 import IconBellOn from '../../assets/icons/IconBellOn';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
@@ -9,6 +9,13 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {typography} from '../../constants/typography';
+
+// 컴포넌트 Props 타입
+type HomeMiniCardProps = {
+    place: PlaceDetail;
+    distance?: string;
+    images?: string[];
+};
 
 export default function HomeMiniCard({
     place,

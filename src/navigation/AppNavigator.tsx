@@ -12,15 +12,16 @@ import CustomTabBar from '../components/map/CustomTabBar';
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-// 하단 탭 네비게이터 (홈 / 리뷰 쓰기 / 마이페이지)
+// 하단 탭 네비게이터 (리뷰 쓰기 / 홈 / 마이페이지)
 function TabNavigator() {
     return (
         <Tab.Navigator
             tabBar={(props) => <CustomTabBar {...props} />}
             screenOptions={{ headerShown: false }}
+            initialRouteName="Home"
         >
-            <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Review" component={ReviewScreen} />
+            <Tab.Screen name="Home" component={HomeScreen} />
             <Tab.Screen name="Mypage" component={MyPageScreen} />
         </Tab.Navigator>
     );

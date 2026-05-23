@@ -13,13 +13,13 @@ type Props = {
 
 export default function SearchItemList({ suggestions, onSelect }: Props) {
 
-    if (suggestions.length === 0) return null;
+    if (!suggestions || suggestions.length === 0) return null;
 
     return (
         <View>
-            {suggestions.map(item => (
+            {suggestions.map((item, index) => (
                 <TouchableOpacity
-                    key={String(item.id)}
+                    key={item.id != null ? String(item.id) : `suggestion-${index}`}
                     style={styles.item}
                     onPress={() => onSelect(item.name)}
                 >

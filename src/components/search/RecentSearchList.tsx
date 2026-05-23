@@ -10,7 +10,7 @@ type Props = {
 
 export default function RecentSearchList({ history, onSelect, onDelete }: Props) {
 
-    if (history.length === 0) return null;
+    if (!history || history.length === 0) return null;
 
     return (
         <View style={styles.container}>
