@@ -1,6 +1,230 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
+import {View, Text, FlatList, StyleSheet, StatusBar} from 'react-native';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {AppStackParamList} from '../../types/navigation';
+import {PlaceDetail, CurrentReview, ArchivedReview} from '../../types/place';
+import {useLocation} from '../../context/LocationContext';
+import {formatDistance} from '../../utils/distance';
+import PlaceDetailHeader from '../../components/placeDetail/PlaceDetailHeader';
+import PlaceDetailInfo from '../../components/placeDetail/PlaceDetailInfo';
+import ReviewTabs, {ReviewTabKey} from '../../components/placeDetail/ReviewTabs';
+import ReviewCard from '../../components/placeDetail/ReviewCard';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
 
-export default function PlaceDetailScreen(){
-    return <View />;
+// ────────────────────── api 함수  ──────────────────────
+// import {
+//     fetchPlaceDetail,
+//     fetchLocationVerify,
+//     fetchCurrentReviews,
+//     fetchArchivedReviews,
+//     subscribe,
+//     unsubscribe,
+// } from '../../api/place';
+
+// 테스트 목 데이터
+import {
+    placeDetailsMock,
+    getLocationVerifyMock,
+    getCurrentReviewsMock,
+} from '../../mocks/placesMock';
+
+type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
+
+export default function PlaceDetailScreen({route, navigation}: Props) {
+    const {placeId, placeName} = route.params;
+
+    // 현위치 (거리 계산용)
+    const {location} = useLocation();
+
+    // 장소 상세 정보
+    const [placeDetail, setPlaceDetail] = useState<PlaceDetail | null>(null);
+
+    // 거리 (미터 단위)
+    const [distance, setDistance] = useState<number | null>(null);
+
+    // 활성 탭 (실시간 / 과거)
+    const [activeTab, setActiveTab] = useState<ReviewTabKey>('current');
+
+    // 리뷰 목록 (탭에 따라 다른 데이터)
+    const [reviews, setReviews] = useState<(CurrentReview | ArchivedReview)[]>([]);
+
+    // 리뷰 사진 index
+    const [imageIndex, setImageIndex] = useState< number | null>(null);
+
+    // 화면 진입 시 상세 정보 가져오기
+    useEffect(() => {
+        // 테스트 목 데이터
+        setPlaceDetail(placeDetailsMock[placeId] ?? null);
+
+        // ────────────────────── 실제 API 호출 ──────────────────────
+        // fetchPlaceDetail(placeId)
+        //     .then(detail => setPlaceDetail(detail))
+        //     .catch(error => console.error('장소 상세 조회 실패:', error));
+    }, [placeId]);
+
+    // 위치 들어오면 위치 인증 API로 거리 계산
+    useEffect(() => {
+        if (!location) return;
+
+        // 테스트용 목 데이터
+        const result = getLocationVerifyMock(placeId, location);
+        setDistance(result.distance);
+
+        // ────────────────────── 실제 API 호출 ──────────────────────
+        // fetchLocationVerify(placeId, location)
+        //     .then(result => setDistance(result.distance))
+        //     .catch(error => console.error('위치 인증 실패:', error));
+    }, [placeId, location]);
+
+    // 탭 바뀔 때마다 해당 리뷰 가져오기
+    useEffect(() => {
+        // 테스트 목데이터
+        const mock = getCurrentReviewsMock(placeId);
+        setReviews(mock.reviews);
+
+        // ────────────────────── API 호출 ──────────────────────
+        // const apiCall =
+        //     activeTab === 'current'
+        //         ? fetchCurrentReviews(placeId, {limit: 20})
+        //         : fetchArchivedReviews(placeId, {limit: 20});
+        //
+        // apiCall
+        //     .then(data => setReviews(data.reviews))
+        //     .catch(error => console.error('리뷰 조회 실패:', error));
+    }, [placeId, activeTab]);
+
+    // 거리 텍스트 (계산된 경우만)
+    const distanceText =
+        distance !== null ? `내 위치에서 ${formatDistance(distance)}` : undefined;
+
+    // 뒤로가기
+    const handleBack = useCallback(() => {
+        navigation.goBack();
+    }, [navigation]);
+
+    // 알림 토글
+    const handleToggleSubscribe = useCallback(async () => {
+        if (!placeDetail) return;
+
+        // 테스트
+        setPlaceDetail({
+            ...placeDetail,
+            is_subscribed: !placeDetail.is_subscribed,
+        });
+
+        // ────────────────────── API 호출 ──────────────────────
+        // try {
+        //     if (placeDetail.is_subscribed) {
+        //         await unsubscribe(placeDetail.id);
+        //     } else {
+        //         await subscribe(placeDetail.id);
+        //     }
+        //     setPlaceDetail({
+        //         ...placeDetail,
+        //         is_subscribed: !placeDetail.is_subscribed,
+        //     });
+        // } catch (error) {
+        //     console.error('구독 토글 실패:', error);
+        // }
+    }, [placeDetail]);
+
+    // 장소 정보 없을 때 (예외 처리)
+    if (!placeDetail) {
+        return (
+            <View style={styles.container}>
+                <PlaceDetailHeader title={placeName} onBack={handleBack} />
+                <View style={styles.emptyWrapper}>
+                    <Text style={styles.emptyText}>장소 정보를 불러올 수 없습니다</Text>
+                </View>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.container}>
+            {/* 헤더 */}
+            <PlaceDetailHeader title="리뷰 확인" onBack={handleBack} />
+
+            {/* 장소 정보 */}
+            <PlaceDetailInfo
+                place={placeDetail}
+                distance={distanceText}
+                onToggleSubscribe={handleToggleSubscribe}
+            />
+
+            {/* 실시간 / 과거 탭 */}
+            <ReviewTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+            {/* 리뷰 그리드 */}
+            <FlatList
+                data={reviews}
+                keyExtractor={item => String(item.id)}
+                numColumns={2}
+                columnWrapperStyle={styles.gridRow}
+                contentContainerStyle={styles.gridContent}
+                renderItem={({item, index}) => (
+                    <ReviewCard
+                        review={item}
+                        onPress={() => setImageIndex(index)}
+                    />
+                )}
+                ListEmptyComponent={
+                    <View style={styles.emptyWrapper}>
+                        <Text style={styles.emptyText}>리뷰가 없습니다</Text>
+                    </View>
+                }
+            />
+
+            {/* 어두운 오버레이 - 사진 뷰어 열리면 화면 전체(상태바 빼고) 덮음 */}
+            {imageIndex !== null && (
+                <View style={styles.darkOverlay} pointerEvents="none" />
+            )}
+
+            {/* 사진 뷰어 (Modal로 오버레이 위에 사진/텍스트 표시) */}
+            <ReviewPhoto
+                reviews={reviews}
+                startIndex={imageIndex ?? 0}
+                visible={imageIndex !== null}
+                onClose={() => setImageIndex(null)}
+            />
+        </View>
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: colors.surface.white,
+        // translucent StatusBar 때문에 콘텐츠가 상태바 영역까지 올라가는 것 방지
+        paddingTop: StatusBar.currentHeight ?? 0,
+    },
+    darkOverlay: {
+        // 사진 뷰어 열렸을 때 화면 전체를 덮는 어두운 레이어
+        // (시스템 상태바는 RN으로 못 덮으니까 자동으로 위에 노출됨)
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(20, 20, 20, 0.98)',
+    },
+    emptyWrapper: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing['3xl'],
+    },
+    emptyText: {
+        color: colors.text.subtle,
+        fontSize: 14,
+    },
+    gridContent: {
+        padding: spacing.lg,                      // 16
+        gap: spacing.md,                          // 12 (행 간격)
+    },
+    gridRow: {
+        gap: spacing.md,                          // 12 (열 간격)
+    },
+});

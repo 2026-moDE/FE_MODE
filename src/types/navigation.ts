@@ -18,4 +18,5 @@ export type AppStackParamList = {
   Tab: undefined;
   Search: undefined;
   PlaceDetail: { placeId: number; placeName: string };
+  // placeName 뺄지말지 고민
 };
