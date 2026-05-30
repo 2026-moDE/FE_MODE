@@ -13,6 +13,8 @@ import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
 import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews } from "../../api/place";
 import { NearbyPlace, PlaceDetail } from "../../types/place";
+// 테스트용 
+import { getNearbyPlacesMock, placeDetailsMock, getCurrentReviewsMock } from "../../mocks/placesMock";
 import IconLogo from "../../assets/icons/IconLogo";
 import { colors } from '../../constants/colors';
 import IconMapBell from "../../assets/icons/IconMapBell";
@@ -60,15 +62,33 @@ export default function HomeScreen(){
 
     // 위치 들어오면 주변 장소 조회
     useEffect(() => {
-        if (!location) return;
+        // 테스트용 - 위치 없으면 시청역 기본값
+        if (!location) {
+            console.warn('위치 권한 없음 → 시청역 기준 목 데이터 사용');
+            setPlaces(getNearbyPlacesMock({latitude: 37.5665, longitude: 126.9780}));
+            return;
+        }
 
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
             radius: 1500,
         })
-            .then(res => setPlaces(res.places))
-            .catch(error => console.error('주변 장소 조회 실패:', error));
+            .then(res => {
+                // API 성공해도 빈 배열이면 mock으로 폴백
+                if (res.places && res.places.length > 0) {
+                    setPlaces(res.places);
+                } else {
+                    //  테스트
+                    console.warn('주변 장소 API 빈 배열 → 목 데이터 사용');
+                    setPlaces(getNearbyPlacesMock(location));
+                }
+            })
+            .catch(error => {
+                //  테스트
+                console.warn('주변 장소 API 실패 → 목 데이터 사용:', error?.message);
+                setPlaces(getNearbyPlacesMock(location));
+            });
     }, [location]);
 
     // 검색창 클릭 시 → SearchScreen으로 이동
@@ -89,10 +109,23 @@ export default function HomeScreen(){
             setPlaceDetail(detail);
             // 현재 리뷰에서 이미지 URL만 추출해서 카드에 표시
             setReviewImages(reviews.reviews.map(r => r.image_url));
-        } catch (error) {
-            console.error('장소 상세/리뷰 조회 실패:', error);
+        } catch (error: any) {
+            // 테스트
+            console.warn('장소 상세/리뷰 API 실패 → 목 데이터 사용:', error?.message);
+            const mockDetail = placeDetailsMock[place.id];
+            const mockReviews = getCurrentReviewsMock(place.id);
+            if (mockDetail) {
+                setPlaceDetail(mockDetail);
+                setReviewImages(mockReviews.reviews.map(r => r.image_url));
+            }
         }
     }, []);
+
+    const handleCardPress = useCallback(()=>{
+        if(!placeDetail) return;
+        navigation.navigate('PlaceDetail',
+            {placeId: placeDetail.id, placeName: placeDetail.name});
+    },[placeDetail,navigation])
 
     // 장소 미니 카드 닫을 때
     const handleCloseCard = useCallback(()=>{
@@ -100,6 +133,30 @@ export default function HomeScreen(){
         setPlaceDetail(null);
         setReviewImages([]);
     },[]);
+
+    // 알림 토글 (벨 아이콘 클릭)
+    const handleToggleSubscribe = useCallback(() => {
+        if (!placeDetail) return;
+
+        // 일단 로컬 state만 토글 (즉시 UI 반영)
+        setPlaceDetail({
+            ...placeDetail,
+            is_subscribed: !placeDetail.is_subscribed,
+        });
+
+        // ────────────────────── 실제 API 호출 (백엔드 연동 시 활성화) ──────────────────────
+        // try {
+        //     if (placeDetail.is_subscribed) {
+        //         await unsubscribe(placeDetail.id);
+        //     } else {
+        //         await subscribe(placeDetail.id);
+        //     }
+        // } catch (error) {
+        //     console.error('구독 토글 실패:', error);
+        //     // 실패 시 롤백
+        //     setPlaceDetail(placeDetail);
+        // }
+    }, [placeDetail]);
 
     // 거리 텍스트 계산 (내 위치 + 선택된 장소 둘 다 있을 때만)
     const distanceText = location && selectedPlace
@@ -161,6 +218,8 @@ export default function HomeScreen(){
                         place={placeDetail}
                         distance={distanceText}
                         images={reviewImages}
+                        onToggleSubscribe={handleToggleSubscribe}
+                        onPress={handleCardPress}
                     />
                 </View>
             )}

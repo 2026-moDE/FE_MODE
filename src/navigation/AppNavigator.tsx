@@ -6,7 +6,7 @@ import HomeScreen from '../screens/home/HomeScreen';
 import SearchScreen from '../screens/search/SearchScreen';
 import ReviewScreen from '../screens/review/ReviewScreen';
 import PlaceDetailScreen from '../screens/placeDetail/PlaceDetailScreen';
-import MyPageScreen from '../screens/mypage/MyPageScreen';
+// import MyPageScreen from '../screens/mypage/MyPageScreen';   // 마이페이지 임시 비활성화
 import CustomTabBar from '../components/map/CustomTabBar';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -22,7 +22,8 @@ function TabNavigator() {
         >
             <Tab.Screen name="Review" component={ReviewScreen} />
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Mypage" component={MyPageScreen} />
+            {/* 마이페이지 임시 비활성화 - 추후 다시 활성화하려면 주석 해제 */}
+            {/* <Tab.Screen name="Mypage" component={MyPageScreen} /> */}
         </Tab.Navigator>
     );
 }

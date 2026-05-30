@@ -1,5 +1,5 @@
 // ⚠️ 테스트용 목 데이터 - 백엔드 연동 완료 후 삭제 ⚠️
-import {NearbyPlace, PlaceDetail, CurrentReviewsResponse, PlaceResponse, LocationVerifyResponse} from '../types/place';
+import {NearbyPlace, PlaceDetail, CurrentReviewsResponse, ArchivedReviewsResponse, PlaceResponse, LocationVerifyResponse} from '../types/place';
 import {Location} from '../types/location';
 
 // 시청역 좌표 (고정 - 시뮬레이터에서도 확인 가능)
@@ -267,6 +267,63 @@ export function getCurrentReviewsMock(placeId: number): CurrentReviewsResponse {
                 is_helpful: false,
                 user: {nickname: '정덕수', profile_image_url: `https://picsum.photos/seed/user5/100`},
                 created_at: '2026-05-19T12:00:00Z',
+            },
+        ],
+        next_cursor: null,
+    };
+}
+
+/**
+ * 과거 리뷰 목록 목데이터 (id로 매핑)
+ * - 실시간 리뷰와 다른 이미지(seed 다름) + 더 오래된 날짜
+ */
+export function getArchivedReviewsMock(placeId: number): ArchivedReviewsResponse {
+    return {
+        reviews: [
+            {
+                id: placeId * 1000 + 1,
+                image_url: `https://picsum.photos/seed/archive${placeId}-1/300/400`,
+                congestion_level: 'CROWDED',
+                comment: '지난주에도 비슷했어요',
+                helpful_count: 25,
+                user: {nickname: '한리뷰', profile_image_url: `https://picsum.photos/seed/user6/100`},
+                created_at: '2026-05-10T13:00:00Z',
+            },
+            {
+                id: placeId * 1000 + 2,
+                image_url: `https://picsum.photos/seed/archive${placeId}-2/300/400`,
+                congestion_level: 'MODERATE',
+                comment: '한 달 전쯤 갔을 땐 적당했어요',
+                helpful_count: 18,
+                user: {nickname: '오래된단골', profile_image_url: `https://picsum.photos/seed/user7/100`},
+                created_at: '2026-04-25T15:30:00Z',
+            },
+            {
+                id: placeId * 1000 + 3,
+                image_url: `https://picsum.photos/seed/archive${placeId}-3/300/400`,
+                congestion_level: 'LOW',
+                comment: '비 오는 날이라 한산했음',
+                helpful_count: 9,
+                user: {nickname: '비날씨러버', profile_image_url: `https://picsum.photos/seed/user8/100`},
+                created_at: '2026-04-15T09:00:00Z',
+            },
+            {
+                id: placeId * 1000 + 4,
+                image_url: `https://picsum.photos/seed/archive${placeId}-4/300/400`,
+                congestion_level: 'MODERATE',
+                comment: '평일 저녁이라 적당',
+                helpful_count: 12,
+                user: {nickname: '저녁러', profile_image_url: `https://picsum.photos/seed/user9/100`},
+                created_at: '2026-03-30T19:00:00Z',
+            },
+            {
+                id: placeId * 1000 + 5,
+                image_url: `https://picsum.photos/seed/archive${placeId}-5/300/400`,
+                congestion_level: 'CROWDED',
+                comment: '주말 점심엔 늘 만석',
+                helpful_count: 30,
+                user: {nickname: '주말킬러', profile_image_url: `https://picsum.photos/seed/user10/100`},
+                created_at: '2026-03-15T12:00:00Z',
             },
         ],
         next_cursor: null,

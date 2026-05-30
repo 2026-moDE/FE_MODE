@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {View, Text, FlatList, StyleSheet, StatusBar} from 'react-native';
+import {View, Text, FlatList, StyleSheet} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
 import {PlaceDetail, CurrentReview, ArchivedReview} from '../../types/place';
@@ -28,12 +29,16 @@ import {
     placeDetailsMock,
     getLocationVerifyMock,
     getCurrentReviewsMock,
+    getArchivedReviewsMock,
 } from '../../mocks/placesMock';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
 export default function PlaceDetailScreen({route, navigation}: Props) {
     const {placeId, placeName} = route.params;
+
+    // 안전 영역 (translucent StatusBar 때문에 상태바 영역만큼 패딩 필요)
+    const insets = useSafeAreaInsets();
 
     // 현위치 (거리 계산용)
     const {location} = useLocation();
@@ -80,8 +85,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
 
     // 탭 바뀔 때마다 해당 리뷰 가져오기
     useEffect(() => {
-        // 테스트 목데이터
-        const mock = getCurrentReviewsMock(placeId);
+        // 테스트 목데이터 - 탭에 따라 다른 데이터 사용
+        const mock = activeTab === 'current'
+            ? getCurrentReviewsMock(placeId)
+            : getArchivedReviewsMock(placeId);
         setReviews(mock.reviews);
 
         // ────────────────────── API 호출 ──────────────────────
@@ -133,7 +140,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     // 장소 정보 없을 때 (예외 처리)
     if (!placeDetail) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, {paddingTop: insets.top}]}>
                 <PlaceDetailHeader title={placeName} onBack={handleBack} />
                 <View style={styles.emptyWrapper}>
                     <Text style={styles.emptyText}>장소 정보를 불러올 수 없습니다</Text>
@@ -143,7 +150,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, {paddingTop: insets.top}]}>
             {/* 헤더 */}
             <PlaceDetailHeader title="리뷰 확인" onBack={handleBack} />
 
@@ -197,8 +204,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.surface.white,
-        // translucent StatusBar 때문에 콘텐츠가 상태바 영역까지 올라가는 것 방지
-        paddingTop: StatusBar.currentHeight ?? 0,
+        // paddingTop은 useSafeAreaInsets()로 inline 처리 (StatusBar.currentHeight보다 안정적)
     },
     darkOverlay: {
         // 사진 뷰어 열렸을 때 화면 전체를 덮는 어두운 레이어
