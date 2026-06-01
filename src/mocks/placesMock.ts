@@ -4,8 +4,8 @@ import {Location} from '../types/location';
 
 // 시청역 좌표 (고정 - 시뮬레이터에서도 확인 가능)
 const CITY_HALL: Location = {
-    latitude: 37.5665,
-    longitude: 126.9780,
+    latitude: 37.5600,
+    longitude: 126.9823,
 };
 
 /**
