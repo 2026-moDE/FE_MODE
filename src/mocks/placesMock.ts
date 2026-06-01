@@ -1,5 +1,5 @@
 // ⚠️ 테스트용 목 데이터 - 백엔드 연동 완료 후 삭제 ⚠️
-import {NearbyPlace, PlaceDetail, CurrentReviewsResponse} from '../types/place';
+import {NearbyPlace, PlaceDetail, CurrentReviewsResponse, ArchivedReviewsResponse, PlaceResponse, LocationVerifyResponse} from '../types/place';
 import {Location} from '../types/location';
 
 // 시청역 좌표 (고정 - 시뮬레이터에서도 확인 가능)
@@ -220,7 +220,7 @@ export function getCurrentReviewsMock(placeId: number): CurrentReviewsResponse {
         reviews: [
             {
                 id: placeId * 100 + 1,
-                image_url: `https://picsum.photos/seed/review${placeId}-1/300`,
+                image_url: `https://picsum.photos/seed/review${placeId}-1/300/400`,
                 congestion_level: 'CROWDED',
                 comment: '주말 점심이라 사람이 많아요',
                 helpful_count: 12,
@@ -230,7 +230,7 @@ export function getCurrentReviewsMock(placeId: number): CurrentReviewsResponse {
             },
             {
                 id: placeId * 100 + 2,
-                image_url: `https://picsum.photos/seed/review${placeId}-2/300`,
+                image_url: `https://picsum.photos/seed/review${placeId}-2/300/400`,
                 congestion_level: 'MODERATE',
                 comment: '오후엔 여유있어요',
                 helpful_count: 5,
@@ -240,7 +240,7 @@ export function getCurrentReviewsMock(placeId: number): CurrentReviewsResponse {
             },
             {
                 id: placeId * 100 + 3,
-                image_url: `https://picsum.photos/seed/review${placeId}-3/300`,
+                image_url: `https://picsum.photos/seed/review${placeId}-3/300/400`,
                 congestion_level: 'LOW',
                 comment: '아침엔 한산해요',
                 helpful_count: 8,
@@ -250,7 +250,7 @@ export function getCurrentReviewsMock(placeId: number): CurrentReviewsResponse {
             },
             {
                 id: placeId * 100 + 4,
-                image_url: `https://picsum.photos/seed/review${placeId}-4/300`,
+                image_url: `https://picsum.photos/seed/review${placeId}-4/300/400`,
                 congestion_level: 'MODERATE',
                 comment: '평일 저녁 추천',
                 helpful_count: 3,
@@ -260,7 +260,7 @@ export function getCurrentReviewsMock(placeId: number): CurrentReviewsResponse {
             },
             {
                 id: placeId * 100 + 5,
-                image_url: `https://picsum.photos/seed/review${placeId}-5/300`,
+                image_url: `https://picsum.photos/seed/review${placeId}-5/300/400`,
                 congestion_level: 'CROWDED',
                 comment: '인기 많은 시간대',
                 helpful_count: 20,
@@ -270,5 +270,147 @@ export function getCurrentReviewsMock(placeId: number): CurrentReviewsResponse {
             },
         ],
         next_cursor: null,
+    };
+}
+
+/**
+ * 과거 리뷰 목록 목데이터 (id로 매핑)
+ * - 실시간 리뷰와 다른 이미지(seed 다름) + 더 오래된 날짜
+ */
+export function getArchivedReviewsMock(placeId: number): ArchivedReviewsResponse {
+    return {
+        reviews: [
+            {
+                id: placeId * 1000 + 1,
+                image_url: `https://picsum.photos/seed/archive${placeId}-1/300/400`,
+                congestion_level: 'CROWDED',
+                comment: '지난주에도 비슷했어요',
+                helpful_count: 25,
+                user: {nickname: '한리뷰', profile_image_url: `https://picsum.photos/seed/user6/100`},
+                created_at: '2026-05-10T13:00:00Z',
+            },
+            {
+                id: placeId * 1000 + 2,
+                image_url: `https://picsum.photos/seed/archive${placeId}-2/300/400`,
+                congestion_level: 'MODERATE',
+                comment: '한 달 전쯤 갔을 땐 적당했어요',
+                helpful_count: 18,
+                user: {nickname: '오래된단골', profile_image_url: `https://picsum.photos/seed/user7/100`},
+                created_at: '2026-04-25T15:30:00Z',
+            },
+            {
+                id: placeId * 1000 + 3,
+                image_url: `https://picsum.photos/seed/archive${placeId}-3/300/400`,
+                congestion_level: 'LOW',
+                comment: '비 오는 날이라 한산했음',
+                helpful_count: 9,
+                user: {nickname: '비날씨러버', profile_image_url: `https://picsum.photos/seed/user8/100`},
+                created_at: '2026-04-15T09:00:00Z',
+            },
+            {
+                id: placeId * 1000 + 4,
+                image_url: `https://picsum.photos/seed/archive${placeId}-4/300/400`,
+                congestion_level: 'MODERATE',
+                comment: '평일 저녁이라 적당',
+                helpful_count: 12,
+                user: {nickname: '저녁러', profile_image_url: `https://picsum.photos/seed/user9/100`},
+                created_at: '2026-03-30T19:00:00Z',
+            },
+            {
+                id: placeId * 1000 + 5,
+                image_url: `https://picsum.photos/seed/archive${placeId}-5/300/400`,
+                congestion_level: 'CROWDED',
+                comment: '주말 점심엔 늘 만석',
+                helpful_count: 30,
+                user: {nickname: '주말킬러', profile_image_url: `https://picsum.photos/seed/user10/100`},
+                created_at: '2026-03-15T12:00:00Z',
+            },
+        ],
+        next_cursor: null,
+    };
+}
+
+/**
+ * 장소 검색 목 데이터
+ * 검색어와 무관하게 동일한 6개 결과 반환
+ * (실제 API 동작은 키워드로 필터링)
+ */
+export function getSearchPlacesMock(keyword: string): PlaceResponse {
+    return {
+        places: [
+            {
+                id: 1,
+                name: '리볼리 성수',
+                address: '성수동2가 315-11',
+                category: 'RESTAURANT',
+                congestion_level: 'CROWDED',
+                thumbnail_url: 'https://picsum.photos/seed/place1/200',
+            },
+            {
+                id: 2,
+                name: '카페 어딘가',
+                address: '중구 정동길 5',
+                category: 'CAFE',
+                congestion_level: 'MODERATE',
+                thumbnail_url: 'https://picsum.photos/seed/place2/200',
+            },
+            {
+                id: 3,
+                name: '베이커리 모잉',
+                address: '중구 세종대로 110',
+                category: 'CAFE',
+                congestion_level: 'LOW',
+                thumbnail_url: 'https://picsum.photos/seed/place3/200',
+            },
+            {
+                id: 4,
+                name: '와인바 해질녘',
+                address: '중구 무교로 32',
+                category: 'BAR',
+                congestion_level: 'CROWDED',
+                thumbnail_url: 'https://picsum.photos/seed/place4/200',
+            },
+            {
+                id: 5,
+                name: '브런치 더샵',
+                address: '중구 을지로 16',
+                category: 'RESTAURANT',
+                congestion_level: 'MODERATE',
+                thumbnail_url: 'https://picsum.photos/seed/place5/200',
+            },
+            {
+                id: 6,
+                name: '책방 모잉문고',
+                address: '중구 덕수궁길 15',
+                category: 'SHOPPING',
+                congestion_level: 'LOW',
+                thumbnail_url: 'https://picsum.photos/seed/place6/200',
+            },
+        ],
+    };
+}
+
+/**
+ * 위치 인증 목 데이터
+ * placeId에 따라 거리 다르게 반환 (실제 API는 좌표 기반 계산)
+ */
+export function getLocationVerifyMock(
+    placeId: number,
+    _location: Location,
+): LocationVerifyResponse {
+    // placeId별로 다른 거리 (반복 테스트 시 결과 일관성)
+    const fakeDistances: Record<number, number> = {
+        1: 210,    // 리볼리 성수
+        2: 35,     // 카페 어딘가 - 50m 이내 → verified true
+        3: 850,
+        4: 1230,
+        5: 480,
+        6: 2100,
+    };
+    const distance = fakeDistances[placeId] ?? 500;
+
+    return {
+        verified: distance <= 50,    // 50m 이내인지 (백엔드 명세 동일)
+        distance,
     };
 }
