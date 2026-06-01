@@ -29,7 +29,6 @@ export type AppStackParamList = {
 export type ReviewStackParamList = {
   ReviewCamera: undefined;
   ReviewPhotoConfirm: { photoUri: string };
-  ReviewPlaceSearch: { photoUri: string };
   ReviewLocationSelect: { photoUri: string };
   ReviewLocationConfirm: {
     photoUri: string;
