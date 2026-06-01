@@ -35,7 +35,7 @@ const px = (value: number) => value * scale;
 const STATUS_BAR_HEIGHT =
   Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
 
-const figmaY = (value: number) => Math.max(0, px(value) - STATUS_BAR_HEIGHT);
+const figmaY = (value: number) => px(value);
 
 // 사진 영역과 헤더 위치 치수
 const SIDE_MARGIN = px(32);

@@ -39,7 +39,7 @@ const px = (value: number) => value * scale;
 const STATUS_BAR_HEIGHT =
   Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
 
-const figmaY = (value: number) => Math.max(0, px(value - STATUS_BAR_HEIGHT));
+const figmaY = (value: number) => px(value);
 
 const CAMERA_MARGIN_X = px(32);
 const CAMERA_WIDTH = SCREEN_WIDTH - CAMERA_MARGIN_X * 2;
