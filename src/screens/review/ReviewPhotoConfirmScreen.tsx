@@ -89,7 +89,14 @@ export default function ReviewPhotoConfirmScreen() {
   };
 
   const handleConfirm = () => {
-    navigation.navigate('ReviewWrite', {photoUri});
+    const parent = navigation.getParent();
+    const root = parent?.getParent?.();
+    console.log('[handleConfirm] parent:', parent?.getId?.(), 'root:', root?.getId?.());
+    if (root) {
+      root.navigate('Search', { reviewPhotoUri: photoUri } as never);
+    } else if (parent) {
+      parent.navigate('Search', { reviewPhotoUri: photoUri } as never);
+    }
   };
 
   const handleBlurPress = () => {

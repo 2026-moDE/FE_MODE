@@ -19,6 +19,10 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {ReviewStackParamList} from '../../types/navigation';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
+import {
+  getReviewSearchPlacesMock,
+  type ReviewPlaceMock,
+} from '../../mocks/reviewPlacesMock';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewPlaceSearch'>;
 
@@ -47,34 +51,6 @@ const RECOMMEND_KEYWORDS = [
 ] as const;
 
 const SEARCH_SUGGESTIONS = ['음식점', '한식', '음식'];
-
-// 장소 목록 임시
-const MOCK_PLACES = [
-  {
-    id: 1,
-    category: '음식점',
-    name: '명화당',
-    address: '서울특별시 광진구 능동로 175 1층',
-    distance: '30m',
-    thumbnail: require('../../assets/image/pin.png'),
-  },
-  {
-    id: 2,
-    category: '쇼핑',
-    name: '명화당',
-    address: '서울특별시 광진구 능동로 175 1층',
-    distance: '30m',
-    thumbnail: require('../../assets/image/pin.png'),
-  },
-  {
-    id: 3,
-    category: '카페',
-    name: '명화당',
-    address: '서울특별시 광진구 능동로 175 1층',
-    distance: '30m',
-    thumbnail: require('../../assets/image/pin.png'),
-  },
-];
 
 const ReviewPlaceSearchScreen = ({navigation, route}: Props) => {
   const {photoUri} = route.params;
@@ -107,20 +83,13 @@ const ReviewPlaceSearchScreen = ({navigation, route}: Props) => {
     };
   }, []);
 
-  // 키워드로 이름/카테고리/주소 필터링
+  // Demo mock returns results regardless of keyword until the real API is wired.
   const filteredPlaces = useMemo(() => {
-    const trimmed = keyword.trim();
-    if (!trimmed) return MOCK_PLACES;
-    return MOCK_PLACES.filter(
-      place =>
-        place.name.includes(trimmed) ||
-        place.category.includes(trimmed) ||
-        place.address.includes(trimmed),
-    );
+    return getReviewSearchPlacesMock(keyword);
   }, [keyword]);
 
   // 장소 선택 시 후기 작성 화면으로 이동
-  const handleSelectPlace = (place: (typeof MOCK_PLACES)[number]) => {
+  const handleSelectPlace = (place: ReviewPlaceMock) => {
     navigation.navigate('ReviewWrite', {
       photoUri,
       placeId: place.id,
@@ -256,7 +225,7 @@ const ReviewPlaceSearchScreen = ({navigation, route}: Props) => {
                       </View>
                     </View>
                     <Image
-                      source={place.thumbnail}
+                      source={{uri: place.thumbnailUrl}}
                       style={styles.placeThumbnail}
                     />
                   </Pressable>

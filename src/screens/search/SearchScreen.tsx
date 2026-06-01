@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
 import { Place } from '../../types/place';
 import SearchHeader from '../../components/search/SearchHeader';
@@ -21,6 +22,8 @@ type Mode = 'default' | 'typing' | 'searched' | 'location';
 
 export default function SearchScreen() {
     const navigation = useNavigation<NavigationProp>();
+    const route = useRoute<RouteProp<AppStackParamList, 'Search'>>();
+    const reviewPhotoUri = route.params?.reviewPhotoUri;
 
     // 검색창 텍스트 state
     const [searchText, setSearchText] = useState('');
@@ -91,10 +94,17 @@ export default function SearchScreen() {
         setMode('default');
     };
 
-    // 특정 장소를 클릭하면 장소 상세페이지로 이동
+    // 특정 장소를 클릭하면 장소 상세페이지로 이동 (리뷰 모드면 ReviewWrite로)
     const handleSelectPlace = useCallback((place: Place) => {
-        navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name });
-    }, [navigation]);
+        if (reviewPhotoUri) {
+            navigation.navigate('ReviewStack', {
+                screen: 'ReviewWrite',
+                params: { photoUri: reviewPhotoUri, placeId: place.id, placeName: place.name },
+            } as never);
+        } else {
+            navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name });
+        }
+    }, [navigation, reviewPhotoUri]);
 
     // 현재 위치로 장소 찾기
     const handleLocationSearch = () => {

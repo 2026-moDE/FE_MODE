@@ -20,9 +20,9 @@ export type TabParamList = {
 
 export type AppStackParamList = {
   Tab: undefined;
-  Search: undefined;
+  Search: { reviewPhotoUri?: string } | undefined;
   PlaceDetail: { placeId: number; placeName: string };
-  ReviewStack: undefined; // 리뷰 스택 진입
+  ReviewStack: { screen: keyof ReviewStackParamList; params?: object } | undefined;
 };
 
 // 리뷰 작성 전용 스택

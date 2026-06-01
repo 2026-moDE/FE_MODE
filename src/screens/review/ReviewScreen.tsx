@@ -11,13 +11,18 @@ import {
   StatusBar,
   Dimensions,
 } from 'react-native';
-import {Camera, useCameraDevice} from 'react-native-vision-camera';
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+} from 'react-native-vision-camera';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
 
 type ReviewNav = NativeStackNavigationProp<ReviewStackParamList>;
+type CameraPosition = 'back' | 'front';
 
 const flashIcon = require('../../assets/image/flash.png');
 const refreshIcon = require('../../assets/image/refresh.png');
@@ -51,26 +56,26 @@ const ZOOM_LEVELS = [
 
 export default function ReviewScreen() {
   const navigation = useNavigation<ReviewNav>();
-
-  const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>(
-    'back',
-  );
-  const device = useCameraDevice(cameraPosition);
-
   const cameraRef = useRef<Camera>(null);
 
-  const [hasPermission, setHasPermission] = useState(false);
+  const [cameraPosition, setCameraPosition] =
+    useState<CameraPosition>('back');
+
   const [zoom, setZoom] = useState(1);
   const [flash, setFlash] = useState<'off' | 'on'>('off');
 
+  const device = useCameraDevice(cameraPosition);
+  const {hasPermission, requestPermission} = useCameraPermission();
+
   useEffect(() => {
-    const getPermission = async () => {
-      const status = await Camera.requestCameraPermission();
-      setHasPermission(status === 'granted');
+    const checkPermission = async () => {
+      if (!hasPermission) {
+        await requestPermission();
+      }
     };
 
-    getPermission();
-  }, []);
+    checkPermission();
+  }, [hasPermission, requestPermission]);
 
   const getCameraZoom = () => {
     if (!device) {
@@ -119,6 +124,10 @@ export default function ReviewScreen() {
     setFlash('off');
   };
 
+  const handleClose = () => {
+    navigation.getParent()?.navigate('Tab' as never);
+  };
+
   if (!hasPermission) {
     return (
       <View style={styles.center}>
@@ -133,6 +142,7 @@ export default function ReviewScreen() {
       <View style={styles.center}>
         <StatusBar barStyle="light-content" backgroundColor="#050509" />
         <ActivityIndicator color="#fff" />
+        <Text style={styles.loadingText}>카메라 준비 중...</Text>
       </View>
     );
   }
@@ -141,7 +151,6 @@ export default function ReviewScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#050509" />
 
-      {/* 상단 영역 */}
       <View style={styles.topSection}>
         <View style={styles.logoWrapper}>
           <Image source={logoIcon} style={styles.logo} resizeMode="contain" />
@@ -150,12 +159,11 @@ export default function ReviewScreen() {
         <TouchableOpacity
           style={styles.closeButton}
           activeOpacity={0.8}
-          onPress={() => navigation.goBack()}>
+          onPress={handleClose}>
           <Text style={styles.closeText}>×</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 카메라 프리뷰 */}
       <View style={styles.cameraSection}>
         <View style={styles.cameraBox}>
           <Camera
@@ -194,7 +202,6 @@ export default function ReviewScreen() {
         </View>
       </View>
 
-      {/* 하단 버튼 영역 */}
       <View style={styles.bottomSection}>
         <TouchableOpacity
           style={styles.sideIconButton}
@@ -235,6 +242,13 @@ const styles = StyleSheet.create({
   permissionText: {
     color: '#fff',
     fontSize: px(16),
+    fontFamily: fontFamily.regular,
+  },
+  loadingText: {
+    marginTop: px(12),
+    color: '#fff',
+    fontSize: px(14),
+    fontFamily: fontFamily.regular,
   },
 
   topSection: {

@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -19,6 +20,8 @@ import type {ReviewStackParamList} from '../../types/navigation';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
 
+import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
+
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
 const refreshCameraIcon = require('../../assets/image/refresh_camera.png');
@@ -26,6 +29,18 @@ const timerIcon = require('../../assets/image/timer.png');
 const pencilIcon = require('../../assets/image/pencil.png');
 
 const CONGESTION_OPTIONS = ['여유', '보통', '혼잡'] as const;
+const getCongestionLevel = (
+  congestion: CongestionType,
+): CongestionLevel => {
+  switch (congestion) {
+    case '여유':
+      return 'LOW';
+    case '보통':
+      return 'MODERATE';
+    case '혼잡':
+      return 'CROWDED';
+  }
+};
 type CongestionType = (typeof CONGESTION_OPTIONS)[number];
 
 const DESIGN_WIDTH = 393;
@@ -42,36 +57,96 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
   const [selectedCongestion, setSelectedCongestion] =
     useState<CongestionType | null>(null);
   const [reviewText, setReviewText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isSubmitActive = useMemo(() => {
-    return !!placeName && !!selectedCongestion;
-  }, [placeName, selectedCongestion]);
+    return !!placeName && !!selectedCongestion && !isSubmitting;
+  }, [placeName, selectedCongestion, isSubmitting]);
 
-  const handlePressPlace = () => {
-    navigation.navigate('ReviewPlaceSearch', {
-      photoUri,
-    });
-  };
-
-  const handleRetakePhoto = () => {
-    navigation.navigate('ReviewCamera');
-  };
-
-  const handleSubmit = () => {
-    if (!isSubmitActive) return;
-
-    const reviewPayload = {
-      photoUri,
-      placeId,
-      placeName,
-      congestion: selectedCongestion,
-      content: reviewText.trim(),
+    const handlePressPlace = () => {
+      navigation.navigate('ReviewPlaceSearch', {
+        photoUri,
+      });
     };
 
-    console.log('리뷰 등록 데이터:', reviewPayload);
+    const handleRetakePhoto = () => {
+      navigation.navigate('ReviewCamera');
+    };
 
-    // TODO: 나중에 여기서 리뷰 등록 API 연결
-    navigation.navigate('ReviewComplete');
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    if (!isSubmitActive || !selectedCongestion) return;
+
+    if (!placeId) {
+      console.log('placeId 없음. 장소 선택 먼저 필요');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      const latitude = 37.5660;
+      const longitude = 126.9823;
+
+      const locationResult = await verifyPlaceLocation(
+        Number(placeId),
+        latitude,
+        longitude,
+      );
+
+      console.log('위치 인증 결과:', locationResult);
+
+      if (!locationResult.verified) {
+        Alert.alert(
+          '위치 인증 실패',
+          `해당 장소에서 ${locationResult.distance}m 떨어져 있어요.`,
+        );
+        return;
+      }
+
+      const fileName = `review_${Date.now()}.jpg`;
+
+      // 1. presigned-url 발급
+      const {presigned_url, image_url} = await getPresignedUrl(fileName);
+
+      // 2. S3 업로드
+      await uploadImageToS3(photoUri, presigned_url);
+
+      console.log('S3 업로드 성공 image_url:', image_url);
+
+      // 3. 리뷰 등록
+      const trimmedComment = reviewText.trim();
+
+      const reviewBody: {
+        place_id: number;
+        image_url: string;
+        congestion_level: CongestionLevel;
+        latitude: number;
+        longitude: number;
+        comment?: string;
+      } = {
+        place_id: Number(placeId),
+        image_url,
+        congestion_level: getCongestionLevel(selectedCongestion),
+        latitude,
+        longitude,
+      };
+
+      if (trimmedComment.length > 0) {
+        reviewBody.comment = trimmedComment;
+      }
+
+      console.log('리뷰 등록 request body:', reviewBody);
+
+      const review = await createReview(reviewBody);
+
+      // 4. 완료 화면 이동
+      navigation.navigate('ReviewComplete');
+    } catch (error) {
+      console.log('리뷰 등록 실패:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -200,7 +275,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
               styles.submitText,
               isSubmitActive ? styles.submitTextActive : styles.submitTextDisabled,
             ]}>
-            ✓  등록하기
+            {isSubmitting ? '등록 중...' : '✓  등록하기'}
           </Text>
         </Pressable>
       </KeyboardAvoidingView>
