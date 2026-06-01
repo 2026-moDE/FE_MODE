@@ -64,9 +64,9 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
   }, [placeName, selectedCongestion, isSubmitting]);
 
     const handlePressPlace = () => {
-      navigation.navigate('ReviewPlaceSearch', {
-        photoUri,
-      });
+      navigation.getParent()?.navigate('Search', {
+        reviewPhotoUri: photoUri,
+      } as never);
     };
 
     const handleRetakePhoto = () => {
