@@ -22,7 +22,7 @@ function TabNavigator() {
         >
             <Tab.Screen name="Review" component={ReviewScreen} />
             <Tab.Screen name="Home" component={HomeScreen} />
-            {/* 마이페이지 임시 비활성화 - 추후 다시 활성화하려면 주석 해제 */}
+            {/* 마이페이지 임시 비활 */}
             {/* <Tab.Screen name="Mypage" component={MyPageScreen} /> */}
         </Tab.Navigator>
     );
