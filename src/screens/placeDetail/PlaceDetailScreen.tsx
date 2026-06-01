@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {View, Text, FlatList, StyleSheet} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -37,7 +37,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 export default function PlaceDetailScreen({route, navigation}: Props) {
     const {placeId, placeName} = route.params;
 
-    // 안전 영역 (translucent StatusBar 때문에 상태바 영역만큼 패딩 필요)
+    // 투명 상태바때문에 ui 올라오는 거 방지
     const insets = useSafeAreaInsets();
 
     // 현위치 (거리 계산용)
@@ -63,7 +63,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
         // 테스트 목 데이터
         setPlaceDetail(placeDetailsMock[placeId] ?? null);
 
-        // ────────────────────── 실제 API 호출 ──────────────────────
+        // ──────────────────────  API 호출 ──────────────────────
         // fetchPlaceDetail(placeId)
         //     .then(detail => setPlaceDetail(detail))
         //     .catch(error => console.error('장소 상세 조회 실패:', error));
@@ -77,7 +77,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
         const result = getLocationVerifyMock(placeId, location);
         setDistance(result.distance);
 
-        // ────────────────────── 실제 API 호출 ──────────────────────
+        // ──────────────────────  API 호출 ──────────────────────
         // fetchLocationVerify(placeId, location)
         //     .then(result => setDistance(result.distance))
         //     .catch(error => console.error('위치 인증 실패:', error));
@@ -105,6 +105,11 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     // 거리 텍스트 (계산된 경우만)
     const distanceText =
         distance !== null ? `내 위치에서 ${formatDistance(distance)}` : undefined;
+
+    // 리뷰 짝수로 맞추기 (홀수면 null로 빈 자리 추가 → 마지막 카드 커지는 거 방지)
+    const displayReviews = useMemo<((CurrentReview | ArchivedReview) | null)[]>(() => {
+        return reviews.length % 2 === 1 ? [...reviews, null] : reviews;
+    }, [reviews]);
 
     // 뒤로가기
     const handleBack = useCallback(() => {
@@ -166,17 +171,23 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
 
             {/* 리뷰 그리드 */}
             <FlatList
-                data={reviews}
-                keyExtractor={item => String(item.id)}
+                data={displayReviews}
+                keyExtractor={(item, index) => item ? String(item.id) : `placeholder-${index}`}
                 numColumns={2}
                 columnWrapperStyle={styles.gridRow}
                 contentContainerStyle={styles.gridContent}
-                renderItem={({item, index}) => (
-                    <ReviewCard
-                        review={item}
-                        onPress={() => setImageIndex(index)}
-                    />
-                )}
+                renderItem={({item, index}) => {
+                    // 빈 자리 (홀수 마지막 칸) - 공간만 차지하고 안 보임
+                    if (item === null) {
+                        return <View style={{flex: 1}} />;
+                    }
+                    return (
+                        <ReviewCard
+                            review={item}
+                            onPress={() => setImageIndex(index)}
+                        />
+                    );
+                }}
                 ListEmptyComponent={
                     <View style={styles.emptyWrapper}>
                         <Text style={styles.emptyText}>리뷰가 없습니다</Text>
@@ -184,12 +195,12 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 }
             />
 
-            {/* 어두운 오버레이 - 사진 뷰어 열리면 화면 전체(상태바 빼고) 덮음 */}
+            {/* 검정 오버레이 - 리뷰 사진 클릭 시 화면 전체(상태바 빼고) 덮음 */}
             {imageIndex !== null && (
                 <View style={styles.darkOverlay} pointerEvents="none" />
             )}
 
-            {/* 사진 뷰어 (Modal로 오버레이 위에 사진/텍스트 표시) */}
+            {/* 사진 (Modal로 오버레이 위에 사진/텍스트 표시) */}
             <ReviewPhoto
                 reviews={reviews}
                 startIndex={imageIndex ?? 0}
@@ -204,11 +215,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.surface.white,
-        // paddingTop은 useSafeAreaInsets()로 inline 처리 (StatusBar.currentHeight보다 안정적)
     },
     darkOverlay: {
-        // 사진 뷰어 열렸을 때 화면 전체를 덮는 어두운 레이어
-        // (시스템 상태바는 RN으로 못 덮으니까 자동으로 위에 노출됨)
+        // 리뷰 사진 클릭했을 때 뒷 화면 전체를 덮는 검정 레이어
         position: 'absolute',
         top: 0,
         left: 0,
@@ -228,9 +237,9 @@ const styles = StyleSheet.create({
     },
     gridContent: {
         padding: spacing.lg,                      // 16
-        gap: spacing.md,                          // 12 (행 간격)
+        gap: spacing.md,                          // 12 (행)
     },
     gridRow: {
-        gap: spacing.md,                          // 12 (열 간격)
+        gap: spacing.md,                          // 12 (열)
     },
 });

@@ -9,11 +9,11 @@ type FetchNearbyPlacesParams = {
   query?: string;   // 카테고리 (기본: 음식점)
 };
 
-// 현위치 기준 주변 장소 조회 api → GET /api/places
+// 현위치 기준 주변 장소 조회 api → GET /api/places/nearby
 export async function fetchNearbyPlaces(
   params: FetchNearbyPlacesParams,
 ): Promise<NearbyPlaceResponse> {
-  const response = await apiClient.get<NearbyPlaceResponse>('/api/places', {
+  const response = await apiClient.get<NearbyPlaceResponse>('/api/places/nearby', {
     params,
   });
   return response.data;
