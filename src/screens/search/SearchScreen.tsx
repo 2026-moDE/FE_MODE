@@ -98,8 +98,15 @@ export default function SearchScreen() {
     const handleSelectPlace = useCallback((place: Place) => {
         if (reviewPhotoUri) {
             navigation.navigate('ReviewStack', {
-                screen: 'ReviewWrite',
-                params: { photoUri: reviewPhotoUri, placeId: place.id, placeName: place.name },
+                screen: 'ReviewLocationConfirm',
+                params: {
+                    photoUri: reviewPhotoUri,
+                    placeId: place.id,
+                    placeName: place.name,
+                    placeCategory: place.category,
+                    placeDistance: '',
+                    placeAddress: place.address,
+                },
             } as never);
         } else {
             navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name });

@@ -19,6 +19,7 @@ import type {ReviewStackParamList} from '../../types/navigation';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
+import {useLocation} from '../../context/LocationContext';
 
 import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
 
@@ -53,6 +54,7 @@ const MAX_REVIEW_LENGTH = 50;
 
 const ReviewWriteScreen = ({navigation, route}: Props) => {
   const {photoUri, placeId, placeName} = route.params;
+  const {location} = useLocation();
 
   const [selectedCongestion, setSelectedCongestion] =
     useState<CongestionType | null>(null);
@@ -82,12 +84,17 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       return;
     }
 
+    if (!location) {
+      Alert.alert('위치 확인 실패', '현재 위치를 확인한 뒤 다시 시도해주세요.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      
-      const latitude = 37.5660;
-      const longitude = 126.9823;
 
+      const {latitude, longitude} = location;
+
+    // 선택한 장소와 현재 위치가 가까운지 위치 인증 요청
       const locationResult = await verifyPlaceLocation(
         Number(placeId),
         latitude,
@@ -202,7 +209,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
               <View style={styles.dateRow}>
                 <Image source={timerIcon} style={styles.timerIcon} />
-                <Text style={styles.dateText}>2026.4.23 (목) 20:11</Text>
+                <Text style={styles.dateText}>2026.6.3 (목) 15:33 </Text>
               </View>
             </Pressable>
           </View>
