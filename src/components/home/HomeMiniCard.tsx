@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, ImageBackground, StyleSheet, ScrollView} from 'react-native';
+import {View, Text, ImageBackground, StyleSheet, ScrollView, Pressable} from 'react-native';
 import {CATEGORY_LABEL, PlaceDetail} from '../../types/place';
 import IconBellOff from '../../assets/icons/IconBellOff';
 import IconBellOn from '../../assets/icons/IconBellOn';
@@ -15,64 +15,79 @@ type HomeMiniCardProps = {
     place: PlaceDetail;
     distance?: string;
     images?: string[];
+    onToggleSubscribe?: () => void;     // 알림 토글 핸들러
+    onPress?: () => void;
 };
 
 export default function HomeMiniCard({
     place,
     distance,
     images = [],
+    onToggleSubscribe,
+    onPress,
 }: HomeMiniCardProps) {
     const {name, address, category, business_hours, is_subscribed} = place;
     const categoryLabel = CATEGORY_LABEL[category] ?? category;
 
+    // 나중에 핸들러로 바꾸기!! 넘 더러움 지금
     return (
         <View style={styles.container}>
             {/* 상단: 카테고리 태그 + 장소명 + 알림 */}
-            <View style={styles.headerRow}>
-                <View style={styles.titleGroup}>
-                    <View style={styles.categoryTag}>
-                        <Text style={styles.categoryText}>{categoryLabel}</Text>
+            <Pressable onPress={onPress}>
+                <View style={styles.headerRow}>
+                    <View style={styles.titleGroup}>
+                        <View style={styles.categoryTag}>
+                            <Text style={styles.categoryText}>{categoryLabel}</Text>
+                        </View>
+                        <Text style={styles.placeName}>{name}</Text>
                     </View>
-                    <Text style={styles.placeName}>{name}</Text>
+                    {/* 벨은 내부 Pressable로 따로 (네비게이션 안 됨, 토글만) */}
+                    <Pressable
+                        style={styles.bellWrapper}
+                        onPress={onToggleSubscribe}
+                        hitSlop={8}>
+                        {is_subscribed ? (
+                            <IconBellOn size={24} color={colors.icon.basic} />
+                        ) : (
+                            <IconBellOff size={24} color={colors.icon.tertiary} />
+                        )}
+                    </Pressable>
                 </View>
-                <View style={styles.bellWrapper}>
-                    {is_subscribed ? (
-                        <IconBellOn size={24} color={colors.icon.basic} />
-                    ) : (
-                        <IconBellOff size={24} color={colors.icon.tertiary} />
-                    )}
-                </View>
-            </View>
+            </Pressable>
 
             {/* 주소 + 거리 + 영업 시간 */}
-            <View style={styles.infoGroup}>
-                {/* 주소 행 */}
-                <View style={styles.infoRow}>
-                    <IconPlaceLocation size={24} color={colors.icon.subtle} />
-                    <Text style={styles.addressText}>{address}</Text>
-                    <Text style={styles.distanceText}>{distance}</Text>
-                </View>
+            <Pressable onPress={onPress}>
+                <View style={styles.infoGroup}>
+                    {/* 주소 행 */}
+                    <View style={styles.infoRow}>
+                        <IconPlaceLocation size={24} color={colors.icon.subtle} />
+                        <Text style={styles.addressText}>{address}</Text>
+                        <Text style={styles.distanceText}>{distance}</Text>
+                    </View>
 
-                {/* 영업 시간 행 */}
-                <View style={styles.infoRow}>
-                    <IconClock size={24} color={colors.icon.subtle} />
-                    <Text style={styles.businessText}>{business_hours}</Text>
+                    {/* 영업 시간 행 */}
+                    <View style={styles.infoRow}>
+                        <IconClock size={24} color={colors.icon.subtle} />
+                        <Text style={styles.businessText}>{business_hours}</Text>
+                    </View>
                 </View>
-            </View>
+            </Pressable>
 
-            {/* 하단: 이미지 슬롯 */}
+            {/* 하단: 이미지 슬롯 (ScrollView는 Pressable 밖에 두기) */}
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.imageRow}>
                 {images.length > 0 ? (
                     images.map((uri, index) => (
-                        <ImageBackground
-                            key={index}
-                            style={styles.imageSlot}
-                            source={{uri}}
-                            imageStyle={styles.imageRadius}
-                        />
+                        // 각 이미지를 Pressable로 감쌈: 탭 → 네비, 드래그 → ScrollView 스크롤
+                        <Pressable key={index} onPress={onPress}>
+                            <ImageBackground
+                                style={styles.imageSlot}
+                                source={{uri}}
+                                imageStyle={styles.imageRadius}
+                            />
+                        </Pressable>
                     ))
                 ) : (
                     // 이미지 없을 때 빈 슬롯 3개 표시

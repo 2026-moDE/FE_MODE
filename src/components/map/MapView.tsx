@@ -15,6 +15,7 @@ const MapView=({ref, ...props}:Props)=>{
             initialCamera={INITIAL_CAMERA}
             isShowCompass={false}
             isShowScaleBar={false}
+            isShowZoomControls={false}     // +/- 줌 버튼 숨김
             {...props}
         />
     );
