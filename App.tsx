@@ -1,6 +1,8 @@
 import React from 'react';
-import {StatusBar} from 'react-native';
+import {StatusBar, LogBox} from 'react-native';
 import RootNavigation from './src/navigation/RootNavigation';
+
+LogBox.ignoreLogs(['[gps]']);
 
 function App() {
   return (

@@ -56,19 +56,13 @@ apiClient.interceptors.response.use(
 
       try {
         console.log('[토큰 만료] access_token 재발급 시도');
-
         const newAccessToken = await refreshAccessTokenApi();
-
         console.log('[토큰 재발급 완료] 원래 요청 재시도');
-
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
         return apiClient(originalRequest);
       } catch (refreshError) {
         console.log('[토큰 재발급 실패] 로컬 토큰 삭제');
-
         await clearTokens();
-
         return Promise.reject(refreshError);
       }
     }

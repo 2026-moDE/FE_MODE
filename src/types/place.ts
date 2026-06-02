@@ -1,7 +1,7 @@
 // ─────────────────── 공용 Union 타입 ───────────────────
 
 // 장소 카테고리 (임의..?)
-export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'BAR' | 'PARK' | 'SHOPPING';
+export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'BAR' | 'PARK' | 'SHOPPING' | 'ETC';
 
 // 혼잡도 레벨
 export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED';
@@ -16,6 +16,7 @@ export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
     BAR:        '술집',
     PARK:       '공원',
     SHOPPING:   '쇼핑',
+    ETC:        '기타',
 };
 
 // ─────────────────── 장소 검색 api (GET /api/search) ───────────────────
@@ -50,8 +51,8 @@ export type NearbyPlace = {
     name: string;
     latitude: number;
     longitude: number;
-    congestion_level: CongestionLevel;
-    thumbnail_url: string;
+    congestion_level: CongestionLevel | null;
+    thumbnail_url: string | null;
 };
 
 export type NearbyPlaceResponse = {

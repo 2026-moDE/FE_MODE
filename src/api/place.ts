@@ -21,14 +21,16 @@ export async function fetchNearbyPlaces(
 
 // 장소 상세 조회 api → GET /api/places/{id}
 export async function fetchPlaceDetail(id: number): Promise<PlaceDetail> {
-  const response = await apiClient.get<PlaceDetail>(`/api/places/${id}`);
-  return response.data;
+  const response = await apiClient.get<{success: boolean; message: string | null; data: PlaceDetail}>(`/api/places/${id}`);
+  return response.data.data;
 }
+
+type ApiResponse<T> = { success: boolean; message: string | null; data: T };
 
 // 현재 위치 인증 api
 export async function fetchLocationVerify(id:number, location:Location): Promise<LocationVerifyResponse>{
-  const response = await apiClient.get<LocationVerifyResponse>(`/api/places/${id}/verify-location`,{params:location});
-  return response.data;
+  const response = await apiClient.get<ApiResponse<LocationVerifyResponse>>(`/api/places/${id}/verify-location`,{params:location});
+  return response.data.data;
 }
 
 // 리뷰 공용 파라미터
@@ -39,30 +41,30 @@ type FetchReviewParams = {
 
 // 현재 리뷰 목록
 export async function fetchCurrentReviews(id:number,params?:FetchReviewParams):Promise<CurrentReviewsResponse>{
-  const response = await apiClient.get<CurrentReviewsResponse>(`/api/places/${id}/reviews/current`,{params});
-  return response.data;
+  const response = await apiClient.get<ApiResponse<CurrentReviewsResponse>>(`/api/places/${id}/reviews/current`,{params});
+  return response.data.data;
 }
 
 // 과거 리뷰 목록
 export async function fetchArchivedReviews(id:number,params?:FetchReviewParams):Promise<ArchivedReviewsResponse>{
-  const response = await apiClient.get<ArchivedReviewsResponse>(`/api/places/${id}/reviews/archived`,{params});
-  return response.data;
+  const response = await apiClient.get<ApiResponse<ArchivedReviewsResponse>>(`/api/places/${id}/reviews/archived`,{params});
+  return response.data.data;
 }
 
 // 혼잡도 추이
 export async function fetchCongestion(id:number):Promise<CongestionResponse>{
-  const response = await apiClient.get<CongestionResponse>(`/api/places/${id}/congestion-trend`);
-  return response.data;
+  const response = await apiClient.get<ApiResponse<CongestionResponse>>(`/api/places/${id}/congestion-trend`);
+  return response.data.data;
 }
 
 // 알림 구독 설정
 export async function subscribe(id:number):Promise<SubscribeResponse>{
-  const response = await apiClient.post<SubscribeResponse>(`/api/places/${id}/subscribe`);
-  return response.data;
+  const response = await apiClient.post<ApiResponse<SubscribeResponse>>(`/api/places/${id}/subscribe`);
+  return response.data.data;
 }
 
 // 알림 구독 취소
 export async function unsubscribe(id:number):Promise<SubscribeResponse>{
-  const response = await apiClient.delete<SubscribeResponse>(`/api/places/${id}/subscribe`);
-  return response.data;
+  const response = await apiClient.delete<ApiResponse<SubscribeResponse>>(`/api/places/${id}/subscribe`);
+  return response.data.data;
 }

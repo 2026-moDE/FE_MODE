@@ -8,6 +8,8 @@ import {
   Pressable,
   TextInput,
   KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
   Platform,
   Dimensions,
   Alert,
@@ -21,6 +23,7 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
 
 import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
+import {useLocation} from '../../context/LocationContext';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
@@ -54,10 +57,16 @@ const MAX_REVIEW_LENGTH = 50;
 const ReviewWriteScreen = ({navigation, route}: Props) => {
   const {photoUri, placeId, placeName} = route.params;
 
+  const {location} = useLocation();
+
   const [selectedCongestion, setSelectedCongestion] =
     useState<CongestionType | null>(null);
   const [reviewText, setReviewText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const now = new Date();
+  const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  const formattedDate = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} (${DAYS[now.getDay()]}) ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   const isSubmitActive = useMemo(() => {
     return !!placeName && !!selectedCongestion && !isSubmitting;
@@ -82,68 +91,52 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       return;
     }
 
+    if (!location) {
+      Alert.alert('위치 오류', '현재 위치를 가져올 수 없어요. 위치 권한을 확인해주세요.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
-      
-      const latitude = 37.5660;
-      const longitude = 126.9823;
 
-      const locationResult = await verifyPlaceLocation(
-        Number(placeId),
-        latitude,
-        longitude,
-      );
+      const latitude = location.latitude;
+      const longitude = location.longitude;
 
-      console.log('위치 인증 결과:', locationResult);
+      // 1. 위치 인증
+      console.log('[리뷰] 위치 인증 요청 placeId:', placeId, 'lat:', latitude, 'lng:', longitude);
+      const locationResult = await verifyPlaceLocation(Number(placeId), latitude, longitude);
+      console.log('[리뷰] 위치 인증 결과:', locationResult);
 
       if (!locationResult.verified) {
-        Alert.alert(
-          '위치 인증 실패',
-          `해당 장소에서 ${locationResult.distance}m 떨어져 있어요.`,
-        );
+        Alert.alert('위치 인증 실패', `해당 장소에서 ${locationResult.distance}m 떨어져 있어요.`);
         return;
       }
 
-      const fileName = `review_${Date.now()}.jpg`;
+      // 2. presigned-url 발급
+      console.log('[리뷰] presigned-url 요청');
+      const {presigned_url, image_url} = await getPresignedUrl(`review_${Date.now()}.jpg`);
+      console.log('[리뷰] presigned-url 발급 완료');
 
-      // 1. presigned-url 발급
-      const {presigned_url, image_url} = await getPresignedUrl(fileName);
-
-      // 2. S3 업로드
+      // 3. S3 업로드
+      console.log('[리뷰] S3 업로드 시작');
       await uploadImageToS3(photoUri, presigned_url);
+      console.log('[리뷰] S3 업로드 완료 image_url:', image_url);
 
-      console.log('S3 업로드 성공 image_url:', image_url);
-
-      // 3. 리뷰 등록
-      const trimmedComment = reviewText.trim();
-
-      const reviewBody: {
-        place_id: number;
-        image_url: string;
-        congestion_level: CongestionLevel;
-        latitude: number;
-        longitude: number;
-        comment?: string;
-      } = {
+      // 4. 리뷰 등록
+      const reviewBody = {
         place_id: Number(placeId),
         image_url,
         congestion_level: getCongestionLevel(selectedCongestion),
         latitude,
         longitude,
+        ...(reviewText.trim() && {comment: reviewText.trim()}),
       };
+      await createReview(reviewBody);
+      console.log('[리뷰] 등록 완료');
 
-      if (trimmedComment.length > 0) {
-        reviewBody.comment = trimmedComment;
-      }
-
-      console.log('리뷰 등록 request body:', reviewBody);
-
-      const review = await createReview(reviewBody);
-
-      // 4. 완료 화면 이동
       navigation.navigate('ReviewComplete');
-    } catch (error) {
-      console.log('리뷰 등록 실패:', error);
+    } catch (error: any) {
+      Alert.alert('등록 실패', error?.response?.data?.message || error?.message || '알 수 없는 오류가 발생했어요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -156,7 +149,8 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.keyboardView}>
         {/* 헤더 */}
         <View style={styles.header}>
           <Pressable
@@ -202,7 +196,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
               <View style={styles.dateRow}>
                 <Image source={timerIcon} style={styles.timerIcon} />
-                <Text style={styles.dateText}>2026.4.23 (목) 20:11</Text>
+                <Text style={styles.dateText}>{formattedDate}</Text>
               </View>
             </Pressable>
           </View>
@@ -278,6 +272,8 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             {isSubmitting ? '등록 중...' : '✓  등록하기'}
           </Text>
         </Pressable>
+        </View>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
