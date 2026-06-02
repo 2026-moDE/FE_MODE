@@ -5,7 +5,7 @@ import { AppStackParamList, TabParamList } from '../types/navigation';
 import HomeScreen from '../screens/home/HomeScreen';
 import SearchScreen from '../screens/search/SearchScreen';
 import PlaceDetailScreen from '../screens/placeDetail/PlaceDetailScreen';
-import MyPageScreen from '../screens/mypage/MyPageScreen';
+// import MyPageScreen from '../screens/mypage/MyPageScreen';   // 마이페이지 임시 비활성화
 import CustomTabBar from '../components/map/CustomTabBar';
 import ReviewStack from './ReviewStack';
 
@@ -15,16 +15,19 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 // 하단 탭 네비게이션 (리뷰 쓰기 / 홈 / 마이페이지)
 function TabNavigator() {
-  return (
-    <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{headerShown: false}}
-      initialRouteName="Home">
-      <Tab.Screen name="Review" component={ReviewStack} />
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Mypage" component={MyPageScreen} />
-    </Tab.Navigator>
-  );
+    return (
+        <Tab.Navigator
+            tabBar={(props) => <CustomTabBar {...props} />}
+            screenOptions={{ headerShown: false }}
+            initialRouteName="Home"
+        >
+            <Tab.Screen name="Review" component={ReviewStack} />
+            <Tab.Screen name="Home" component={HomeScreen} />
+            {/* 마이페이지 임시 비활 */}
+            {/* <Tab.Screen name="Mypage" component={MyPageScreen} /> */}
+        </Tab.Navigator>
+    );
+
 }
 
 export default function AppNavigator() {

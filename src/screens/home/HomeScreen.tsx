@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, useState, useCallback} from "react";
-import {View, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";
@@ -11,7 +11,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
-import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews } from "../../api/place";
+import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, subscribe, unsubscribe } from "../../api/place";
 import { NearbyPlace, PlaceDetail } from "../../types/place";
 import IconLogo from "../../assets/icons/IconLogo";
 import { colors } from '../../constants/colors';
@@ -58,16 +58,16 @@ export default function HomeScreen(){
         requestPermission();
     }, []);
 
-    // 위치 들어오면 주변 장소 조회
+    // 위치 들어오면 주변 장소 조회 (위치 없으면 그냥 대기)
     useEffect(() => {
-        if (!location) return;
+        if (!location) return;   // 위치 잡힐 때까지 대기만
 
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
             radius: 1500,
         })
-            .then(res => setPlaces(res.places))
+            .then(res => setPlaces(res.places ?? []))
             .catch(error => console.error('주변 장소 조회 실패:', error));
     }, [location]);
 
@@ -94,6 +94,12 @@ export default function HomeScreen(){
         }
     }, []);
 
+    const handleCardPress = useCallback(()=>{
+        if(!placeDetail) return;
+        navigation.navigate('PlaceDetail',
+            {placeId: placeDetail.id, placeName: placeDetail.name});
+    },[placeDetail,navigation])
+
     // 장소 미니 카드 닫을 때
     const handleCloseCard = useCallback(()=>{
         setSelectedPlace(null);
@@ -101,17 +107,51 @@ export default function HomeScreen(){
         setReviewImages([]);
     },[]);
 
+    // 알림 토글 (벨 아이콘 클릭)
+    const handleToggleSubscribe = useCallback(async () => {
+        if (!placeDetail) return;
+
+        // 일단 로컬 state만 토글 (즉시 UI 반영)
+        const previous = placeDetail;
+        setPlaceDetail({
+            ...placeDetail,
+            is_subscribed: !placeDetail.is_subscribed,
+        });
+
+        try {
+            if (previous.is_subscribed) {
+                await unsubscribe(previous.id);
+            } else {
+                await subscribe(previous.id);
+            }
+        } catch (error) {
+            console.error('구독 토글 실패:', error);
+            // 실패 시 롤백
+            setPlaceDetail(previous);
+        }
+    }, [placeDetail]);
+
     // 거리 텍스트 계산 (내 위치 + 선택된 장소 둘 다 있을 때만)
     const distanceText = location && selectedPlace
         ? `내 위치에서 ${formatDistance(getDistance(location, selectedPlace))}`
         : undefined;
 
+    // 위치 잡힐 때까지 로딩 화면 (시청 초기 카메라 안 뜨도록)
+    if (!location) {
+        return (
+            <View style={[styles.container, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color={colors.brand.primary} />
+                <Text style={styles.loadingText}>위치를 찾는 중...</Text>
+            </View>
+        );
+    }
 
     return(
         <View style={styles.container}>
 
             <MapView
                 ref={mapRef}
+                initialCamera={{latitude: location.latitude, longitude: location.longitude, zoom: 16}}
                 isShowLocationButton={false}   // 기본 위치 버튼 숨김 (커스텀 버튼 사용)
                 onTapMap={handleCloseCard}
                 onInitialized={() => {
@@ -161,6 +201,8 @@ export default function HomeScreen(){
                         place={placeDetail}
                         distance={distanceText}
                         images={reviewImages}
+                        onToggleSubscribe={handleToggleSubscribe}
+                        onPress={handleCardPress}
                     />
                 </View>
             )}
@@ -171,6 +213,16 @@ export default function HomeScreen(){
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    loadingContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: '#fff',
+    },
+    loadingText: {
+        fontSize: 14,
+        color: '#666',
+    },
     searchBarWrapper: {
         position: 'absolute',
         left: 0,

@@ -22,6 +22,7 @@ export type AppStackParamList = {
   Tab: undefined;
   Search: { reviewPhotoUri?: string } | undefined;
   PlaceDetail: { placeId: number; placeName: string };
+
   ReviewStack: { screen: keyof ReviewStackParamList; params?: object } | undefined;
 };
 
