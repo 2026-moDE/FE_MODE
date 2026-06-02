@@ -26,11 +26,8 @@ const TAIL_WIDTH = 12;  // 살짝 얇게 (좌우 합쳐서 12)
 const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
 export default function LiveBubble({place, onPress}: Props) {
-    // 혼잡도에 따라 테두리 색 결정 (디버깅용 fallback: 핑크)
-    const borderColor = CONGESTION_COLORS[place.congestion_level] ?? '#FF00FF';
-
-    // 디버깅 로그
-    console.log(`[LiveBubble] id:${place.id}, congestion: ${place.congestion_level}, color: ${borderColor}`);
+    // 혼잡도에 따라 테두리 색 결정 (없으면 회색 fallback)
+    const borderColor = CONGESTION_COLORS[place.congestion_level] ?? '#999';
 
     return (
         <NaverMapMarkerOverlay
@@ -38,13 +35,13 @@ export default function LiveBubble({place, onPress}: Props) {
             longitude={place.longitude}
             width={BUBBLE_SIZE}
             height={TOTAL_HEIGHT}
-            anchor={{x: 0.5, y: 1}}    // 마커 하단 중앙(=꼬리 끝)이 좌표에 위치
+            anchor={{x: 0.5, y: 1}}
             onTap={() => onPress(place)}>
-            <View // 캐싱X -> 성능 이슈가 생길 수도
-                key={`${place.thumbnail_url}-${place.congestion_level}`}    // 이미지/혼잡도 바뀌면 다시 렌더링
-                collapsable={false} // 이 방식에선 필수로 false 설정
+            <View
+                key={`${place.thumbnail_url}-${place.congestion_level}`}
+                collapsable={false}
                 style={styles.container}>
-                {/* 버블  - 테두리 색은 혼잡도에 따라  */}
+                {/* 버블 본체 - 테두리 색 혼잡도 따라 */}
                 <View style={[styles.bubble, {borderColor}]}>
                     <Image
                         source={{uri: place.thumbnail_url}}
@@ -52,7 +49,7 @@ export default function LiveBubble({place, onPress}: Props) {
                     />
                 </View>
 
-                {/* 꼬리  - 색은 혼잡도에 따라 */}
+                {/* 꼬리 - 색 혼잡도 따라 */}
                 <View style={[styles.tail, {borderTopColor: borderColor}]} />
             </View>
         </NaverMapMarkerOverlay>

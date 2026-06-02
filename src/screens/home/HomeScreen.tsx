@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, useState, useCallback} from "react";
-import {View, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";
@@ -60,35 +60,34 @@ export default function HomeScreen(){
         requestPermission();
     }, []);
 
-    // 위치 들어오면 주변 장소 조회
+    // 위치 들어오면 주변 장소 조회 (위치 없으면 그냥 대기)
     useEffect(() => {
-        // 테스트용 - 위치 없으면 시청역 기본값
-        if (!location) {
-            console.warn('위치 권한 없음 → 시청역 기준 목 데이터 사용');
-            setPlaces(getNearbyPlacesMock({latitude: 37.5665, longitude: 126.9780}));
-            return;
-        }
+        if (!location) return;   // 위치 잡힐 때까지 대기만
 
-        fetchNearbyPlaces({
-            latitude: location.latitude,
-            longitude: location.longitude,
-            radius: 1500,
-        })
-            .then(res => {
-                // API 성공해도 빈 배열이면 mock으로 폴백
-                if (res.places && res.places.length > 0) {
-                    setPlaces(res.places);
-                } else {
-                    //  테스트
-                    console.warn('주변 장소 API 빈 배열 → 목 데이터 사용');
-                    setPlaces(getNearbyPlacesMock(location));
-                }
-            })
-            .catch(error => {
-                //  테스트
-                console.warn('주변 장소 API 실패 → 목 데이터 사용:', error?.message);
-                setPlaces(getNearbyPlacesMock(location));
-            });
+        // ⚠️ 테스트용 - mock 강제 사용 (백엔드 API 응답이 불완전해서)
+        // 백엔드 정상 연동 후엔 아래 mock 줄 지우고 try/catch 블록 활성화
+        console.log('[HomeScreen] mock 데이터로 라이브 버블 표시');
+        setPlaces(getNearbyPlacesMock(location));
+        return;
+
+        // ────────────────────── 실제 API 호출 (백엔드 연동 완료 후 활성화) ──────────────────────
+        // fetchNearbyPlaces({
+        //     latitude: location.latitude,
+        //     longitude: location.longitude,
+        //     radius: 1500,
+        // })
+        //     .then(res => {
+        //         if (res.places && res.places.length > 0) {
+        //             setPlaces(res.places);
+        //         } else {
+        //             console.warn('주변 장소 API 빈 배열 → 목 데이터 사용');
+        //             setPlaces(getNearbyPlacesMock(location));
+        //         }
+        //     })
+        //     .catch(error => {
+        //         console.warn('주변 장소 API 실패 → 목 데이터 사용:', error?.message);
+        //         setPlaces(getNearbyPlacesMock(location));
+        //     });
     }, [location]);
 
     // 검색창 클릭 시 → SearchScreen으로 이동
@@ -100,6 +99,16 @@ export default function HomeScreen(){
     const handlePlacePress = useCallback(async (place: NearbyPlace) => {
         setSelectedPlace(place);
 
+        // ⚠️ 테스트용 - mock에 매칭되는 장소면 mock 우선 사용 (백엔드 연동 완료 후 이 블록 삭제)
+        const mockDetail = placeDetailsMock[place.id];
+        if (mockDetail) {
+            console.log('[handlePlacePress] mock 매칭됨 → mock 사용:', place.id);
+            const mockReviews = getCurrentReviewsMock(place.id);
+            setPlaceDetail(mockDetail);
+            setReviewImages(mockReviews.reviews.map(r => r.image_url));
+            return;
+        }
+
         try {
             // 상세 + 현재 리뷰 동시 호출
             const [detail, reviews] = await Promise.all([
@@ -110,14 +119,7 @@ export default function HomeScreen(){
             // 현재 리뷰에서 이미지 URL만 추출해서 카드에 표시
             setReviewImages(reviews.reviews.map(r => r.image_url));
         } catch (error: any) {
-            // 테스트
-            console.warn('장소 상세/리뷰 API 실패 → 목 데이터 사용:', error?.message);
-            const mockDetail = placeDetailsMock[place.id];
-            const mockReviews = getCurrentReviewsMock(place.id);
-            if (mockDetail) {
-                setPlaceDetail(mockDetail);
-                setReviewImages(mockReviews.reviews.map(r => r.image_url));
-            }
+            console.warn('장소 상세/리뷰 API 실패:', error?.message);
         }
     }, []);
 
@@ -144,7 +146,7 @@ export default function HomeScreen(){
             is_subscribed: !placeDetail.is_subscribed,
         });
 
-        // ────────────────────── 실제 API 호출 (백엔드 연동 시 활성화) ──────────────────────
+        // ──────────────────────  API 호출  ──────────────────────
         // try {
         //     if (placeDetail.is_subscribed) {
         //         await unsubscribe(placeDetail.id);
@@ -163,12 +165,22 @@ export default function HomeScreen(){
         ? `내 위치에서 ${formatDistance(getDistance(location, selectedPlace))}`
         : undefined;
 
+    // 위치 잡힐 때까지 로딩 화면 (시청 초기 카메라 안 뜨도록)
+    if (!location) {
+        return (
+            <View style={[styles.container, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color={colors.brand.primary} />
+                <Text style={styles.loadingText}>위치를 찾는 중...</Text>
+            </View>
+        );
+    }
 
     return(
         <View style={styles.container}>
 
             <MapView
                 ref={mapRef}
+                initialCamera={{latitude: location.latitude, longitude: location.longitude, zoom: 16}}
                 isShowLocationButton={false}   // 기본 위치 버튼 숨김 (커스텀 버튼 사용)
                 onTapMap={handleCloseCard}
                 onInitialized={() => {
@@ -230,6 +242,16 @@ export default function HomeScreen(){
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    loadingContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: '#fff',
+    },
+    loadingText: {
+        fontSize: 14,
+        color: '#666',
+    },
     searchBarWrapper: {
         position: 'absolute',
         left: 0,

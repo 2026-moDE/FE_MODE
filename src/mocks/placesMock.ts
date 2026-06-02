@@ -16,8 +16,9 @@ const CITY_HALL: Location = {
  */
 export function getNearbyPlacesMock(baseLocation: Location): NearbyPlace[] {
     return [
-        ...generatePlacesAround(baseLocation, 0),         // id 1~6 (현위치)
-        ...generatePlacesAround(CITY_HALL, 100),          // id 101~106 (시청역)
+        ...generatePlacesAround(baseLocation, 0),         // id 1~6 (현위치 주변만)
+        // ⚠️ 시청역 mock 비활성화 - 현위치 주변에만 라이브 버블 표시
+        // ...generatePlacesAround(CITY_HALL, 100),       // id 101~106 (시청역)
     ];
 }
 
