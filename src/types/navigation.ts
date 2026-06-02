@@ -2,7 +2,12 @@ export type AuthStackParamList = {
   Splash: undefined;
   Login: undefined;
   Terms: undefined;
-  ProfileSetup: undefined;
+  ProfileSetup: {
+    terms_agreed: boolean;
+    location_terms_agreed: boolean;
+    privacy_agreed: boolean;
+    marketing_agreed: boolean;
+  };
   SignupComplete: undefined;
 };
 
