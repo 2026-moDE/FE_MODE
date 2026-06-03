@@ -39,7 +39,7 @@ export default function HomeMiniCard({
                         <View style={styles.categoryTag}>
                             <Text style={styles.categoryText}>{categoryLabel}</Text>
                         </View>
-                        <Text style={styles.placeName}>{name}</Text>
+                        <Text style={styles.placeName} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
                     </View>
                     {/* 벨은 내부 Pressable로 따로 (네비게이션 안 됨, 토글만) */}
                     <Pressable
@@ -61,8 +61,8 @@ export default function HomeMiniCard({
                     {/* 주소 행 */}
                     <View style={styles.infoRow}>
                         <IconPlaceLocation size={24} color={colors.icon.subtle} />
-                        <Text style={styles.addressText}>{address}</Text>
-                        <Text style={styles.distanceText}>{distance}</Text>
+                        <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">{address}</Text>
+                        <Text style={styles.distanceText} numberOfLines={1}>{distance}</Text>
                     </View>
 
                     {/* 영업 시간 행 */}
@@ -153,11 +153,13 @@ const styles = StyleSheet.create({
         color: colors.text.subtle,          // #4B566D
         fontWeight: '400',
         letterSpacing: -0.07,
+        flexShrink: 1,                      // 주소 길면 줄어들어서 거리 보장
     },
     distanceText: {
         ...typography.b2,                   // fontSize: 14
         color: colors.text.brand,           // #6489F2
         letterSpacing: -0.07,
+        flexShrink: 0,                      // 거리는 절대 안 줄어듦
     },
     businessText: {
         ...typography.b2,                   // fontSize: 14

@@ -50,11 +50,13 @@ export default function PlaceDetailInfo({
 
             {/* 정보 영역 */}
             <View style={styles.infoGroup}>
-                {/* 주소 + 거리 */}
+                {/* 주소 + 거리 (짧으면 한 줄, 길면 거리만 다음 줄로 자동) */}
                 <View style={styles.infoRow}>
                     <IconPlaceLocation size={24} color={colors.icon.subtle} />
-                    <Text style={styles.addressText}>{address}</Text>
-                    {distance && <Text style={styles.distanceText}>{distance}</Text>}
+                    <View style={styles.addressBlock}>
+                        <Text style={styles.addressText}>{address}</Text>
+                        {distance && <Text style={styles.distanceText}>{distance}</Text>}
+                    </View>
                 </View>
 
                 {/* 영업 시간 */}
@@ -113,8 +115,16 @@ const styles = StyleSheet.create({
     },
     infoRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',                        // wrap 됐을 때 아이콘 위 정렬
         gap: spacing.md,                                 // 12
+    },
+    addressBlock: {
+        flex: 1,                                         // 남은 공간 다 차지
+        flexDirection: 'row',                            // 주소 + 거리 가로 배치
+        flexWrap: 'wrap',                                // 안 들어가면 거리만 다음 줄로
+        alignItems: 'center',
+        columnGap: spacing.s,                            // 8 (같은 줄일 때 간격)
+        rowGap: 2,                                       // 줄바꿈됐을 때 위아래 간격
     },
     addressText: {
         ...typography.b2,                                // fontSize: 14
