@@ -68,7 +68,6 @@ export default function HomeScreen(){
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
-            radius: 1500,
         })
             .then(res => {
                 if (res.places && res.places.length > 0) {
