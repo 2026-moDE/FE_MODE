@@ -13,24 +13,14 @@ import ReviewCard from '../../components/placeDetail/ReviewCard';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
-
-// ────────────────────── api 함수  ──────────────────────
-// import {
-//     fetchPlaceDetail,
-//     fetchLocationVerify,
-//     fetchCurrentReviews,
-//     fetchArchivedReviews,
-//     subscribe,
-//     unsubscribe,
-// } from '../../api/place';
-
-// 테스트 목 데이터
 import {
-    placeDetailsMock,
-    getLocationVerifyMock,
-    getCurrentReviewsMock,
-    getArchivedReviewsMock,
-} from '../../mocks/placesMock';
+    fetchPlaceDetail,
+    fetchLocationVerify,
+    fetchCurrentReviews,
+    fetchArchivedReviews,
+    subscribe,
+    unsubscribe,
+} from '../../api/place';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
@@ -60,46 +50,30 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
 
     // 화면 진입 시 상세 정보 가져오기
     useEffect(() => {
-        // 테스트 목 데이터
-        setPlaceDetail(placeDetailsMock[placeId] ?? null);
-
-        // ──────────────────────  API 호출 ──────────────────────
-        // fetchPlaceDetail(placeId)
-        //     .then(detail => setPlaceDetail(detail))
-        //     .catch(error => console.error('장소 상세 조회 실패:', error));
+        fetchPlaceDetail(placeId)
+            .then(detail => setPlaceDetail(detail))
+            .catch(error => console.error('장소 상세 조회 실패:', error));
     }, [placeId]);
 
     // 위치 들어오면 위치 인증 API로 거리 계산
     useEffect(() => {
         if (!location) return;
 
-        // 테스트용 목 데이터
-        const result = getLocationVerifyMock(placeId, location);
-        setDistance(result.distance);
-
-        // ──────────────────────  API 호출 ──────────────────────
-        // fetchLocationVerify(placeId, location)
-        //     .then(result => setDistance(result.distance))
-        //     .catch(error => console.error('위치 인증 실패:', error));
+        fetchLocationVerify(placeId, location)
+            .then(result => setDistance(result.distance))
+            .catch(error => console.error('위치 인증 실패:', error));
     }, [placeId, location]);
 
     // 탭 바뀔 때마다 해당 리뷰 가져오기
     useEffect(() => {
-        // 테스트 목데이터 - 탭에 따라 다른 데이터 사용
-        const mock = activeTab === 'current'
-            ? getCurrentReviewsMock(placeId)
-            : getArchivedReviewsMock(placeId);
-        setReviews(mock.reviews);
+        const apiCall =
+            activeTab === 'current'
+                ? fetchCurrentReviews(placeId, {limit: 20})
+                : fetchArchivedReviews(placeId, {limit: 20});
 
-        // ────────────────────── API 호출 ──────────────────────
-        // const apiCall =
-        //     activeTab === 'current'
-        //         ? fetchCurrentReviews(placeId, {limit: 20})
-        //         : fetchArchivedReviews(placeId, {limit: 20});
-        //
-        // apiCall
-        //     .then(data => setReviews(data.reviews))
-        //     .catch(error => console.error('리뷰 조회 실패:', error));
+        apiCall
+            .then(data => setReviews(data.reviews))
+            .catch(error => console.error('리뷰 조회 실패:', error));
     }, [placeId, activeTab]);
 
     // 거리 텍스트 (계산된 경우만)
@@ -120,26 +94,24 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     const handleToggleSubscribe = useCallback(async () => {
         if (!placeDetail) return;
 
-        // 테스트
+        const previous = placeDetail;
+        // 즉시 UI 반영 (낙관적 업데이트)
         setPlaceDetail({
             ...placeDetail,
             is_subscribed: !placeDetail.is_subscribed,
         });
 
-        // ────────────────────── API 호출 ──────────────────────
-        // try {
-        //     if (placeDetail.is_subscribed) {
-        //         await unsubscribe(placeDetail.id);
-        //     } else {
-        //         await subscribe(placeDetail.id);
-        //     }
-        //     setPlaceDetail({
-        //         ...placeDetail,
-        //         is_subscribed: !placeDetail.is_subscribed,
-        //     });
-        // } catch (error) {
-        //     console.error('구독 토글 실패:', error);
-        // }
+        try {
+            if (previous.is_subscribed) {
+                await unsubscribe(previous.id);
+            } else {
+                await subscribe(previous.id);
+            }
+        } catch (error) {
+            console.error('구독 토글 실패:', error);
+            // 실패 시 롤백
+            setPlaceDetail(previous);
+        }
     }, [placeDetail]);
 
     // 장소 정보 없을 때 (예외 처리)
@@ -163,7 +135,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             <PlaceDetailInfo
                 place={placeDetail}
                 distance={distanceText}
-                onToggleSubscribe={handleToggleSubscribe}
+                // onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
             />
 
             {/* 실시간 / 과거 탭 */}

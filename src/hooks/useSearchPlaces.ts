@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Place } from '../types/place';
 import { searchPlaces } from '../api/search';
-// import { getSearchPlacesMock } from '../mocks/placesMock';
 
 export function useSearchPlaces() {
     const [places, setPlaces] = useState<Place[]>([]);

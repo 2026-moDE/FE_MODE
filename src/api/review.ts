@@ -1,6 +1,6 @@
 import {apiClient} from './client';
 
-export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED';
+export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
 type PresignedUrlResponse = {
   success: boolean;

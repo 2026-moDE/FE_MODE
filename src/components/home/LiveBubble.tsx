@@ -7,14 +7,13 @@ import {radius} from '../../constants/radius';
 
 // 혼잡도별 테두리 색 매핑
 const CONGESTION_COLORS: Record<CongestionLevel, string> = {
-    LOW:      '#84E588',   // 여유
-    MODERATE: '#FFD75E',   // 보통
-    CROWDED:  '#FF685D',   // 혼잡
+    LOW:    '#84E588',   // 여유
+    MEDIUM: '#FFD75E',   // 보통
+    HIGH:   '#FF685D',   // 혼잡
 };
 
 type Props = {
     place: NearbyPlace;
-    imageReady: boolean;
     onPress: (place: NearbyPlace) => void;
 };
 
@@ -23,7 +22,7 @@ const TAIL_HEIGHT = 16;
 const TAIL_WIDTH = 12;
 const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
-export default function LiveBubble({place, imageReady, onPress}: Props) {
+export default function LiveBubble({place, onPress}: Props) {
     const borderColor = (place.congestion_level ? CONGESTION_COLORS[place.congestion_level] : undefined) ?? '#84E588';
 
     return (
@@ -34,12 +33,9 @@ export default function LiveBubble({place, imageReady, onPress}: Props) {
             height={TOTAL_HEIGHT}
             anchor={{x: 0.5, y: 1}}
             onTap={() => onPress(place)}>
-            <View
-                key={imageReady ? `ready-${place.thumbnail_url}` : `init-${place.id}`}
-                collapsable={false}
-                style={styles.container}>
+            <View collapsable={false} style={styles.container}>
                 <View collapsable={false} style={[styles.bubble, {borderColor}]}>
-                    {imageReady && place.thumbnail_url ? (
+                    {place.thumbnail_url ? (
                         <Image
                             source={{uri: place.thumbnail_url}}
                             style={styles.thumbnail}
@@ -74,7 +70,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        borderRadius: radius.md - 2,
     },
     tail: {
         width: 0,

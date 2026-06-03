@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, useState, useCallback} from "react";
-import {View, Image, StyleSheet} from 'react-native';
+import {View, Text, Image, StyleSheet, ActivityIndicator} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";
@@ -11,10 +11,8 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
-import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews } from "../../api/place";
+import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, subscribe, unsubscribe } from "../../api/place";
 import { NearbyPlace, PlaceDetail } from "../../types/place";
-// 테스트용
-// import { getNearbyPlacesMock, placeDetailsMock, getCurrentReviewsMock } from "../../mocks/placesMock";
 import IconLogo from "../../assets/icons/IconLogo";
 import { colors } from '../../constants/colors';
 import IconMapBell from "../../assets/icons/IconMapBell";
@@ -33,9 +31,6 @@ export default function HomeScreen(){
     const navigation = useNavigation<NavigationProp>();
     const mapRef = useRef<NaverMapViewRef>(null);
     const insets = useSafeAreaInsets(); // 상태바 높이
-
-    // 검색창에 입력된 텍스트 state (홈에서는 불필요 - 클릭 시 SearchScreen으로 이동)
-    // const [searchText, setSearchText] = useState('');
 
     // 커스텀 훅에서 권한 요청 함수 가져오기
     const { requestPermission } = useLocationPermission();
@@ -58,6 +53,9 @@ export default function HomeScreen(){
     // 디코딩까지 완료된 썸네일 URL 목록 (버블 이미지 안정 표시용)
     const [readyUrls, setReadyUrls] = useState<Set<string>>(new Set());
 
+    // 지도 초기화 완료 여부 (초기화 전 마커 렌더 방지)
+    const [mapReady, setMapReady] = useState(false);
+
     // 컴포넌트가 처음 마운트될 때 위치 권한 요청
     useEffect(() => {
         requestPermission();
@@ -66,6 +64,7 @@ export default function HomeScreen(){
     // 주변 장소 조회 함수
     const loadNearbyPlaces = useCallback(() => {
         if (!location) return;
+
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
@@ -73,8 +72,11 @@ export default function HomeScreen(){
         })
             .then(res => {
                 if (res.places && res.places.length > 0) {
-                    setPlaces(res.places);
-                    setReadyUrls(new Set()); // 새 장소 목록 → 이미지 다시 로드
+                    const unique = res.places.filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+                    const newUrls = new Set(unique.map(p => p.thumbnail_url).filter(Boolean) as string[]);
+                    setPlaces(unique);
+                    // 기존에 로드된 URL은 유지, 새 URL만 preloader가 채움
+                    setReadyUrls(prev => new Set([...prev].filter(url => newUrls.has(url))));
                 }
             })
             .catch(error => {
@@ -141,27 +143,27 @@ export default function HomeScreen(){
     },[]);
 
     // 알림 토글 (벨 아이콘 클릭)
-    const handleToggleSubscribe = useCallback(() => {
+    const handleToggleSubscribe = useCallback(async () => {
         if (!placeDetail) return;
 
         // 일단 로컬 state만 토글 (즉시 UI 반영)
+        const previous = placeDetail;
         setPlaceDetail({
             ...placeDetail,
             is_subscribed: !placeDetail.is_subscribed,
         });
 
-        // ────────────────────── 실제 API 호출 (백엔드 연동 시 활성화) ──────────────────────
-        // try {
-        //     if (placeDetail.is_subscribed) {
-        //         await unsubscribe(placeDetail.id);
-        //     } else {
-        //         await subscribe(placeDetail.id);
-        //     }
-        // } catch (error) {
-        //     console.error('구독 토글 실패:', error);
-        //     // 실패 시 롤백
-        //     setPlaceDetail(placeDetail);
-        // }
+        try {
+            if (previous.is_subscribed) {
+                await unsubscribe(previous.id);
+            } else {
+                await subscribe(previous.id);
+            }
+        } catch (error) {
+            console.error('구독 토글 실패:', error);
+            // 실패 시 롤백
+            setPlaceDetail(previous);
+        }
     }, [placeDetail]);
 
     // 거리 텍스트 계산 (내 위치 + 선택된 장소 둘 다 있을 때만)
@@ -169,16 +171,27 @@ export default function HomeScreen(){
         ? `내 위치에서 ${formatDistance(getDistance(location, selectedPlace))}`
         : undefined;
 
+    // 위치 잡힐 때까지 로딩 화면 (초기 카메라 안 뜨도록)
+    if (!location) {
+        return (
+            <View style={[styles.container, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color={colors.brand.primary} />
+                <Text style={styles.loadingText}>위치를 찾는 중...</Text>
+            </View>
+        );
+    }
 
     return(
         <View style={styles.container}>
 
             <MapView
                 ref={mapRef}
-                isShowLocationButton={false}
+                initialCamera={{latitude: location.latitude, longitude: location.longitude, zoom: 16}}
+                isShowLocationButton={false}   // 기본 위치 버튼 숨김 (커스텀 버튼 사용)
                 onTapMap={handleCloseCard}
                 onInitialized={() => {
                     console.log('[Map] onInitialized');
+                    setMapReady(true);
                     setTimeout(() => {
                         console.log('[Map] setLocationTrackingMode Follow');
                         mapRef.current?.setLocationTrackingMode('Follow');
@@ -188,11 +201,10 @@ export default function HomeScreen(){
                     console.log('[Map] onOptionChanged:', params.locationTrackingMode);
                 }}>
 
-                {places.map(place => (
+                {mapReady && places.map(place => (
                     <LiveBubble
-                        key={place.id}
+                        key={`${place.id}-${readyUrls.has(place.thumbnail_url ?? '')}`}
                         place={place}
-                        imageReady={!place.thumbnail_url || readyUrls.has(place.thumbnail_url)}
                         onPress={handlePlacePress}
                     />
                 ))}
@@ -218,13 +230,14 @@ export default function HomeScreen(){
             </View>
 
 
-            {/* 썸네일 프리로더: MapView 밖에서 디코딩까지 완료 후 버블에 전달 */}
+            {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 */}
             {places.map(place => place.thumbnail_url && !readyUrls.has(place.thumbnail_url) ? (
                 <Image
                     key={place.thumbnail_url}
                     source={{uri: place.thumbnail_url}}
                     style={styles.preloader}
-                    onLoad={() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!]))}
+                    onLoad={() => setTimeout(() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!])), 100)}
+                    onError={() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!]))}
                 />
             ) : null)}
 
@@ -234,7 +247,7 @@ export default function HomeScreen(){
                         place={placeDetail}
                         distance={distanceText}
                         images={reviewImages}
-                        onToggleSubscribe={handleToggleSubscribe}
+                        // onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
                         onPress={handleCardPress}
                     />
                 </View>
@@ -247,6 +260,17 @@ export default function HomeScreen(){
 const styles = StyleSheet.create({
     container: { flex: 1 },
     preloader: { width: 1, height: 1, position: 'absolute', opacity: 0 },
+    loadingContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: '#fff',
+    },
+    loadingText: {
+        fontSize: 14,
+        color: '#666',
+    },
+
     searchBarWrapper: {
         position: 'absolute',
         left: 0,

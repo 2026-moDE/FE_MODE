@@ -4,7 +4,7 @@
 export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'BAR' | 'PARK' | 'SHOPPING' | 'ETC';
 
 // 혼잡도 레벨
-export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED';
+export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
 // 요일
 export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';

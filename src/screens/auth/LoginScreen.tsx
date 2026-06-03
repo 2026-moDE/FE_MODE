@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,60 +6,27 @@ import {
   StyleSheet,
   StatusBar,
   Pressable,
-  FlatList,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  useWindowDimensions,
   Alert,
 } from 'react-native';
-import {login, loginWithKakaoAccount} from '@react-native-seoul/kakao-login';
+import {loginWithKakaoAccount} from '@react-native-seoul/kakao-login';
 import {socialLoginApi} from '../../api/auth';
 import {saveTokens} from '../../storage/tokenStorage';
 import {useAuth} from '../../context/AuthContext';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
-import type { AuthStackParamList } from '../../types/navigation';
-import {fontFamily, fontSize} from '../../constants/typography';
+import type {AuthStackParamList} from '../../types/navigation';
+import {fontFamily} from '../../constants/typography';
 
 const kakaoLogo = require('../../assets/image/kakao_logo.png');
+const logo = require('../../assets/image/logo.png');
+const iphoneMockup = require('../../assets/image/iphone_mockup.png');
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-const slides = [
-  {
-    id: '1',
-    title: '메인텍스트',
-    description: '설명 서브텍스트',
-  },
-  {
-    id: '2',
-    title: '메인텍스트',
-    description: '설명 서브텍스트',
-  },
-  {
-    id: '3',
-    title: '메인텍스트',
-    description: '설명 서브텍스트',
-  },
-  {
-    id: '4',
-    title: '메인텍스트',
-    description: '설명 서브텍스트',
-  },
-];
-
-export default function LoginScreen({ navigation }: Props) {
-  const { width } = useWindowDimensions();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoginLoading, setIsLoginLoading] = useState(false);
+export default function LoginScreen({navigation}: Props) {
+  const [isLoginLoading, setIsLoginLoading] = React.useState(false);
   const {setIsLoggedIn} = useAuth();
-
-  const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / width);
-    setCurrentIndex(index);
-  };
 
   const handleKakaoLogin = async () => {
     try {
@@ -108,164 +75,139 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#2C343F" />
 
-      <View style={styles.container}>
-        <FlatList
-          data={slides}
-          keyExtractor={item => item.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleScrollEnd}
-          renderItem={({ item }) => (
-            <View style={[styles.slide, { width }]}>
-              <View style={styles.imageArea} />
+      <View style={styles.topSection}>
+        <Image source={logo} style={styles.logo} resizeMode="contain" />
 
-              <View style={styles.contentArea}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.description}>{item.description}</Text>
-
-                <View style={styles.dots}>
-                  {slides.map((_, index) =>
-                    currentIndex === index ? (
-                      <View key={index} style={styles.activeDot} />
-                    ) : (
-                      <View key={index} style={styles.dot} />
-                    ),
-                  )}
-                </View>
-              </View>
-            </View>
-          )}
+        <Image
+          source={iphoneMockup}
+          style={styles.mockupImage}
+          resizeMode="contain"
         />
+      </View>
 
-  <Pressable
-  style={({ pressed }) => [
-    styles.kakaoButton,
-    pressed && styles.kakaoButtonPressed,
-    isLoginLoading && styles.kakaoButtonPressed,
-  ]}
-  onPress={handleKakaoLogin}
-  disabled={isLoginLoading}>
-  <View style={styles.kakaoContent}>
-    <Image source={kakaoLogo} style={styles.kakaoLogo} />
-    <Text style={styles.kakaoButtonText}>카카오 로그인 </Text>
-  </View>
-</Pressable>
+      <View style={styles.bottomSection}>
+        <View style={styles.textGroup}>
+          <Text style={styles.title}>실시간으로 탐색하는 장소 정보</Text>
+
+          <Text style={styles.description}>
+            혼잡도 정보부터 장소 사진 확인까지{'\n'}모잉에서 한 번에!
+          </Text>
+        </View>
+
+        <Pressable
+          style={({pressed}) => [
+            styles.kakaoButton,
+            pressed && styles.kakaoButtonPressed,
+            isLoginLoading && styles.kakaoButtonPressed,
+          ]}
+          onPress={handleKakaoLogin}
+          disabled={isLoginLoading}>
+          <View style={styles.kakaoContent}>
+            <Image source={kakaoLogo} style={styles.kakaoLogo} />
+            <Text style={styles.kakaoButtonText}>카카오 로그인</Text>
+          </View>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#2C343F',
   },
 
-  slide: {
+  topSection: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-
-  imageArea: {
-    height: 582,
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-  },
-
-  contentArea: {
+    backgroundColor: '#2C343F',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingTop: 36,
+  },
+
+  logo: {
+    width: 75,
+    height: 40,
+    position: 'absolute',
+    top: 78,
+  },
+
+  mockupImage: {
+    width: 262,
+    height: 397,
+    marginBottom: 0
+  },
+
+  bottomSection: {
+    width: '100%',
+    height: 254,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 30,
+    paddingBottom: 41,
+    alignItems: 'center',
+  },
+
+  textGroup: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 32,
   },
 
   title: {
     color: '#000000',
     fontSize: 20,
-    fontFamily: 'Pretendard',
-    fontWeight: '700',
+    fontFamily: fontFamily.bold,
     lineHeight: 24,
     textAlign: 'center',
+    marginBottom: 8,
   },
 
   description: {
-    marginTop: 4,
     color: '#000000',
     fontSize: 14,
-    fontFamily: 'Pretendard',
-    fontWeight: '400',
+    fontFamily: fontFamily.regular,
     lineHeight: 18,
     textAlign: 'center',
   },
 
-  dots: {
-    marginTop: 32,
-    height: 6,
-    flexDirection: 'row',
+  kakaoButton: {
+    width: '100%',
+    height: 45,
+    borderRadius: 6,
+    backgroundColor: '#FEE500',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 14,
   },
-
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#8D99AE',
-    marginHorizontal: 2,
-  },
-
-  activeDot: {
-    width: 32,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2C343F',
-    marginHorizontal: 2,
-  },
-
-  kakaoButton: {
-  position: 'absolute',
-  left: 30,
-  right: 30,
-  bottom: 54,
-  height: 45,
-  borderRadius: 6,
-  backgroundColor: '#FEE500',
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingHorizontal: 14,
-},
-kakaoContent: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-
 
   kakaoButtonPressed: {
     opacity: 0.75,
   },
 
-  kakaoLogo: {
-  width: 18,
-  height: 16.8,
-  marginRight: 6,
-  resizeMode: 'contain',
-},
+  kakaoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
+  kakaoLogo: {
+    width: 18,
+    height: 17,
+    marginRight: 6,
+    resizeMode: 'contain',
+  },
 
   kakaoButtonText: {
-  color: 'rgba(0, 0, 0, 0.85)',
-  fontSize: 15,
-  fontFamily: 'Pretendard',
-  fontWeight: '600',
-  lineHeight: 22.5,
-  includeFontPadding: false,
-  textAlignVertical: 'center',
-},
+    color: 'rgba(0, 0, 0, 0.85)',
+    fontSize: 15,
+    fontFamily: fontFamily.bold,
+    lineHeight: 22,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
 });

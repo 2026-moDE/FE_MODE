@@ -39,9 +39,9 @@ const getCongestionLevel = (
     case '여유':
       return 'LOW';
     case '보통':
-      return 'MODERATE';
+      return 'MEDIUM';
     case '혼잡':
-      return 'CROWDED';
+      return 'HIGH';
   }
 };
 type CongestionType = (typeof CONGESTION_OPTIONS)[number];
