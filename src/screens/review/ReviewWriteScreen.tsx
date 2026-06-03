@@ -21,9 +21,8 @@ import type {ReviewStackParamList} from '../../types/navigation';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
-
-import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
 import {useLocation} from '../../context/LocationContext';
+import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
@@ -56,7 +55,6 @@ const MAX_REVIEW_LENGTH = 50;
 
 const ReviewWriteScreen = ({navigation, route}: Props) => {
   const {photoUri, placeId, placeName} = route.params;
-
   const {location} = useLocation();
 
   const [selectedCongestion, setSelectedCongestion] =
@@ -92,15 +90,14 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
     }
 
     if (!location) {
-      Alert.alert('위치 오류', '현재 위치를 가져올 수 없어요. 위치 권한을 확인해주세요.');
+      Alert.alert('위치 확인 실패', '현재 위치를 확인한 뒤 다시 시도해주세요.');
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      const latitude = location.latitude;
-      const longitude = location.longitude;
+      const {latitude, longitude} = location;
 
       // 1. 위치 인증
       console.log('[리뷰] 위치 인증 요청 placeId:', placeId, 'lat:', latitude, 'lng:', longitude);

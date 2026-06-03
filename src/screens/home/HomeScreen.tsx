@@ -146,24 +146,23 @@ export default function HomeScreen(){
     const handleToggleSubscribe = useCallback(async () => {
         if (!placeDetail) return;
 
-        // 일단 로컬 state만 토글 (즉시 UI 반영)
         const previous = placeDetail;
         setPlaceDetail({
             ...placeDetail,
             is_subscribed: !placeDetail.is_subscribed,
         });
 
-        try {
-            if (previous.is_subscribed) {
-                await unsubscribe(previous.id);
-            } else {
-                await subscribe(previous.id);
-            }
-        } catch (error) {
-            console.error('구독 토글 실패:', error);
-            // 실패 시 롤백
-            setPlaceDetail(previous);
-        }
+        // ──────────────────────  API 호출  ──────────────────────
+        // try {
+        //     if (previous.is_subscribed) {
+        //         await unsubscribe(previous.id);
+        //     } else {
+        //         await subscribe(previous.id);
+        //     }
+        // } catch (error) {
+        //     console.error('구독 토글 실패:', error);
+        //     setPlaceDetail(previous);
+        // }
     }, [placeDetail]);
 
     // 거리 텍스트 계산 (내 위치 + 선택된 장소 둘 다 있을 때만)
@@ -229,7 +228,6 @@ export default function HomeScreen(){
                 <IconMapBell size={18} color={colors.icon.basic} />
             </View>
 
-
             {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 */}
             {places.map(place => place.thumbnail_url && !readyUrls.has(place.thumbnail_url) ? (
                 <Image
@@ -270,7 +268,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
     },
-
     searchBarWrapper: {
         position: 'absolute',
         left: 0,
