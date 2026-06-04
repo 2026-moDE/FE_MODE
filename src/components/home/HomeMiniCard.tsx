@@ -86,6 +86,7 @@ export default function HomeMiniCard({
                                 style={styles.imageSlot}
                                 source={{uri}}
                                 imageStyle={styles.imageRadius}
+                                resizeMethod="resize"
                             />
                         </Pressable>
                     ))

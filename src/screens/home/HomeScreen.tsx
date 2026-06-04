@@ -68,6 +68,7 @@ export default function HomeScreen(){
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
+            radius: 150000,
         })
             .then(res => {
                 if (res.places && res.places.length > 0) {
@@ -233,6 +234,7 @@ export default function HomeScreen(){
                     key={place.thumbnail_url}
                     source={{uri: place.thumbnail_url}}
                     style={styles.preloader}
+                    resizeMethod="resize"
                     onLoad={() => setTimeout(() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!])), 100)}
                     onError={() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!]))}
                 />

@@ -37,7 +37,8 @@ export default function ReviewCard({review, onPress}: Props) {
             <ImageBackground
                 source={{uri: image_url}}
                 style={styles.image}
-                imageStyle={styles.imageRadius}>
+                imageStyle={styles.imageRadius}
+                resizeMethod="resize">
                 {/* 상단: 사용자 정보(좌) + 시간(우) */}
                 <View style={styles.topRow}>
                     {/* 사용자 (아바타 + 닉네임) */}

@@ -40,6 +40,7 @@ export default function LiveBubble({place, onPress}: Props) {
                             source={{uri: place.thumbnail_url}}
                             style={styles.thumbnail}
                             resizeMode="cover"
+                            resizeMethod="resize"
                         />
                     ) : null}
                 </View>
