@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {NaverMapView, NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 
 import type {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
@@ -31,7 +32,11 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
     placeCategory,
     placeDistance,
     placeAddress,
+    latitude,
+    longitude,
   } = route.params;
+
+  const mapRef = useRef<NaverMapViewRef>(null);
 
   const handleNo = () => {
     navigation.goBack();
@@ -64,13 +69,34 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
 
         <View style={styles.placeCard}>
             <View style={styles.mapBox}>
-            <Text style={styles.mapPlaceholderText}>지도 영역</Text>
+              {latitude != null && longitude != null && latitude !== 0 && longitude !== 0 ? (
+                <NaverMapView
+                  ref={mapRef}
+                  style={styles.naverMap}
+                  initialCamera={{latitude, longitude, zoom: 16}}
+                  isShowCompass={false}
+                  isShowScaleBar={false}
+                  isShowZoomControls={false}
+                  isScrollGesturesEnabled={false}
+                  isZoomGesturesEnabled={false}
+                  isTiltGesturesEnabled={false}
+                  isRotateGesturesEnabled={false}>
+                  <NaverMapMarkerOverlay
+                    latitude={latitude}
+                    longitude={longitude}
+                  />
+                </NaverMapView>
+              ) : (
+                <View style={styles.mapFallback} />
+              )}
             </View>
 
           <View style={styles.placeInfoBox}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{placeCategory}</Text>
-            </View>
+            {!!placeCategory && (
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryText}>{placeCategory}</Text>
+              </View>
+            )}
 
             <View style={styles.placeTextBox}>
               <View style={styles.placeNameRow}>
@@ -78,7 +104,9 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
                 <Text style={styles.placeDistance}>{placeDistance}</Text>
               </View>
 
-              <Text style={styles.placeAddress}>{placeAddress}</Text>
+              {!!placeAddress && (
+                <Text style={styles.placeAddress}>{placeAddress}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -173,14 +201,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  // 지도 표시 영역 (회색 플레이스홀더)
+  // 지도 표시 영역
   mapBox: {
+    width: '100%',
     height: px(244),
     borderRadius: px(8),
+  },
+
+  naverMap: {
+    flex: 1,
+  },
+
+  mapFallback: {
+    flex: 1,
     backgroundColor: '#F1F3F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
   },
 
   // 지도 준비 전 임시 안내 문구

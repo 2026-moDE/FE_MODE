@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,17 @@ import {
   FlatList,
   Dimensions,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import type {ReviewStackParamList} from '../../types/navigation';
+import type {NearbyPlace} from '../../types/place';
+import {CATEGORY_LABEL} from '../../types/place';
+import {fetchNearbyPlaces} from '../../api/place';
+import {useLocation} from '../../context/LocationContext';
+import {getDistance, formatDistance} from '../../utils/distance';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
 
@@ -24,29 +30,55 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
 const px = (value: number) => value * scale;
 
-const pinIcon = require('../../assets/image/pin.png');
 const placePinIcon = require('../../assets/image/place_pin.png');
 const searchIcon = require('../../assets/image/search.png');
 
-const CURRENT_PLACES = [
-  {id: 1, category: '음식점', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 2, category: '소품', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 3, category: '카페', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 4, category: '소품', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 5, category: '소품', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-];
-
 const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
   const {photoUri} = route.params;
+  const {location} = useLocation();
 
-  const handleSelectPlace = (place: (typeof CURRENT_PLACES)[number]) => {
+  const [places, setPlaces] = useState<NearbyPlace[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!location) return;
+
+    setIsLoading(true);
+    fetchNearbyPlaces({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      radius: 150000,
+    })
+      .then(res => {
+        const unique = (res.places ?? [])
+          .filter(p => p.latitude != null && p.longitude != null)
+          .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+        setPlaces(unique);
+      })
+      .catch(err => {
+        console.warn('주변 장소 조회 실패:', err?.message);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [location]);
+
+  const handleSelectPlace = (place: NearbyPlace) => {
+    if (place.latitude == null || place.longitude == null) return;
+
+    const distanceM = location
+      ? getDistance(location, {latitude: place.latitude, longitude: place.longitude})
+      : 0;
+
     navigation.navigate('ReviewLocationConfirm', {
       photoUri,
       placeId: place.id,
       placeName: place.name,
-      placeCategory: place.category,
-      placeDistance: place.distance,
-      placeAddress: place.address,
+      placeCategory: place.category ? CATEGORY_LABEL[place.category] : '',
+      placeDistance: formatDistance(distanceM),
+      placeAddress: place.address ?? '',
+      latitude: place.latitude,
+      longitude: place.longitude,
     });
   };
 
@@ -83,32 +115,54 @@ const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
       </View>
 
       {/* 장소 리스트 */}
-      <FlatList
-        data={CURRENT_PLACES}
-        keyExtractor={item => String(item.id)}
-        contentContainerStyle={styles.listContent}
-        renderItem={({item}) => (
-          <Pressable
-            style={styles.placeItem}
-            onPress={() => handleSelectPlace(item)}>
-            <View style={styles.placeTextBox}>
-              <View style={styles.placeTitleRow}>
-                <View style={styles.placeCategoryBadge}>
-                  <Text style={styles.placeCategory}>{item.category}</Text>
-                </View>
-                <View style={{flex: 1}}>
-                  <View style={styles.placeNameRow}>
-                    <Text style={styles.placeName}>{item.name}</Text>
-                    <Text style={styles.placeDistance}>{item.distance}</Text>
+      {isLoading ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color="#6489F2" />
+        </View>
+      ) : (
+        <FlatList
+          data={places}
+          keyExtractor={item => String(item.id)}
+          contentContainerStyle={styles.listContent}
+          renderItem={({item}) => {
+            const distanceM =
+              location && item.latitude != null && item.longitude != null
+                ? getDistance(location, {latitude: item.latitude, longitude: item.longitude})
+                : 0;
+
+            return (
+              <Pressable
+                style={styles.placeItem}
+                onPress={() => handleSelectPlace(item)}>
+                <View style={styles.placeTextBox}>
+                  <View style={styles.placeTitleRow}>
+                    {!!item.category && (
+                      <View style={styles.placeCategoryBadge}>
+                        <Text style={styles.placeCategory}>{CATEGORY_LABEL[item.category]}</Text>
+                      </View>
+                    )}
+                    <View style={styles.placeNameRow}>
+                      <Text style={styles.placeName}>{item.name}</Text>
+                      <Text style={styles.placeDistance}>{formatDistance(distanceM)}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.placeAddress}>{item.address}</Text>
+                  {!!item.address && (
+                    <Text style={styles.placeAddress}>{item.address}</Text>
+                  )}
                 </View>
-              </View>
-            </View>
-            <Image source={item.thumbnail} style={styles.placeThumbnail} />
-          </Pressable>
-        )}
-      />
+                {item.thumbnail_url ? (
+                  <Image
+                    source={{uri: item.thumbnail_url}}
+                    style={styles.placeThumbnail}
+                  />
+                ) : (
+                  <View style={[styles.placeThumbnail, styles.placeThumbnailEmpty]} />
+                )}
+              </Pressable>
+            );
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -204,6 +258,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
+  loadingBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   listContent: {
     paddingTop: px(8),
     paddingBottom: px(24),
@@ -221,7 +281,6 @@ const styles = StyleSheet.create({
   placeTextBox: {
     flex: 1,
     marginRight: px(12),
-    flexDirection: 'column',
   },
 
   placeTitleRow: {
@@ -249,6 +308,14 @@ const styles = StyleSheet.create({
     lineHeight: px(14),
   },
 
+  placeAddress: {
+    marginTop: px(8),
+    fontFamily: fontFamily.medium,
+    fontSize: px(14),
+    color: '#8A919E',
+    lineHeight: px(17),
+  },
+
   placeNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -270,19 +337,15 @@ const styles = StyleSheet.create({
     lineHeight: px(17),
   },
 
-  placeAddress: {
-    marginTop: px(8),
-    fontFamily: fontFamily.medium,
-    fontSize: px(14),
-    color: '#8A919E',
-    lineHeight: px(17),
-  },
-
   placeThumbnail: {
     width: px(80),
     height: px(80),
     borderRadius: px(12),
     resizeMode: 'cover',
+    backgroundColor: '#F1F3F5',
+  },
+
+  placeThumbnailEmpty: {
     backgroundColor: '#F1F3F5',
   },
 });

@@ -43,6 +43,8 @@ export type ReviewStackParamList = {
     placeCategory: string;
     placeDistance: string;
     placeAddress: string;
+    latitude?: number;
+    longitude?: number;
   };
   ReviewWrite: { photoUri: string; placeId?: number; placeName?: string };
   ReviewComplete: undefined;

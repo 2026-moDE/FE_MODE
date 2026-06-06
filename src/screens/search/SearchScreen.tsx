@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
-import { Place } from '../../types/place';
+import { Place, CATEGORY_LABEL } from '../../types/place';
 import SearchHeader from '../../components/search/SearchHeader';
 import RecentSearchList from '../../components/search/RecentSearchList';
 import RecommendedSearchList from '../../components/search/RecommendedSearchList';
@@ -103,9 +103,11 @@ export default function SearchScreen() {
                     photoUri: reviewPhotoUri,
                     placeId: place.id,
                     placeName: place.name,
-                    placeCategory: place.category,
+                    placeCategory: CATEGORY_LABEL[place.category] ?? place.category,
                     placeDistance: '',
                     placeAddress: place.address,
+                    latitude: place.latitude ?? undefined,
+                    longitude: place.longitude ?? undefined,
                 },
             } as never);
         } else {

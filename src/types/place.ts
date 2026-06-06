@@ -27,6 +27,8 @@ export type Place = {
     category: PlaceCategory;
     congestion_level: CongestionLevel;
     thumbnail_url: string;
+    latitude: number | null;
+    longitude: number | null;
 };
 
 export type PlaceResponse = {
@@ -49,10 +51,12 @@ export type PlaceDetail = {
 export type NearbyPlace = {
     id: number;
     name: string;
-    latitude: number;
-    longitude: number;
+    latitude: number | null;
+    longitude: number | null;
     congestion_level: CongestionLevel | null;
     thumbnail_url: string | null;
+    category: PlaceCategory | null;
+    address: string | null;
 };
 
 export type NearbyPlaceResponse = {

@@ -18,7 +18,10 @@ export function useSearchPlaces() {
         try {
             const data = await searchPlaces(keyword);
             console.log('검색 응답:', JSON.stringify(data));
-            setPlaces(data.places ?? []);
+            const unique = (data.places ?? []).filter(
+              (p, i, arr) => arr.findIndex(x => x.id === p.id) === i,
+            );
+            setPlaces(unique);
         } catch (e: any) {
             console.warn('검색 API 실패:', e?.response?.status, e?.message);
             setPlaces([]);
