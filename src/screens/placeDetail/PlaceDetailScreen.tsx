@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {View, Text, FlatList, StyleSheet} from 'react-native';
+import {View, Text, FlatList, StyleSheet, Pressable} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
@@ -13,6 +13,7 @@ import ReviewCard from '../../components/placeDetail/ReviewCard';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
+import IconFloatingButton from '../../assets/icons/IconFloatingButton';
 import {
     fetchPlaceDetail,
     fetchLocationVerify,
@@ -90,12 +91,17 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
         navigation.goBack();
     }, [navigation]);
 
+    // 리뷰 바로 쓰기 (조리개 버튼)
+    const handleQuickReview = useCallback(() => {
+        navigation.navigate('ReviewStack', {screen: 'ReviewCamera'});
+    }, [navigation]);
+
     // 알림 토글
     const handleToggleSubscribe = useCallback(async () => {
         if (!placeDetail) return;
 
         const previous = placeDetail;
-        // 즉시 UI 반영 (낙관적 업데이트)
+        // 즉시 UI 반영
         setPlaceDetail({
             ...placeDetail,
             is_subscribed: !placeDetail.is_subscribed,
@@ -179,6 +185,16 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 visible={imageIndex !== null}
                 onClose={() => setImageIndex(null)}
             />
+
+            {/* 리뷰 바로 쓰기 플로팅 버튼 (사진 클릭시 숨김) */}
+            {imageIndex === null && (
+                <Pressable
+                    style={({pressed}) => [styles.fab, pressed && styles.fabPressed]}
+                    onPress={handleQuickReview}
+                    hitSlop={8}>
+                    <IconFloatingButton size={28} color="#FFFFFF" />
+                </Pressable>
+            )}
         </View>
     );
 }
@@ -213,5 +229,27 @@ const styles = StyleSheet.create({
     },
     gridRow: {
         gap: spacing.md,                          // 12 (열)
+    },
+    fab: {
+        position: 'absolute',
+        right: 20,
+        bottom: 30,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#2C343F',               // 다크 네이비
+        alignItems: 'center',
+        justifyContent: 'center',
+        // 그림자 (iOS)
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        // 그림자 (Android)
+        elevation: 6,
+    },
+    fabPressed: {
+        opacity: 0.85,
+        transform: [{scale: 0.95}],
     },
 });

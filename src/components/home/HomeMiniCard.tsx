@@ -65,11 +65,11 @@ export default function HomeMiniCard({
                         <Text style={styles.distanceText} numberOfLines={1}>{distance}</Text>
                     </View>
 
-                    {/* 영업 시간 행 */}
-                    <View style={styles.infoRow}>
+                    {/* 영업 시간 행 (우선 주석) */}
+                    {/* <View style={styles.infoRow}>
                         <IconClock size={24} color={colors.icon.subtle} />
                         <Text style={styles.businessText}>{business_hours}</Text>
-                    </View>
+                    </View> */}
                 </View>
             </Pressable>
 
