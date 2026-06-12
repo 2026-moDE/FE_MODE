@@ -68,7 +68,6 @@ export default function HomeScreen(){
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
-            radius: 150000,
         })
             .then(res => {
                 if (res.places && res.places.length > 0) {
@@ -166,8 +165,8 @@ export default function HomeScreen(){
     }, [placeDetail]);
 
     // 거리 텍스트 계산 (내 위치 + 선택된 장소 둘 다 있을 때만)
-    const distanceText = location && selectedPlace
-        ? `내 위치에서 ${formatDistance(getDistance(location, selectedPlace))}`
+    const distanceText = location && selectedPlace && selectedPlace.latitude != null && selectedPlace.longitude != null
+        ? `내 위치에서 ${formatDistance(getDistance(location, {latitude: selectedPlace.latitude, longitude: selectedPlace.longitude}))}`
         : undefined;
 
     // 위치 잡힐 때까지 로딩 화면 (초기 카메라 안 뜨도록)

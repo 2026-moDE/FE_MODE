@@ -3,6 +3,7 @@ import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
 import KakaoSDKAuth
+import KakaoSDKCommon
 import NMapsMap
 
 @main
@@ -16,6 +17,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    if let kakaoAppKey = Bundle.main.object(forInfoDictionaryKey: "KAKAO_APP_KEY") as? String {
+      KakaoSDK.initSDK(appKey: kakaoAppKey)
+    }
+
     NMFAuthManager.shared().ncpKeyId = "8hcvg54tuz"
 
     let delegate = ReactNativeDelegate()
