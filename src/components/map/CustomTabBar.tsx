@@ -16,8 +16,16 @@ const TAB_LABELS: Record<string, string> = {
 
 const TAB_ORDER = ['ReviewBtn', 'Home', 'Mypage'];
 
-export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+export default function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   const appNavigation = useNavigation<AppNav>();
+
+  // 현재 화면이 tabBarStyle을 'none'으로 설정했으면 탭바 숨김
+  const focusedRoute = state.routes[state.index]; // 현재 화면
+  const focusedOptions = descriptors[focusedRoute.key]?.options;
+  const tabBarStyle = focusedOptions?.tabBarStyle as { display?: string } | undefined;
+  if (tabBarStyle?.display === 'none') {
+    return null;
+  }
 
   return (
     <View style={styles.wrapper}>

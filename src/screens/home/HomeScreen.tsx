@@ -11,7 +11,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
-import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, subscribe, unsubscribe } from "../../api/place";
+import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, subscribe, unsubscribe } from "../../api/place";
 import { NearbyPlace, PlaceDetail } from "../../types/place";
 import IconLogo from "../../assets/icons/IconLogo";
 import { colors } from '../../constants/colors';
@@ -61,6 +61,13 @@ export default function HomeScreen(){
         requestPermission();
     }, []);
 
+    // 미니카드 떠있을 때 하단 탭바 숨김 (카드 닫으면 복구)
+    useEffect(() => {
+        navigation.setOptions({
+            tabBarStyle: placeDetail ? { display: 'none' } : undefined,
+        });
+    }, [navigation, placeDetail]);
+
     // 주변 장소 조회 함수
     const loadNearbyPlaces = useCallback(() => {
         if (!location) return;
@@ -68,6 +75,7 @@ export default function HomeScreen(){
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
+            filter: 'all',   // 전체 리뷰 버블 표시
         })
             .then(res => {
                 if (res.places && res.places.length > 0) {
@@ -110,7 +118,7 @@ export default function HomeScreen(){
         setPlaceDetail(null);
         setReviewImages([]);
 
-        // 상세 조회 (카드 표시의 핵심)
+        // 상세 조회
         try {
             const detail = await fetchPlaceDetail(place.id);
             console.log('[fetchPlaceDetail] 응답:', JSON.stringify(detail));
@@ -119,12 +127,19 @@ export default function HomeScreen(){
             console.warn('[fetchPlaceDetail] 실패:', error?.response?.status, error?.message);
         }
 
-        // 리뷰 조회 (실패해도 카드는 보임)
+        // 리뷰 조회: current + archived 합쳐서 최신순 상위 5개
         try {
-            const reviews = await fetchCurrentReviews(place.id, {limit: 5});
-            setReviewImages((reviews.reviews ?? []).map(r => r.image_url));
+            const [currentRes, archivedRes] = await Promise.all([
+                fetchCurrentReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
+                fetchArchivedReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
+            ]);
+            const allReviews = [...(currentRes.reviews ?? []), ...(archivedRes.reviews ?? [])];
+            const sortedByLatest = allReviews.sort(
+                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+            setReviewImages(sortedByLatest.slice(0, 5).map(r => r.image_url));
         } catch (error: any) {
-            console.warn('[fetchCurrentReviews] 실패:', error?.response?.status, error?.message);
+            console.warn('[리뷰 조회] 실패:', error?.message);
         }
     }, []);
 
@@ -217,20 +232,24 @@ export default function HomeScreen(){
             />
 
             {/* 지도 검색창 + 알림 버튼 */}
+            {/* ⚠️ 시연용 임시: 알림 버튼 숨김 (복구 시 아래 주석 풀고 위 SearchBar 단독 블록 제거) */}
             <View style={[styles.searchBarWrapper, { top: insets.top + 10 }]}>
                 <SearchBar
                     value={''}
                     logoIcon={<IconLogo width={40} height={22} color={colors.icon.basic}/>}
                     onChangeText={() => {}}
                     onFocus={handleSearchFocus}
+                    backgroundColor={colors.surface.white}
+                    width={361} // 검색창 잠깐 폭 늘려둠
                 />
-                <IconMapBell size={18} color={colors.icon.basic} />
+                {/* 데모에서만 ui잠깐 없앰 */}
+                {/* <IconMapBell size={18} color={colors.icon.basic} /> */}
             </View>
 
             {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 */}
             {places.map(place => place.thumbnail_url && !readyUrls.has(place.thumbnail_url) ? (
                 <Image
-                    key={place.thumbnail_url}
+                    key={place.id}
                     source={{uri: place.thumbnail_url}}
                     style={styles.preloader}
                     resizeMethod="resize"
@@ -284,10 +303,10 @@ const styles = StyleSheet.create({
         bottom: 120,                // 탭바 위에 위치
     },
     cardWrapper: {
-    position: 'absolute',
-    bottom: 100,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+        position: 'absolute',
+        bottom: 30,                     // 탭바 숨겨져서 더 내림 (기존 100)
+        left: 0,
+        right: 0,
+        alignItems: 'center',
     },
 });

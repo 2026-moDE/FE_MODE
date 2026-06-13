@@ -23,7 +23,8 @@ const TAIL_WIDTH = 12;
 const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
 export default function LiveBubble({place, onPress}: Props) {
-    const borderColor = (place.congestion_level ? CONGESTION_COLORS[place.congestion_level] : undefined) ?? '#84E588';
+    // 혼잡도 있으면 색상, 없으면 null
+    const congestionColor = place.congestion_level ? CONGESTION_COLORS[place.congestion_level] : null;
 
     return (
         <NaverMapMarkerOverlay
@@ -34,7 +35,12 @@ export default function LiveBubble({place, onPress}: Props) {
             anchor={{x: 0.5, y: 1}}
             onTap={() => onPress(place)}>
             <View collapsable={false} style={styles.container}>
-                <View collapsable={false} style={[styles.bubble, {borderColor}]}>
+                <View
+                    collapsable={false}
+                    style={[
+                        styles.bubble,
+                        {borderColor: congestionColor ?? colors.surface.white},
+                    ]}>
                     {place.thumbnail_url ? (
                         <Image
                             source={{uri: place.thumbnail_url}}
@@ -44,7 +50,13 @@ export default function LiveBubble({place, onPress}: Props) {
                         />
                     ) : null}
                 </View>
-                <View style={[styles.tail, {borderTopColor: borderColor}]} />
+                {/* 꼬리: 혼잡도 있으면 같은 색, 없으면 흰색 */}
+                <View
+                    style={[
+                        styles.tail,
+                        {borderTopColor: congestionColor ?? colors.surface.white},
+                    ]}
+                />
             </View>
         </NaverMapMarkerOverlay>
     );

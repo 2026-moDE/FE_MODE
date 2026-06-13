@@ -5,8 +5,9 @@ import { Location } from '../types/location';
 type FetchNearbyPlacesParams = {
   latitude: number;
   longitude: number;
-  radius?: number;  // 기본값 1500 (서버 기본값)
-  query?: string;   // 카테고리 (기본: 음식점)
+  radius?: number;                                // 반경 (미터, 서버 기본값 1500)
+  query?: string;                                 // 카테고리 (기본: 음식점)
+  filter?: 'all' | 'current' | 'archived';        // 리뷰 기준 필터 (기본 all)
 };
 
 // 현위치 기준 주변 장소 조회 api → GET /api/places/nearby
