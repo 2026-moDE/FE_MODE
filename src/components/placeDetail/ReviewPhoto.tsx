@@ -1,12 +1,9 @@
-import React from 'react';
-import {View, Text, Image, Pressable, StyleSheet, Dimensions} from 'react-native';
-import ImageView from 'react-native-image-viewing';
+import React, {useState, useEffect, useRef} from 'react';
+import {View, Text, Image, Pressable, Modal, StyleSheet, Animated, PanResponder} from 'react-native';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
+import {radius} from '../../constants/radius';
 import {formatRelativeTime} from './ReviewCard';
-
-// 화면 높이 (오버레이를 전체 화면에 깔기 위해)
-const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
@@ -16,76 +13,184 @@ type Props = {
 };
 
 export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Props) {
-    // 이미지 소스 배열로 변환
-    const images = reviews.map(r => ({uri: r.image_url}));
+    const [currentIndex, setCurrentIndex] = useState(startIndex);
+
+    // 스와이프 닫기용 위치 값 (Animated)
+    const translateY = useRef(new Animated.Value(0)).current;
+
+    // visible 켜질 때마다 startIndex로 초기화 + 위치 리셋
+    useEffect(() => {
+        if (visible) {
+            setCurrentIndex(startIndex);
+            translateY.setValue(0);
+        }
+    }, [visible, startIndex, translateY]);
+
+    const review = reviews[currentIndex];
+
+    // 이전/다음 사진 (양 끝에서는 비활성)
+    const handlePrev = () => {
+        if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+    };
+    const handleNext = () => {
+        if (currentIndex < reviews.length - 1) setCurrentIndex(currentIndex + 1);
+    };
+
+    // 스와이프 닫기 제스처 (사진이 따라 움직임)
+    const panResponder = useRef(
+        PanResponder.create({
+            // 시작 시점엔 가로채지 않음 (tap이 먼저 동작하도록)
+            onStartShouldSetPanResponder: () => false,
+            // 세로 위주 움직임 + 일정 거리 이상이면 가로채기
+            onMoveShouldSetPanResponder: (_, gesture) =>
+                Math.abs(gesture.dy) > Math.abs(gesture.dx) && Math.abs(gesture.dy) > 10,
+            // 손가락 따라 사진 위/아래 이동
+            onPanResponderMove: (_, gesture) => {
+                translateY.setValue(gesture.dy);
+            },
+            // 손가락 떼면 거리 판정
+            onPanResponderRelease: (_, gesture) => {
+                if (Math.abs(gesture.dy) > 100) {
+                    // 100px 이상 → 슉 사라지며 닫기
+                    Animated.timing(translateY, {
+                        toValue: gesture.dy > 0 ? 800 : -800,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        onClose();
+                    });
+                } else {
+                    // 미달 → 스프링으로 원위치
+                    Animated.spring(translateY, {
+                        toValue: 0,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            },
+        }),
+    ).current;
+
+    if (!review) return null;
 
     return (
-        <ImageView
-            images={images}
-            imageIndex={startIndex}
+        <Modal
             visible={visible}
-            onRequestClose={onClose}
-            presentationStyle="overFullScreen"
-            backgroundColor="rgba(0,0,0,0)"      // 완전 투명 (어둠은 컨테이너가 담당)
-            // HeaderComponent 하나로 전체 오버레이 만들기 (Footer 사용 X)
-            HeaderComponent={({imageIndex}) => {
-                const review = reviews[imageIndex];
-                if (!review) return null;
+            transparent
+            animationType="fade"
+            onRequestClose={onClose}>
+            {/* 어두운 배경 (상하단 검은 여백) */}
+            <View style={styles.backdrop}>
+                {/* 이미지 컨테이너 (3:4 비율 + 스와이프 시 같이 이동) */}
+                <Animated.View
+                    style={[styles.imageWrapper, {transform: [{translateY}]}]}
+                    {...panResponder.panHandlers}>
+                    {/* 이미지 */}
+                    <Image
+                        source={{uri: review.image_url}}
+                        style={styles.image}
+                        resizeMode="cover"
+                        resizeMethod="resize"
+                    />
 
-                return (
-                    // pointerEvents="box-none" → 빈 공간 터치는 이미지에 전달 (줌/스와이프 유지)
-                    <View style={styles.overlay} pointerEvents="box-none">
-                        {/* ── 상단: 사용자 정보 + 닫기 ── */}
-                        <View style={styles.topRow}>
-                            <View style={styles.userGroup}>
-                                <Image
-                                    source={{uri: review.user.profile_image_url}}
-                                    style={styles.avatar}
-                                />
-                                <Text style={styles.nickname} numberOfLines={1}>
-                                    {review.user.nickname}
-                                </Text>
-                            </View>
-                            <Pressable onPress={onClose} style={styles.closeButton}>
-                                <Text style={styles.closeIcon}>✕</Text>
-                            </Pressable>
-                        </View>
+                    {/* 좌측 탭 영역: 이전 사진 */}
+                    <Pressable
+                        style={[styles.tapZone, styles.leftZone]}
+                        onPress={handlePrev}
+                    />
 
-                        {/* ── 중하단: 시간 뱃지 + 코멘트 ── */}
-                        <View style={styles.commentArea}>
-                            <View style={styles.timeBadge}>
-                                <Text style={styles.timeText}>
-                                    {formatRelativeTime(review.created_at)}
-                                </Text>
-                            </View>
-                            <Text style={styles.comment}>{review.comment}</Text>
+                    {/* 우측 탭 영역: 다음 사진 */}
+                    <Pressable
+                        style={[styles.tapZone, styles.rightZone]}
+                        onPress={handleNext}
+                    />
+
+                    {/* ── 상단: 사용자 + 닫기 (이미지 위에 오버레이) ── */}
+                    <View style={styles.topRow}>
+                        <View style={styles.userGroup}>
+                            <Image
+                                source={{uri: review.user.profile_image_url}}
+                                style={styles.avatar}
+                            />
+                            <Text style={styles.nickname} numberOfLines={1}>
+                                {review.user.nickname}
+                            </Text>
                         </View>
+                        <Pressable
+                            onPress={onClose}
+                            style={styles.closeButton}
+                            hitSlop={12}>
+                            <Text style={styles.closeIcon}>✕</Text>
+                        </Pressable>
                     </View>
-                );
-            }}
-        />
+
+                    {/* ── 중하단: 시간 + 코멘트 (이미지 위 가운데~하단) ── */}
+                    <View style={styles.commentArea} pointerEvents="none">
+                        <View style={styles.timeBadge}>
+                            <Text style={styles.timeText}>
+                                {formatRelativeTime(review.created_at)}
+                            </Text>
+                        </View>
+                        <Text style={styles.comment}>{review.comment}</Text>
+                    </View>
+
+                    {/* 페이지 인디케이터 (여러 사진일 때) */}
+                    {reviews.length > 1 && (
+                        <View style={styles.indicator} pointerEvents="none">
+                            <Text style={styles.indicatorText}>
+                                {currentIndex + 1} / {reviews.length}
+                            </Text>
+                        </View>
+                    )}
+                </Animated.View>
+            </View>
+        </Modal>
     );
 }
 
 const styles = StyleSheet.create({
-    // 전체 화면 오버레이 (Header 슬롯 안에서 absolute로 화면 전체 차지)
-    overlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: SCREEN_HEIGHT,
+    backdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(20,20,20,0.98)',       // 어두운 검정 (살짝 투명)
+        justifyContent: 'center',                      // 이미지 가운데 정렬
     },
 
-    // ─────────── 상단 ───────────
+    // ─────────── 이미지 영역 (3:4 비율, 너비 100%) ───────────
+    imageWrapper: {
+        width: '100%',
+        aspectRatio: 3 / 4,                            // 3:4 세로형 비율
+        borderRadius: radius.xl,                       // 16 - 둥근 모서리
+        overflow: 'hidden',
+        backgroundColor: colors.surface.muted,
+    },
+    image: {
+        width: '100%',
+        height: '100%',
+    },
+
+    // ─────────── 좌/우 탭 영역 (이미지 전체 절반씩) ───────────
+    tapZone: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        width: '50%',
+    },
+    leftZone: {
+        left: 0,
+    },
+    rightZone: {
+        right: 0,
+    },
+
+    // ─────────── 상단: 사용자 + 닫기 (이미지 안 상단) ───────────
     topRow: {
         position: 'absolute',
-        top: SCREEN_HEIGHT * 0.195,        // 화면 위에서 18% (사진 시작 지점 근처)
+        top: 16,
         left: 16,
         right: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        zIndex: 1,                                     // 탭 영역보다 위
     },
     userGroup: {
         flexDirection: 'row',
@@ -98,36 +203,60 @@ const styles = StyleSheet.create({
         height: 28,
         borderRadius: 14,
         backgroundColor: colors.surface.muted,
+        borderWidth: 1.5,
+        borderColor: colors.surface.white,
     },
     nickname: {
         color: colors.text.inverse,
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
         flexShrink: 1,
         textShadowColor: 'rgba(0,0,0,0.5)',
         textShadowOffset: {width: 0, height: 1},
-        textShadowRadius: 2,
+        textShadowRadius: 3,
     },
     closeButton: {
-        width: 28,
-        height: 28,
+        width: 32,
+        height: 32,
         alignItems: 'center',
         justifyContent: 'center',
     },
     closeIcon: {
         color: colors.text.inverse,
-        fontSize: 22,
+        fontSize: 24,
         fontWeight: '300',
+        textShadowColor: 'rgba(0,0,0,0.4)',
+        textShadowOffset: {width: 0, height: 1},
+        textShadowRadius: 2,
     },
 
-    // ─────────── 시간 + 코멘트 (사진 위 중하단에 둥둥) ───────────
+    // ─────────── 페이지 인디케이터 (상단 중앙) ───────────
+    indicator: {
+        position: 'absolute',
+        top: 16,
+        alignSelf: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 9999,
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        zIndex: 1,
+    },
+    indicatorText: {
+        color: colors.text.inverse,
+        fontSize: 12,
+        fontWeight: '500',
+    },
+
+    // ─────────── 중하단: 시간 + 코멘트 (이미지 안 중앙) ───────────
     commentArea: {
         position: 'absolute',
-        bottom: SCREEN_HEIGHT * 0.32,   // 화면 하단에서 32% 위 (디자인 위치 맞춤)
+        top: '40%',                                    // 화면 위에서 40% 위치
         left: 0,
         right: 0,
         alignItems: 'center',
-        gap: 8,
+        gap: 10,
+        paddingHorizontal: 24,
+        zIndex: 1,
     },
     timeBadge: {
         backgroundColor: 'rgba(0,0,0,0.5)',
@@ -142,11 +271,11 @@ const styles = StyleSheet.create({
     },
     comment: {
         color: colors.text.inverse,
-        fontSize: 18,
-        fontWeight: '700',
+        fontSize: 20,
+        fontWeight: '800',
         textAlign: 'center',
         textShadowColor: 'rgba(0,0,0,0.7)',
         textShadowOffset: {width: 0, height: 1},
-        textShadowRadius: 3,
+        textShadowRadius: 4,
     },
 });

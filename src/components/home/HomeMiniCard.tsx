@@ -15,8 +15,8 @@ type HomeMiniCardProps = {
     place: PlaceDetail;
     distance?: string;
     images?: string[];
-    onToggleSubscribe?: () => void;     // 알림 토글 핸들러
-    onPress?: () => void;
+    onToggleSubscribe?: () => void;             // 알림 토글 핸들러
+    onPress?: (imageIndex?: number) => void;    // 카드 클릭 (imageIndex 있으면 그 사진 기준)
 };
 
 export default function HomeMiniCard({
@@ -80,8 +80,8 @@ export default function HomeMiniCard({
                 contentContainerStyle={styles.imageRow}>
                 {images.length > 0 ? (
                     images.map((uri, index) => (
-                        // 각 이미지를 Pressable로 감쌈: 탭 → 네비, 드래그 → ScrollView 스크롤
-                        <Pressable key={index} onPress={onPress}>
+                        // 각 이미지를 Pressable로 감쌈: 탭 → 네비(인덱스 전달), 드래그 → ScrollView 스크롤
+                        <Pressable key={index} onPress={() => onPress?.(index)}>
                             <ImageBackground
                                 style={styles.imageSlot}
                                 source={{uri}}

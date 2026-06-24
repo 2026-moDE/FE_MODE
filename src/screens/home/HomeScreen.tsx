@@ -47,8 +47,10 @@ export default function HomeScreen(){
     // 장소 미니 카드 정보
     const [placeDetail, setPlaceDetail] = useState<PlaceDetail| null>(null);
 
-    // 미니 카드에 표시할 리뷰 이미지 URL 목록
-    const [reviewImages, setReviewImages] = useState<string[]>([]);
+    // 미니 카드에 표시할 리뷰 이미지 (URL + 어느 탭 소속인지)
+    const [reviewItems, setReviewItems] = useState<Array<{url: string; type: 'current' | 'archived'}>>([]);
+    // 호환: URL만 추출해 미니카드에 전달
+    const reviewImages = reviewItems.map(item => item.url);
 
     // 디코딩까지 완료된 썸네일 URL 목록 (버블 이미지 안정 표시용)
     const [readyUrls, setReadyUrls] = useState<Set<string>>(new Set());
@@ -102,7 +104,7 @@ export default function HomeScreen(){
             loadNearbyPlaces();
             setSelectedPlace(null);
             setPlaceDetail(null);
-            setReviewImages([]);
+            setReviewItems([]);
         }, [loadNearbyPlaces])
     );
 
@@ -116,7 +118,7 @@ export default function HomeScreen(){
         console.log('[handlePlacePress] 호출됨, place.id:', place.id);
         setSelectedPlace(place);
         setPlaceDetail(null);
-        setReviewImages([]);
+        setReviewItems([]);
 
         // 상세 조회
         try {
@@ -127,27 +129,42 @@ export default function HomeScreen(){
             console.warn('[fetchPlaceDetail] 실패:', error?.response?.status, error?.message);
         }
 
-        // 리뷰 조회: current + archived 합쳐서 최신순 상위 5개
+        // 리뷰 조회: current + archived 각각 타입 태그해서 최신순 상위 5개
         try {
             const [currentRes, archivedRes] = await Promise.all([
                 fetchCurrentReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
                 fetchArchivedReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
             ]);
-            const allReviews = [...(currentRes.reviews ?? []), ...(archivedRes.reviews ?? [])];
-            const sortedByLatest = allReviews.sort(
+            const currentTagged = (currentRes.reviews ?? []).map((r: any) => ({
+                url: r.image_url,
+                created_at: r.created_at,
+                type: 'current' as const,
+            }));
+            const archivedTagged = (archivedRes.reviews ?? []).map((r: any) => ({
+                url: r.image_url,
+                created_at: r.created_at,
+                type: 'archived' as const,
+            }));
+            const sortedByLatest = [...currentTagged, ...archivedTagged].sort(
                 (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
-            setReviewImages(sortedByLatest.slice(0, 5).map(r => r.image_url));
+            setReviewItems(sortedByLatest.slice(0, 5).map(({url, type}) => ({url, type})));
         } catch (error: any) {
             console.warn('[리뷰 조회] 실패:', error?.message);
         }
     }, []);
 
-    const handleCardPress = useCallback(()=>{
-        if(!placeDetail) return;
-        navigation.navigate('PlaceDetail',
-            {placeId: placeDetail.id, placeName: placeDetail.name});
-    },[placeDetail,navigation])
+    // 카드 본체 / 사진 클릭 시 → 장소 상세 (사진은 그 사진의 타입에 따라 탭 결정)
+    const handleCardPress = useCallback((imageIndex?: number) => {
+        if (!placeDetail) return;
+        // imageIndex 받으면 해당 사진 타입으로, 아니면 기본 (current)
+        const initialTab = imageIndex !== undefined ? reviewItems[imageIndex]?.type : undefined;
+        navigation.navigate('PlaceDetail', {
+            placeId: placeDetail.id,
+            placeName: placeDetail.name,
+            initialTab,
+        });
+    }, [placeDetail, reviewItems, navigation]);
 
     // 장소 미니 카드 닫을 때
     const handleCloseCard = useCallback(()=>{

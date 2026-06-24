@@ -26,7 +26,7 @@ export type AppStackParamList = {
       }
     | undefined;
 
-  PlaceDetail: { placeId: number; placeName: string };
+  PlaceDetail: { placeId: number; placeName: string; initialTab?: 'current' | 'archived' };
 
   ReviewStack: { screen: keyof ReviewStackParamList; params?: object } | undefined;
 };

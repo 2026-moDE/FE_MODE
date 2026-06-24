@@ -26,7 +26,7 @@ import {
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
 export default function PlaceDetailScreen({route, navigation}: Props) {
-    const {placeId, placeName} = route.params;
+    const {placeId, placeName, initialTab} = route.params;
 
     // 투명 상태바때문에 ui 올라오는 거 방지
     const insets = useSafeAreaInsets();
@@ -40,8 +40,8 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     // 거리 (미터 단위)
     const [distance, setDistance] = useState<number | null>(null);
 
-    // 활성 탭 (실시간 / 과거)
-    const [activeTab, setActiveTab] = useState<ReviewTabKey>('current');
+    // 활성 탭 (실시간 / 과거) - 미니카드에서 클릭한 사진 타입에 따라 초기값 결정
+    const [activeTab, setActiveTab] = useState<ReviewTabKey>(initialTab ?? 'current');
 
     // 리뷰 목록 (탭에 따라 다른 데이터)
     const [reviews, setReviews] = useState<(CurrentReview | ArchivedReview)[]>([]);
@@ -173,12 +173,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 }
             />
 
-            {/* 검정 오버레이 - 리뷰 사진 클릭 시 화면 전체(상태바 빼고) 덮음 */}
-            {imageIndex !== null && (
-                <View style={styles.darkOverlay} pointerEvents="none" />
-            )}
-
-            {/* 사진 (Modal로 오버레이 위에 사진/텍스트 표시) */}
+            {/* 사진 풀스크린 뷰어 (자체 어두운 배경 + 좌우 탭 네비) */}
             <ReviewPhoto
                 reviews={reviews}
                 startIndex={imageIndex ?? 0}
