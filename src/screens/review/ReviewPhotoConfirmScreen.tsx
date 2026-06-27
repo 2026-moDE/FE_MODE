@@ -9,12 +9,14 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RouteProp} from '@react-navigation/native';
 import type {ReviewStackParamList} from '../../types/navigation';
-import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
+
+import IconArrowLeft from '../../assets/icons/IconArrowLeft';
+import ReviewExitModal from '../../components/review/ReviewExitModal';
 
 type ReviewNav = NativeStackNavigationProp<ReviewStackParamList>;
 type ReviewPhotoConfirmRoute = RouteProp<
@@ -51,6 +53,8 @@ export default function ReviewPhotoConfirmScreen() {
   const [showBlurToast, setShowBlurToast] = useState(true);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [exitModalVisible, setExitModalVisible] = useState(false);
+
   // 블러 도구가 켜져 있는지
   const [isBlurMode, setIsBlurMode] = useState(false);
     
@@ -85,8 +89,26 @@ export default function ReviewPhotoConfirmScreen() {
       return;
     }
 
-    navigation.goBack();
+    setExitModalVisible(true);
   };
+  
+  const handleExitToHome = () => {
+  setExitModalVisible(false);
+
+  (navigation as any).getParent()?.dispatch(
+    CommonActions.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Tab',
+          params: {
+            screen: 'Home',
+          },
+        },
+      ],
+    }),
+  );
+};
 
   const handleConfirm = () => {
     navigation.navigate('ReviewWrite', {photoUri});
@@ -180,6 +202,11 @@ export default function ReviewPhotoConfirmScreen() {
           </View>
         </View>
       )}
+      <ReviewExitModal
+        visible={exitModalVisible}
+        onClose={() => setExitModalVisible(false)}
+        onExit={handleExitToHome}
+      />
     </View>
   );
 }
