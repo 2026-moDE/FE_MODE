@@ -1,4 +1,4 @@
-﻿import React, {useEffect, useRef, useState} from 'react';
+﻿import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StatusBar,
   Dimensions,
   Platform,
+  PanResponder,
 } from 'react-native';
 import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -18,11 +19,31 @@ import {fontFamily} from '../../constants/typography';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
 
+import RNFS from 'react-native-fs';
+import {
+  Canvas,
+  Image as SkiaImage,
+  useImage,
+  Group,
+  //Paint,
+  //Blur,
+  Skia,
+  useCanvasRef,
+  ImageFormat,
+  RuntimeShader,
+} from '@shopify/react-native-skia';
+
 type ReviewNav = NativeStackNavigationProp<ReviewStackParamList>;
 type ReviewPhotoConfirmRoute = RouteProp<
   ReviewStackParamList,
   'ReviewPhotoConfirm'
 >;
+
+type BlurPoint = {
+  id: number;
+  x: number;
+  y: number;
+};
 
 const checkBlueIcon = require('../../assets/image/check_blue.png');
 const mdiBlurIcon = require('../../assets/image/mdi_blur.png');
@@ -46,6 +67,22 @@ const PHOTO_HEIGHT = px(585);
 const TOP_SECTION_HEIGHT = figmaY(129);
 const LOGO_TOP = figmaY(77);
 
+const BRUSH_RADIUS = px(24);
+const ERASE_RADIUS = px(28);
+//const BLUR_SIGMA = 12;
+const MOSAIC_BLOCK_SIZE = 14;
+const MIN_BRUSH_DISTANCE = px(10);
+
+const mosaicRuntimeEffect = Skia.RuntimeEffect.Make(`
+uniform shader image;
+
+half4 main(float2 xy) {
+  float blockSize = ${MOSAIC_BLOCK_SIZE.toFixed(1)};
+  float2 block = floor(xy / blockSize) * blockSize + blockSize * 0.5;
+  return image.eval(block);
+}
+`)!;
+
 export default function ReviewPhotoConfirmScreen() {
   const navigation = useNavigation<ReviewNav>();
   const route = useRoute<ReviewPhotoConfirmRoute>();
@@ -57,9 +94,17 @@ export default function ReviewPhotoConfirmScreen() {
 
   // 블러 도구가 켜져 있는지
   const [isBlurMode, setIsBlurMode] = useState(false);
-    
-  const {photoUri} = route.params;
 
+  const [blurPoints, setBlurPoints] = useState<BlurPoint[]>([]);
+  const [selectedTool, setSelectedTool] = useState<'blur' | 'eraser'>('blur');
+
+  const blurPointIdRef = useRef(0);
+  const lastPointRef = useRef<{x: number; y: number} | null>(null);
+
+  const canvasRef = useCanvasRef();
+  const {photoUri} = route.params;
+  const photoSkiaImage = useImage(photoUri);
+    
   const showToastForThreeSeconds = () => {
     setShowBlurToast(true);
 
@@ -110,16 +155,111 @@ export default function ReviewPhotoConfirmScreen() {
   );
 };
 
-  const handleConfirm = () => {
+const handleConfirm = async () => {
+  try {
+    if (blurPoints.length === 0) {
+      navigation.navigate('ReviewWrite', {photoUri});
+      return;
+    }
+
+    const snapshot = canvasRef.current?.makeImageSnapshot();
+
+    if (!snapshot) {
+      throw new Error('Skia snapshot 생성 실패');
+    }
+
+    const base64 = snapshot.encodeToBase64(ImageFormat.PNG, 100);
+    const filePath = `${RNFS.CachesDirectoryPath}/review_blur_${Date.now()}.png`;
+
+    await RNFS.writeFile(filePath, base64, 'base64');
+
+    navigation.navigate('ReviewWrite', {
+      photoUri: `file://${filePath}`,
+    });
+  } catch (error) {
+    console.log('Skia blur 이미지 저장 실패:', error);
     navigation.navigate('ReviewWrite', {photoUri});
-  };
+  }
+};
 
   const handleBlurPress = () => {
+    setSelectedTool('blur');
     setIsBlurMode(true);
   };
 
+  const addBlurPoint = useCallback((x: number, y: number) => {
+    if (lastPointRef.current) {
+      const dx = lastPointRef.current.x - x;
+      const dy = lastPointRef.current.y - y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < MIN_BRUSH_DISTANCE) {
+        return;
+      }
+    }
+
+    lastPointRef.current = {x, y};
+
+    const newPoint: BlurPoint = {
+      id: blurPointIdRef.current,
+      x,
+      y,
+    };
+
+    blurPointIdRef.current += 1;
+
+    setBlurPoints(prev => [...prev, newPoint]);
+  }, []);
+
+  const eraseBlurPoint = useCallback((x: number, y: number) => {
+    setBlurPoints(prev =>
+      prev.filter(point => {
+        const dx = point.x - x;
+        const dy = point.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        return distance > ERASE_RADIUS;
+      }),
+    );
+  }, []);
+
+  const handleDraw = useCallback(
+    (x: number, y: number) => {
+      if (x < 0 || x > PHOTO_WIDTH || y < 0 || y > PHOTO_HEIGHT) {
+        return;
+      }
+
+      if (selectedTool === 'blur') {
+        addBlurPoint(x, y);
+      } else {
+        eraseBlurPoint(x, y);
+      }
+    },
+    [addBlurPoint, eraseBlurPoint, selectedTool],
+  );
+
+  const panResponder = useMemo(
+  () =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => isBlurMode,
+      onMoveShouldSetPanResponder: () => isBlurMode,
+
+      onPanResponderGrant: event => {
+        const {locationX, locationY} = event.nativeEvent;
+        handleDraw(locationX, locationY);
+      },
+
+      onPanResponderMove: event => {
+        const {locationX, locationY} = event.nativeEvent;
+        handleDraw(locationX, locationY);
+      },
+    }),
+  [handleDraw, isBlurMode],
+);
+
   const handleResetBlur = () => {
-    // 나중에 실제 블러 좌표를 저장하면 여기서 초기화
+      setBlurPoints([]);
+      lastPointRef.current = null;
   };
 
   return (
@@ -150,10 +290,47 @@ export default function ReviewPhotoConfirmScreen() {
       {/* 사진 영역 */}
       <View style={styles.photoSection}>
         <View style={styles.photoWrapper}>
-          <View style={styles.photoBox}>
-            <Image source={{uri: photoUri}} style={styles.photo} />
-          </View>
+          <View
+            style={styles.photoBox}
+            {...(isBlurMode ? panResponder.panHandlers : {})}>
+            {photoSkiaImage ? (
+              <Canvas ref={canvasRef} style={styles.photo}>
+                <SkiaImage
+                  image={photoSkiaImage}
+                  x={0}
+                  y={0}
+                  width={PHOTO_WIDTH}
+                  height={PHOTO_HEIGHT}
+                  fit="cover"
+                />
 
+                {blurPoints.map(point => {
+                  const clipPath = Skia.Path.Make();
+                  clipPath.addCircle(point.x, point.y, BRUSH_RADIUS);
+
+                  return (
+                  <Group key={point.id} clip={clipPath}>
+                    <SkiaImage
+                      image={photoSkiaImage}
+                      x={0}
+                      y={0}
+                      width={PHOTO_WIDTH}
+                      height={PHOTO_HEIGHT}
+                      fit="cover">
+                      <RuntimeShader source={mosaicRuntimeEffect} />
+                    </SkiaImage>
+                  </Group>
+                  );
+                })}
+              </Canvas>
+            ) : (
+              <View style={styles.photoLoadingBox}>
+                <Text style={styles.photoLoadingText}>이미지 불러오는 중...</Text>
+              </View>
+            )}
+          </View>
+          
+            {/*
           {showBlurToast && !isBlurMode && (
             <View style={styles.aiBubble}>
               <Text style={styles.aiBubbleText}>
@@ -162,6 +339,7 @@ export default function ReviewPhotoConfirmScreen() {
               <View style={styles.aiBubbleTail} />
             </View>
           )}
+            */}
         </View>
       </View>
 
@@ -181,15 +359,45 @@ export default function ReviewPhotoConfirmScreen() {
           <View style={styles.blurToolRow}>
             <View style={styles.leftToolGroup}>
               <TouchableOpacity
-                style={styles.selectedCircleButton}
-                activeOpacity={0.8}>
-                <Image source={mdiBlurIcon} style={styles.selectedBlurIcon} />
+                style={
+                  selectedTool === 'blur'
+                    ? styles.selectedCircleButton
+                    : styles.outlineCircleButton
+                }
+                activeOpacity={0.8}
+                onPress={() => {
+                  setSelectedTool('blur');
+                  setIsBlurMode(true);
+                }}>
+                <Image
+                  source={mdiBlurIcon}
+                  style={
+                    selectedTool === 'blur'
+                      ? styles.selectedBlurIcon
+                      : styles.outlineToolIcon
+                  }
+                />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.outlineCircleButton}
-                activeOpacity={0.8}>
-                <Image source={eraserIcon} style={styles.outlineToolIcon} />
+                style={
+                  selectedTool === 'eraser'
+                    ? styles.selectedCircleButton
+                    : styles.outlineCircleButton
+                }
+                activeOpacity={0.8}
+                onPress={() => {
+                  setSelectedTool('eraser');
+                  setIsBlurMode(true);
+                }}>
+                <Image
+                  source={eraserIcon}
+                  style={
+                    selectedTool === 'eraser'
+                      ? styles.selectedBlurIcon
+                      : styles.outlineToolIcon
+                  }
+                />
               </TouchableOpacity>
             </View>
 
@@ -279,6 +487,7 @@ const styles = StyleSheet.create({
     height: PHOTO_HEIGHT,
     borderRadius: px(20),
     overflow: 'hidden',
+    
     backgroundColor: '#111111',
   },
   photo: {
@@ -401,6 +610,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: px(26),
     lineHeight: px(30),
+    fontFamily: fontFamily.regular,
+  },
+  photoLoadingBox: {
+    width: PHOTO_WIDTH,
+    height: PHOTO_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E9EDF3',
+  },
+
+  photoLoadingText: {
+    fontSize: px(14),
+    color: '#6B7280',
     fontFamily: fontFamily.regular,
   },
 });
