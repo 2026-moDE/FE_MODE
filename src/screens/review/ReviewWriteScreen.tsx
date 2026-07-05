@@ -2,7 +2,7 @@ import React, {useMemo, useState} from 'react';
 import {
   View,
   Text,
-  StyleSheet,
+  StyleSheet, 
   StatusBar,
   Image,
   Pressable,
@@ -18,11 +18,13 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import type {ReviewStackParamList} from '../../types/navigation';
+import {CommonActions} from '@react-navigation/native';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
 import {useLocation} from '../../context/LocationContext';
 import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
+import ReviewExitModal from '../../components/review/ReviewExitModal';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
@@ -51,7 +53,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
 const px = (value: number) => value * scale;
 
-const MAX_REVIEW_LENGTH = 50;
+const MAX_REVIEW_LENGTH = 100;
 
 const ReviewWriteScreen = ({navigation, route}: Props) => {
   const {photoUri, placeId, placeName} = route.params;
@@ -61,6 +63,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
     useState<CongestionType | null>(null);
   const [reviewText, setReviewText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [exitModalVisible, setExitModalVisible] = useState(false);
 
   const now = new Date();
   const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -152,7 +155,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => setExitModalVisible(true)}
             hitSlop={10}>
             <IconArrowLeft size={px(24)} color="#1F2933" />
           </Pressable>
@@ -239,7 +242,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
                     setReviewText(text);
                   }
                 }}
-                placeholder="50자 이내로 짧은 코멘트 작성해주세요."
+                placeholder="100자 이내로 짧은 코멘트 작성해주세요."
                 placeholderTextColor="#C8CDD4"
                 multiline
                 maxLength={MAX_REVIEW_LENGTH}
@@ -269,6 +272,27 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             {isSubmitting ? '등록 중...' : '✓  등록하기'}
           </Text>
         </Pressable>
+          <ReviewExitModal
+            visible={exitModalVisible}
+            onClose={() => setExitModalVisible(false)}
+            onExit={() => {
+              setExitModalVisible(false);
+
+              navigation.getParent()?.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: 'Tab',
+                      params: {
+                        screen: 'Home',
+                      },
+                    },
+                  ],
+                }),
+              );
+            }}
+          />
         </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

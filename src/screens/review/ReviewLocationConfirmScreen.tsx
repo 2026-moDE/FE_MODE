@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   StatusBar,
   Pressable,
   Dimensions,
+  Modal,
+  Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -13,6 +15,7 @@ import {NaverMapView, NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/r
 
 import type {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
+const cautionIcon = require('../../assets/image/caution.png');
 
 type Props = NativeStackScreenProps<
   ReviewStackParamList,
@@ -23,6 +26,7 @@ const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
 const px = (value: number) => value * scale;
+const DEV_BYPASS_LOCATION_CHECK = __DEV__;
 
 const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
   const {
@@ -36,19 +40,70 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
     longitude,
   } = route.params;
 
-  const mapRef = useRef<NaverMapViewRef>(null);
+const mapRef = useRef<NaverMapViewRef>(null);
 
-  const handleNo = () => {
-    navigation.goBack();
-  };
+const [locationFailVisible, setLocationFailVisible] = useState(false);
 
-  const handleYes = () => {
-    navigation.navigate('ReviewWrite', {
-      photoUri,
-      placeId,
-      placeName,
-    });
-  };
+const LOCATION_LIMIT_M = 100;
+
+const getDistanceNumber = (distance: string | number | undefined) => {
+  if (typeof distance === 'number') {
+    return distance;
+  }
+
+  if (!distance) {
+    return 9999;
+  }
+
+  const lowerDistance = distance.toLowerCase();
+
+  const onlyNumber = lowerDistance.replace(/[^0-9.]/g, '');
+  const numberValue = Number(onlyNumber);
+
+  if (Number.isNaN(numberValue)) {
+    return 9999;
+  }
+
+  // 혹시 "1.2km" 이런 식으로 들어오면 m로 변환
+  if (lowerDistance.includes('km')) {
+    return numberValue * 1000;
+  }
+
+  return numberValue;
+};
+
+const handleNo = () => {
+  navigation.goBack();
+};
+
+const handleConfirmLocation = () => {
+  if (true) {
+    setLocationFailVisible(true);
+    return;
+  }
+
+
+  const distanceNumber = getDistanceNumber(placeDistance);
+
+  if (distanceNumber > LOCATION_LIMIT_M) {
+    setLocationFailVisible(true);
+    return;
+  }
+
+  navigation.navigate('ReviewWrite', {
+    photoUri,
+    placeId,
+    placeName,
+  });
+};
+
+const handleLocationFailConfirm = () => {
+  setLocationFailVisible(false);
+
+  navigation.navigate('ReviewWrite', {
+    photoUri,
+  });
+};
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -114,11 +169,11 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
         <View style={styles.bottomButtonBox}>
             <Pressable
                 style={styles.noButton}
-                onPress={() => navigation.goBack()}>
+                onPress={handleNo}>
                 <Text style={styles.noButtonText}>아니에요</Text>
             </Pressable>
 
-            <Pressable style={styles.yesButton} onPress={handleYes}>
+            <Pressable style={styles.yesButton} onPress={handleConfirmLocation}>
                 <View style={styles.yesButtonContent}>
                 <Text style={styles.checkText}>✓</Text>
                 <Text style={styles.yesButtonText}>네 맞아요</Text>
@@ -126,6 +181,31 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
             </Pressable>
         </View>
       </View>
+
+      <Modal
+        visible={locationFailVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLocationFailVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.locationFailModal}>
+            <Image source={cautionIcon} style={styles.cautionIcon} />
+
+            <Text style={styles.modalTitle}>위치 인증에 실패했어요</Text>
+
+            <Text style={styles.modalDescription}>
+              내 위치 기준 100m 이내의 장소만{'\n'}
+              리뷰 작성이 가능해요
+            </Text>
+
+            <Pressable
+              style={styles.modalButton}
+              onPress={handleLocationFailConfirm}>
+            <Text style={styles.modalButtonText}>확인했어요</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -359,4 +439,70 @@ const styles = StyleSheet.create({
     color: '#6489F2',
     includeFontPadding: false,
     },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'flex-end',
+  },
+
+  locationFailModal: {
+    width: '100%',
+    height: px(358),
+    backgroundColor: '#FFFFFF',
+
+    borderTopLeftRadius: px(12),
+    borderTopRightRadius: px(12),
+
+    paddingTop: px(45),
+    paddingRight: px(16),
+    paddingBottom: px(44),
+    paddingLeft: px(17),
+
+    alignItems: 'center',
+  },
+  
+  cautionIcon: {
+    width: px(74),
+    height: px(74),
+    resizeMode: 'contain',
+    marginBottom: px(16),
+  },
+
+  modalTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: px(24),
+    lineHeight: px(29),
+    color: '#111114',
+    textAlign: 'center',
+    includeFontPadding: false,
+    marginBottom: px(12),
+  },
+
+  modalDescription: {
+    fontFamily: fontFamily.medium,
+    fontSize: px(18),
+    lineHeight: px(22),
+    color: '#4B566D',
+    textAlign: 'center',
+    includeFontPadding: false,
+    marginBottom: px(44),
+  },
+
+  modalButton: {
+    width: px(360),
+    height: px(52),
+    borderRadius: px(12),
+    backgroundColor: '#2C343F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalButtonText: {
+    fontFamily: fontFamily.bold,
+    fontSize: px(18),
+    lineHeight: px(21),
+    color: '#FFFFFF',
+    includeFontPadding: false,
+  },
 });
