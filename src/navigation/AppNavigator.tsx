@@ -8,6 +8,7 @@ import PlaceDetailScreen from '../screens/placeDetail/PlaceDetailScreen';
 // import MyPageScreen from '../screens/mypage/MyPageScreen';   // 마이페이지 임시 비활성화
 import CustomTabBar from '../components/map/CustomTabBar';
 import ReviewStack from './ReviewStack';
+import NotificationScreen from '../screens/notification/NotificationScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -35,6 +36,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="PlaceDetail" component={PlaceDetailScreen} />
       <Stack.Screen name="ReviewStack" component={ReviewStack} />
+      <Stack.Screen name='Notification' component={NotificationScreen}/>
     </Stack.Navigator>
   );
 }

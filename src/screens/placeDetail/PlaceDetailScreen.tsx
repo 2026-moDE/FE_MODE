@@ -141,7 +141,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             <PlaceDetailInfo
                 place={placeDetail}
                 distance={distanceText}
-                // onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
+                onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
             />
 
             {/* 실시간 / 과거 탭 */}

@@ -1,10 +1,10 @@
 // ─────────────────── 공용 Union 타입 ───────────────────
 
 // 장소 카테고리 (임의..?)
-export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'BAR' | 'PARK' | 'SHOPPING' | 'ETC';
+export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'BAR' | 'PARK' | 'SHOPPING';
 
 // 혼잡도 레벨
-export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED';
 
 // 요일
 export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
@@ -16,7 +16,6 @@ export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
     BAR:        '술집',
     PARK:       '공원',
     SHOPPING:   '쇼핑',
-    ETC:        '기타',
 };
 
 // ─────────────────── 장소 검색 api (GET /api/search) ───────────────────
@@ -27,8 +26,6 @@ export type Place = {
     category: PlaceCategory;
     congestion_level: CongestionLevel;
     thumbnail_url: string;
-    latitude: number | null;
-    longitude: number | null;
 };
 
 export type PlaceResponse = {
@@ -51,12 +48,10 @@ export type PlaceDetail = {
 export type NearbyPlace = {
     id: number;
     name: string;
-    latitude: number | null;
-    longitude: number | null;
-    congestion_level: CongestionLevel | null;
-    thumbnail_url: string | null;
-    category: PlaceCategory | null;
-    address: string | null;
+    latitude: number;
+    longitude: number;
+    congestion_level: CongestionLevel;
+    thumbnail_url: string;
 };
 
 export type NearbyPlaceResponse = {
