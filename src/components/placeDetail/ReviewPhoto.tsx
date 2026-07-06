@@ -39,19 +39,14 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
     // 스와이프 닫기 제스처 (사진이 따라 움직임)
     const panResponder = useRef(
         PanResponder.create({
-            // 시작 시점엔 가로채지 않음 (tap이 먼저 동작하도록)
             onStartShouldSetPanResponder: () => false,
-            // 세로 위주 움직임 + 일정 거리 이상이면 가로채기
             onMoveShouldSetPanResponder: (_, gesture) =>
                 Math.abs(gesture.dy) > Math.abs(gesture.dx) && Math.abs(gesture.dy) > 10,
-            // 손가락 따라 사진 위/아래 이동
             onPanResponderMove: (_, gesture) => {
                 translateY.setValue(gesture.dy);
             },
-            // 손가락 떼면 거리 판정
             onPanResponderRelease: (_, gesture) => {
                 if (Math.abs(gesture.dy) > 100) {
-                    // 100px 이상 → 슉 사라지며 닫기
                     Animated.timing(translateY, {
                         toValue: gesture.dy > 0 ? 800 : -800,
                         duration: 200,
@@ -60,7 +55,6 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
                         onClose();
                     });
                 } else {
-                    // 미달 → 스프링으로 원위치
                     Animated.spring(translateY, {
                         toValue: 0,
                         useNativeDriver: true,
@@ -104,7 +98,15 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
                         onPress={handleNext}
                     />
 
-                    {/* ── 상단: 사용자 + 닫기 (이미지 위에 오버레이) ── */}
+                    {/* ── 닫기 버튼: 원 + 반원이 이미지 상단 중앙에 걸침 ── */}
+                    <View style={styles.closeOuter}>
+                        <Pressable onPress={onClose} style={styles.xCircle} hitSlop={16}>
+                            <Text style={styles.closeIcon}>✕</Text>
+                        </Pressable>
+                        {/* <View style={styles.semicircle} /> */}
+                    </View>
+
+                    {/* ── 상단: 사용자 (이미지 위에 오버레이) ── */}
                     <View style={styles.topRow}>
                         <View style={styles.userGroup}>
                             <Image
@@ -115,12 +117,6 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
                                 {review.user.nickname}
                             </Text>
                         </View>
-                        <Pressable
-                            onPress={onClose}
-                            style={styles.closeButton}
-                            hitSlop={12}>
-                            <Text style={styles.closeIcon}>✕</Text>
-                        </Pressable>
                     </View>
 
                     {/* ── 중하단: 시간 + 코멘트 (이미지 위 가운데~하단) ── */}
@@ -137,7 +133,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
                     {reviews.length > 1 && (
                         <View style={styles.indicator} pointerEvents="none">
                             <Text style={styles.indicatorText}>
-                                {currentIndex + 1} / {reviews.length}
+                                {/* {currentIndex + 1} / {reviews.length} */}
                             </Text>
                         </View>
                     )}
@@ -150,24 +146,22 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
 const styles = StyleSheet.create({
     backdrop: {
         flex: 1,
-        backgroundColor: 'rgba(20,20,20,0.98)',       // 어두운 검정 (살짝 투명)
-        justifyContent: 'center',                      // 이미지 가운데 정렬
+        backgroundColor: 'rgba(20,20,20,0.98)',
+        justifyContent: 'center',
     },
 
-    // ─────────── 이미지 영역 (3:4 비율, 너비 100%) ───────────
     imageWrapper: {
         width: '100%',
-        aspectRatio: 3 / 4,                            // 3:4 세로형 비율
-        borderRadius: radius.xl,                       // 16 - 둥근 모서리
-        overflow: 'hidden',
+        aspectRatio: 3 / 4,
+        borderRadius: radius.xl,
         backgroundColor: colors.surface.muted,
     },
     image: {
         width: '100%',
         height: '100%',
+        borderRadius: radius.xl,
     },
 
-    // ─────────── 좌/우 탭 영역 (이미지 전체 절반씩) ───────────
     tapZone: {
         position: 'absolute',
         top: 0,
@@ -181,7 +175,23 @@ const styles = StyleSheet.create({
         right: 0,
     },
 
-    // ─────────── 상단: 사용자 + 닫기 (이미지 안 상단) ───────────
+    closeOuter: {
+        position: 'absolute',
+        top: -27,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    xCircle: {
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        backgroundColor: 'rgba(20,20,20,0.98)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
     topRow: {
         position: 'absolute',
         top: 16,
@@ -189,8 +199,7 @@ const styles = StyleSheet.create({
         right: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        zIndex: 1,                                     // 탭 영역보다 위
+        zIndex: 1,
     },
     userGroup: {
         flexDirection: 'row',
@@ -203,7 +212,6 @@ const styles = StyleSheet.create({
         height: 28,
         borderRadius: 14,
         backgroundColor: colors.surface.muted,
-        borderWidth: 1.5,
         borderColor: colors.surface.white,
     },
     nickname: {
@@ -215,22 +223,12 @@ const styles = StyleSheet.create({
         textShadowOffset: {width: 0, height: 1},
         textShadowRadius: 3,
     },
-    closeButton: {
-        width: 32,
-        height: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     closeIcon: {
         color: colors.text.inverse,
-        fontSize: 24,
-        fontWeight: '300',
-        textShadowColor: 'rgba(0,0,0,0.4)',
-        textShadowOffset: {width: 0, height: 1},
-        textShadowRadius: 2,
+        fontSize: 30,
+        fontWeight: '400',
     },
 
-    // ─────────── 페이지 인디케이터 (상단 중앙) ───────────
     indicator: {
         position: 'absolute',
         top: 16,
@@ -247,10 +245,9 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
 
-    // ─────────── 중하단: 시간 + 코멘트 (이미지 안 중앙) ───────────
     commentArea: {
         position: 'absolute',
-        top: '40%',                                    // 화면 위에서 40% 위치
+        top: '40%',
         left: 0,
         right: 0,
         alignItems: 'center',

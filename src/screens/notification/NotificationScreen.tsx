@@ -1,4 +1,5 @@
 import React, {useEffect, useState, useCallback} from 'react';
+import {useFocusEffect} from '@react-navigation/native';
 import {View, Text, ScrollView, StyleSheet} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -35,19 +36,23 @@ export default function NotificationScreen({navigation}: Props) {
 
     useEffect(() => {
         fetchNotifications()
-            .then(res => setNotifications(res.notifications))
+            .then(res => setNotifications(res.notifications ?? []))
             .catch(err => console.warn('알림 조회 실패:', err?.message));
     }, []);
 
-    useEffect(() => {
+    useFocusEffect(useCallback(() => {
         fetchSubscriptions()
-            .then(res => setPlaces(res.subscriptions))
+            .then(res => setPlaces(res.subscriptions ?? []))
             .catch(err => console.warn('구독 장소 조회 실패:', err?.message));
-    }, []);
+    }, []));
 
     const handleNotificationPress = useCallback((id: number) => {
         setNotifications(prev => prev.map(n => n.id === id ? {...n, is_read: true} : n));
-    }, []);
+        const target = notifications.find(n => n.id === id);
+        if (target) {
+            navigation.navigate('PlaceDetail', {placeId: target.place.id, placeName: target.place.name});
+        }
+    }, [notifications, navigation]);
 
     const handleSubscriptions = useCallback((id: number, current: boolean) => {
         setPlaces(prev => prev.map(p => p.id === id ? {...p, is_active: !current} : p));
