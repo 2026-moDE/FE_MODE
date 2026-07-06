@@ -22,7 +22,7 @@ const TAIL_HEIGHT = 16;
 const TAIL_WIDTH = 12;
 const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
-export default function LiveBubble({place, onPress}: Props) {
+const LiveBubble = React.memo(function LiveBubble({place, onPress}: Props) {
     // 혼잡도 있으면 색상, 없으면 null
     const congestionColor = place.congestion_level ? CONGESTION_COLORS[place.congestion_level] : null;
 
@@ -60,7 +60,9 @@ export default function LiveBubble({place, onPress}: Props) {
             </View>
         </NaverMapMarkerOverlay>
     );
-}
+});
+
+export default LiveBubble;
 
 const styles = StyleSheet.create({
     container: {

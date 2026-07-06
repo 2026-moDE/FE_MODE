@@ -44,7 +44,8 @@ export default function HomeMiniCard({
                     {/* 벨은 내부 Pressable로 따로 (네비게이션 안 됨, 토글만) */}
                     <Pressable
                         style={styles.bellWrapper}
-                        onPress={onToggleSubscribe}
+                        // 버블링 방지 stopPropagation
+                        onPress={e => { e.stopPropagation(); onToggleSubscribe?.(); }}
                         hitSlop={8}>
                         {is_subscribed ? (
                             <IconBellOn size={24} color={colors.icon.basic} />
