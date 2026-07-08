@@ -1,0 +1,164 @@
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+
+import {useNavigation} from '@react-navigation/native';
+import {fontFamily} from '../../constants/typography';
+import {getMyProfile, MyProfile} from '../../api/mypage';
+
+const pencilIcon = require('../../assets/image/pencil.png');
+
+const DESIGN_WIDTH = 393;
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const scale = SCREEN_WIDTH / DESIGN_WIDTH;
+const px = (value: number) => value * scale;
+
+type Props = {
+  onEditPress?: () => void;
+};
+
+export default function ProfileSection({onEditPress}: Props) {
+  const navigation = useNavigation<any>();
+
+  const [profile, setProfile] = useState<MyProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage('');
+
+      const data = await getMyProfile();
+      setProfile(data);
+    } catch (error) {
+      console.log('내 프로필 조회 실패:', error);
+      setErrorMessage('프로필 정보를 불러오지 못했어요');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.profileArea}>
+      <View style={styles.profileImageBox}>
+        {profile?.profile_image_url ? (
+          <Image
+            source={{uri: profile.profile_image_url}}
+            style={styles.profileImage}
+            resizeMode="cover"
+          />
+        ) : null}
+      </View>
+
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color="#2C343F"
+          style={styles.loading}
+        />
+      ) : errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : (
+        <View style={styles.nicknameRow}>
+          <Text style={styles.nickname}>{profile?.nickname ?? '닉네임'}</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.editButton}
+              onPress={() => {
+                if (onEditPress) {
+                  onEditPress();
+                  return;
+                }
+
+                navigation.navigate('ProfileEdit', {
+                  nickname: profile?.nickname ?? '',
+                  profileImageUrl: profile?.profile_image_url ?? null,
+                });
+              }}>
+            <Image
+              source={pencilIcon}
+              style={styles.pencilImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  profileArea: {
+    alignItems: 'center',
+    paddingTop: px(15),
+    paddingBottom: px(18),
+  },
+
+  profileImageBox: {
+    width: px(88),
+    height: px(88),
+    borderRadius: px(12),
+    backgroundColor: '#F3F3F3',
+    borderWidth: 1,
+    borderColor: '#E0E0E4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+
+  profileImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  loading: {
+    marginTop: px(12),
+  },
+
+  errorText: {
+    marginTop: px(12),
+    fontSize: px(13),
+    fontFamily: fontFamily.medium,
+    color: '#999999',
+  },
+
+  nicknameRow: {
+    marginTop: px(12),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  nickname: {
+    fontFamily: fontFamily.bold,
+    fontSize: px(18),
+    lineHeight: px(22),
+    color: '#000000',
+  },
+
+  editButton: {
+    marginLeft: px(10),
+    width: px(16),
+    height: px(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  pencilImage: {
+    width: px(16),
+    height: px(16),
+    tintColor: '#9A9A9A',
+  },
+});
