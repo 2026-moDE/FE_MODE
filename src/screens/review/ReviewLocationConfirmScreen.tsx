@@ -26,7 +26,6 @@ const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
 const px = (value: number) => value * scale;
-const DEV_BYPASS_LOCATION_CHECK = __DEV__;
 
 const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
   const {
@@ -77,12 +76,6 @@ const handleNo = () => {
 };
 
 const handleConfirmLocation = () => {
-  if (true) {
-    setLocationFailVisible(true);
-    return;
-  }
-
-
   const distanceNumber = getDistanceNumber(placeDistance);
 
   if (distanceNumber > LOCATION_LIMIT_M) {
@@ -96,6 +89,7 @@ const handleConfirmLocation = () => {
     placeName,
   });
 };
+
 
 const handleLocationFailConfirm = () => {
   setLocationFailVisible(false);

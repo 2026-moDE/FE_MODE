@@ -29,6 +29,11 @@ export type AppStackParamList = {
   PlaceDetail: { placeId: number; placeName: string; initialTab?: 'current' | 'archived' };
 
   ReviewStack: { screen: keyof ReviewStackParamList; params?: object } | undefined;
+
+  ProfileEdit: {
+    nickname: string;
+    profileImageUrl: string | null;
+  };
 };
 
 // 리뷰 작성 전용 스택
