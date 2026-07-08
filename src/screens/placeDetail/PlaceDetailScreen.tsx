@@ -22,6 +22,7 @@ import {
     subscribe,
     unsubscribe,
 } from '../../api/place';
+import { reportReview } from '../../api/review';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
@@ -141,7 +142,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             <PlaceDetailInfo
                 place={placeDetail}
                 distance={distanceText}
-                // onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
+                onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
             />
 
             {/* 실시간 / 과거 탭 */}
@@ -178,7 +179,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 reviews={reviews}
                 startIndex={imageIndex ?? 0}
                 visible={imageIndex !== null}
+                isOwner={false}
                 onClose={() => setImageIndex(null)}
+                onDelete={() => {}}
+                onReport={() => {}}
             />
 
             {/* 리뷰 바로 쓰기 플로팅 버튼 (사진 클릭시 숨김) */}

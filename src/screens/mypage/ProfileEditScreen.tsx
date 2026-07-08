@@ -6,12 +6,11 @@ import {
   StatusBar,
   TouchableOpacity,
   Dimensions,
-  Image,
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -20,7 +19,10 @@ import {fontFamily} from '../../constants/typography';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {updateMyProfile} from '../../api/mypage';
 
-const pencilIcon = require('../../assets/image/pencil.png');
+import ProfileImageEditor from '../../components/mypage/ProfileImageEditor';
+import {useProfileImageUpload, PickedProfileImage} from '../../hooks/useProfileImageUpload';
+
+const checkBlueIcon = require('../../assets/image/check_blue.png');
 
 const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -34,24 +36,65 @@ export default function ProfileEditScreen() {
   const initialNickname = route.params?.nickname ?? '';
   const profileImageUrl = route.params?.profileImageUrl ?? null;
 
+  const [selectedProfileImageUrl, setSelectedProfileImageUrl] =
+    useState<string | null>(profileImageUrl);
+
+  const [previewImage, setPreviewImage] = useState<PickedProfileImage | null>(
+    null,
+  );
+
+  const {
+    uploading: imageUploading,
+    pickProfileImage,
+    uploadProfileImage,
+  } = useProfileImageUpload();
+
   const [nickname, setNickname] = useState(initialNickname);
+  const [nicknameError, setNicknameError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const nicknameLength = nickname.length;
-  const isNicknameValid = nicknameLength > 0 && nicknameLength <= 8;
+  const trimmedNickname = nickname.trim();
+  const isNicknameValid = trimmedNickname.length > 0;
+  const hasError = nicknameError.length > 0;
+
+  const handlePressImageEdit = async () => {
+    const image = await pickProfileImage();
+
+    if (image) {
+      setPreviewImage(image);
+    }
+  };
+
+  const handleConfirmProfileImage = async () => {
+    if (!previewImage) {
+      return;
+    }
+
+    const imageUrl = await uploadProfileImage(previewImage);
+
+    if (imageUrl) {
+      setSelectedProfileImageUrl(imageUrl);
+      setPreviewImage(null);
+    }
+  };
+
+  const handleCancelProfileImagePreview = () => {
+    setPreviewImage(null);
+  };
 
   const handleSubmit = async () => {
-    if (!isNicknameValid) {
-      Alert.alert('알림', '닉네임은 1자 이상 8자 이하로 입력해주세요.');
+    if (!trimmedNickname) {
+      setNicknameError('닉네임을 입력해주세요');
       return;
     }
 
     try {
       setLoading(true);
+      setNicknameError('');
 
       await updateMyProfile({
-        nickname,
-        profile_image_url: profileImageUrl,
+        nickname: trimmedNickname,
+        profile_image_url: selectedProfileImageUrl,
       });
 
       navigation.goBack();
@@ -61,20 +104,66 @@ export default function ProfileEditScreen() {
       const status = error?.response?.status;
 
       if (status === 409) {
-        Alert.alert('알림', '이미 사용 중인 닉네임이에요.');
+        setNicknameError('이미 사용 중인 닉네임이에요');
         return;
       }
 
       if (status === 400) {
-        Alert.alert('알림', '사용할 수 없는 닉네임이에요.');
+        setNicknameError('사용할 수 없는 닉네임이에요');
         return;
       }
 
-      Alert.alert('알림', '프로필 수정에 실패했어요.');
+      setNicknameError('프로필 수정에 실패했어요');
     } finally {
       setLoading(false);
     }
   };
+
+if (previewImage) {
+  return (
+    <SafeAreaView style={styles.previewContainer} edges={['top']}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="#050509"
+        translucent={false}
+      />
+
+      <View style={styles.previewHeader}>
+        <TouchableOpacity
+          style={styles.previewBackButton}
+          activeOpacity={0.8}
+          onPress={handleCancelProfileImagePreview}>
+          <IconArrowLeft size={px(24)} color="#FFFFFF" />
+        </TouchableOpacity>
+
+        <Text style={styles.previewTitle}>프로필 수정</Text>
+
+        <TouchableOpacity
+          style={styles.previewConfirmButton}
+          activeOpacity={0.8}
+          onPress={handleConfirmProfileImage}
+          disabled={imageUploading}>
+          {imageUploading ? (
+            <Text style={styles.previewConfirmText}>업로드 중...</Text>
+          ) : (
+            <>
+              <Image source={checkBlueIcon} style={styles.previewCheckIcon} />
+              <Text style={styles.previewConfirmText}>확인</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.previewImageWrapper}>
+        <Image
+          source={{uri: previewImage.uri}}
+          style={styles.previewImage}
+          resizeMode="contain"
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -97,56 +186,37 @@ export default function ProfileEditScreen() {
         </View>
 
         <View style={styles.profileArea}>
-          <View style={styles.profileImageBox}>
-            {profileImageUrl ? (
-              <Image
-                source={{uri: profileImageUrl}}
-                style={styles.profileImage}
-                resizeMode="cover"
-              />
-            ) : null}
-
-            <View style={styles.imageEditBadge}>
-              <Image
-                source={pencilIcon}
-                style={styles.imageEditIcon}
-                resizeMode="contain"
-              />
-            </View>
-          </View>
+          <ProfileImageEditor
+            imageUrl={selectedProfileImageUrl}
+            uploading={imageUploading}
+            onPressEdit={handlePressImageEdit}
+          />
         </View>
 
         <View style={styles.inputArea}>
           <TextInput
             value={nickname}
-            onChangeText={setNickname}
+            onChangeText={text => {
+              setNickname(text);
+              setNicknameError('');
+            }}
             style={[
               styles.nicknameInput,
-              !isNicknameValid && nicknameLength > 0 && styles.inputError,
+              hasError && styles.inputError,
             ]}
             placeholder="닉네임"
             placeholderTextColor="#999999"
           />
 
-          <View style={styles.inputInfoRow}>
-            <Text
-              style={[
-                styles.nicknameGuide,
-                !isNicknameValid && nicknameLength > 0 && styles.errorText,
-              ]}>
-              {isNicknameValid
-                ? '사용 가능한 닉네임이에요'
-                : '사용 불가능한 닉네임이에요'}
-            </Text>
-
-            <Text
-              style={[
-                styles.nicknameCount,
-                !isNicknameValid && nicknameLength > 0 && styles.errorText,
-              ]}>
-              {nicknameLength} / 8
-            </Text>
-          </View>
+         <View style={styles.inputInfoRow}>
+          <Text
+            style={[
+              styles.nicknameGuide,
+              hasError && styles.errorText,
+            ]}>
+            {nicknameError || '닉네임을 입력해주세요'}
+          </Text>
+        </View>
         </View>
 
         <TouchableOpacity
@@ -205,39 +275,6 @@ const styles = StyleSheet.create({
     paddingTop: px(15),
   },
 
-  profileImageBox: {
-    width: px(88),
-    height: px(88),
-    borderRadius: px(12),
-    backgroundColor: '#F3F3F3',
-    borderWidth: 1,
-    borderColor: '#E0E0E4',
-    overflow: 'hidden',
-  },
-
-  profileImage: {
-    width: '100%',
-    height: '100%',
-  },
-
-  imageEditBadge: {
-    position: 'absolute',
-    right: px(4),
-    bottom: px(4),
-    width: px(22),
-    height: px(22),
-    borderRadius: px(9),
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  imageEditIcon: {
-    width: px(16),
-    height: px(16),
-    tintColor: '#A3A3AA',
-  },
-
   inputArea: {
     marginTop: px(25),
     paddingHorizontal: px(23),
@@ -275,12 +312,6 @@ const styles = StyleSheet.create({
     color: '#6489F2',
   },
 
-  nicknameCount: {
-    fontSize: px(12),
-    fontFamily: fontFamily.bold,
-    color: '#6489F2',
-  },
-
   errorText: {
     color: '#FF0000',
   },
@@ -306,4 +337,73 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     color: '#FFFFFF',
   },
+
+  previewContainer: {
+    flex: 1,
+    backgroundColor: '#050509',
+  },
+
+  previewHeader: {
+    height: px(64),
+    backgroundColor: '#050509',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: px(20),
+  },
+
+  previewBackButton: {
+    width: px(40),
+    height: px(40),
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    zIndex: 2,
+  },
+
+  previewTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: px(17),
+    fontFamily: fontFamily.bold,
+    color: '#FFFFFF',
+  },
+
+  previewConfirmButton: {
+    width: px(125),
+    height: px(37),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: px(8),
+    zIndex: 2,
+  },
+
+  previewCheckIcon: {
+    width: px(18),
+    height: px(18),
+    resizeMode: 'contain',
+  },
+
+  previewConfirmText: {
+    fontSize: px(16),
+    fontFamily: fontFamily.bold,
+    color: '#FFFFFF',
+  },
+
+  previewImageWrapper: {
+    flex: 1,
+    backgroundColor: '#050509',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: px(20),
+    paddingTop: px(5),
+  },
+
+  previewImage: {
+    width: '100%',
+    height: '96%',
+  },
+  
 });

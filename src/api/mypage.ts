@@ -44,7 +44,7 @@ type GetMyReviewsParams = {
 
 export type UpdateProfileRequest = {
   nickname?: string;
-  profile_image_url?: string;
+  profile_image_url?: string | null;
 };
 
 export type UpdateProfileResponse = {

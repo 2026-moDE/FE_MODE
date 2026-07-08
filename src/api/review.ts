@@ -101,3 +101,11 @@ export async function verifyPlaceLocation(
 
   return response.data.data;
 }
+
+// 리뷰 신고 api
+export async function reportReview(id:number, reason:string) {
+  const response =  await apiClient.post(`/api/reviews/${id}/report`,{reason})
+  return response.data;
+}
+
+// 리뷰 삭제 api

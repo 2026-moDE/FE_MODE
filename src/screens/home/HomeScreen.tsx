@@ -1,10 +1,11 @@
-import React, {useRef, useEffect, useState, useCallback} from "react";
+import React, {useRef, useEffect, useState, useCallback, useMemo} from "react";
 import {View, Text, Image, StyleSheet, ActivityIndicator} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";
 import SearchBar from "../../components/search/SearchBar";
 import LiveBubble from "../../components/home/LiveBubble";
+import ClusterBubble from "../../components/home/ClusterBubble";
 import { useNavigation, CompositeNavigationProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -19,6 +20,7 @@ import IconMapBell from "../../assets/icons/IconMapBell";
 import IconCurrentLocation from "../../assets/icons/IconCurrentLocation";
 import HomeMiniCard from "../../components/home/HomeMiniCard";
 import { getDistance, formatDistance } from "../../utils/distance";
+import Supercluster from "supercluster";
 
 
 // 탭 안에 있지만 스택 화면(Search)으로도 이동해야 해서 두 타입을 합침
@@ -30,6 +32,7 @@ type NavigationProp = CompositeNavigationProp<
 export default function HomeScreen(){
     const navigation = useNavigation<NavigationProp>();
     const mapRef = useRef<NaverMapViewRef>(null);
+    const cameraDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const insets = useSafeAreaInsets(); // 상태바 높이
 
     // 커스텀 훅에서 권한 요청 함수 가져오기
@@ -49,6 +52,7 @@ export default function HomeScreen(){
 
     // 미니 카드에 표시할 리뷰 이미지 (URL + 어느 탭 소속인지)
     const [reviewItems, setReviewItems] = useState<Array<{url: string; type: 'current' | 'archived'}>>([]);
+    
     // 호환: URL만 추출해 미니카드에 전달
     const reviewImages = reviewItems.map(item => item.url);
 
@@ -58,10 +62,118 @@ export default function HomeScreen(){
     // 지도 초기화 완료 여부 (초기화 전 마커 렌더 방지)
     const [mapReady, setMapReady] = useState(false);
 
+    // 클러스터링 zoom
+    const [zoom, setZoom] = useState(14);
+
+    // 클러스터링 bounds
+    const [bounds, setBounds] = useState<[number, number, number, number]>([126.97, 37.56, 126.99, 37.58]);
+
+
+    // 장소 버블 클릭 시 → 장소 미니 카드
+    const handlePlacePress = useCallback(async (place: NearbyPlace) => {
+        console.log('[handlePlacePress] 호출됨, place.id:', place.id);
+        setSelectedPlace(place);
+        setPlaceDetail(null); // 이전 장소 상세 지움
+        setReviewItems([]); // 이전 장소 리뷰 지움
+
+        // 상세 조회
+        try {
+            const detail = await fetchPlaceDetail(place.id);
+            console.log('[fetchPlaceDetail] 응답:', JSON.stringify(detail));
+            setPlaceDetail(detail);
+        } catch (error: any) {
+            console.warn('[fetchPlaceDetail] 실패:', error?.response?.status, error?.message);
+        }
+
+        // 리뷰 조회: current + archived 각각 타입 태그해서 최신순 상위 5개
+        try {
+            const [currentRes, archivedRes] = await Promise.all([
+                fetchCurrentReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
+                fetchArchivedReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
+            ]);
+            const currentTagged = (currentRes.reviews ?? []).map((r: any) => ({
+                url: r.image_url,
+                created_at: r.created_at,
+                type: 'current' as const,
+            }));
+            const archivedTagged = (archivedRes.reviews ?? []).map((r: any) => ({
+                url: r.image_url,
+                created_at: r.created_at,
+                type: 'archived' as const,
+            }));
+            const sortedByLatest = [...currentTagged, ...archivedTagged].sort(
+                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            ); // 내림차순 -> 최신순
+
+            //map반환값이 reviewItems로
+            setReviewItems(sortedByLatest.slice(0, 5).map(({url, type}) => ({url, type})));
+            
+        } catch (error: any) {
+            console.warn('[리뷰 조회] 실패:', error?.message);
+        }
+    }, []);
+
+    // places 바뀔 때마다 supercluster 인스턴스 재생성 (500m 원 안의 장소만)
+    const supercluster = useMemo(() => {
+        const cluster = new Supercluster({ radius: 60, maxZoom: 14, minPoints: 2 });
+        const filtered = location
+            ? places.filter(p => getDistance(location, {latitude: p.latitude, longitude: p.longitude}) <= 500)
+            : places;
+        cluster.load(filtered.map(p => ({
+            type: 'Feature' as const,
+            geometry: {
+                type: 'Point' as const,
+                coordinates: [p.longitude, p.latitude],
+            },
+            properties: { place: p },
+        })));
+        return cluster;
+    }, [places, location]);
+
+    // bounds/zoom 바뀔 때마다 클러스터 계산
+    const clusters = useMemo(() => {
+        return supercluster.getClusters(bounds, Math.floor(zoom));
+    }, [supercluster, bounds, zoom]);
+
+    // 클러스터 버블 클릭 시 → 해당 클러스터가 분리되는 줌으로 카메라 이동
+    const handleClusterPress = useCallback((clusterId: number, latitude: number, longitude: number) => {
+        const clickzoom = supercluster.getClusterExpansionZoom(clusterId);
+        mapRef.current?.animateCameraTo({latitude,longitude,zoom:clickzoom});
+    }, [supercluster]);
+
+    // clusters가 바뀔 때만 마커 elements 새로 생성 (HomeScreen 리렌더 시 깜빡임 방지)
+    const clusterMarkers = useMemo(() => {
+        if (!mapReady) return null;
+        return clusters.map(cluster => {
+            const [lng, lat] = cluster.geometry.coordinates;
+            if (cluster.properties.cluster) {
+                return (
+                    <ClusterBubble
+                        key={`cluster-${cluster.properties.cluster_id}`}
+                        latitude={lat}
+                        longitude={lng}
+                        count={cluster.properties.point_count}
+                        thumbnailUrl={supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place.thumbnail_url}
+                        onPress={() => handleClusterPress(cluster.properties.cluster_id, lat, lng)}
+                    />
+                );
+            }
+            const place = cluster.properties.place;
+            return (
+                <LiveBubble
+                    key={`place-${place.id}`}
+                    place={place}
+                    onPress={handlePlacePress}
+                />
+            );
+        });
+    }, [mapReady, clusters, supercluster, handlePlacePress, handleClusterPress]);
+
     // 컴포넌트가 처음 마운트될 때 위치 권한 요청
     useEffect(() => {
         requestPermission();
     }, []);
+
 
     // 미니카드 떠있을 때 하단 탭바 숨김 (카드 닫으면 복구)
     useEffect(() => {
@@ -113,47 +225,6 @@ export default function HomeScreen(){
         navigation.navigate('Search');
     }, [navigation]);
 
-    // 장소 버블 클릭 시 → 장소 미니 카드
-    const handlePlacePress = useCallback(async (place: NearbyPlace) => {
-        console.log('[handlePlacePress] 호출됨, place.id:', place.id);
-        setSelectedPlace(place);
-        setPlaceDetail(null);
-        setReviewItems([]);
-
-        // 상세 조회
-        try {
-            const detail = await fetchPlaceDetail(place.id);
-            console.log('[fetchPlaceDetail] 응답:', JSON.stringify(detail));
-            setPlaceDetail(detail);
-        } catch (error: any) {
-            console.warn('[fetchPlaceDetail] 실패:', error?.response?.status, error?.message);
-        }
-
-        // 리뷰 조회: current + archived 각각 타입 태그해서 최신순 상위 5개
-        try {
-            const [currentRes, archivedRes] = await Promise.all([
-                fetchCurrentReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
-                fetchArchivedReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
-            ]);
-            const currentTagged = (currentRes.reviews ?? []).map((r: any) => ({
-                url: r.image_url,
-                created_at: r.created_at,
-                type: 'current' as const,
-            }));
-            const archivedTagged = (archivedRes.reviews ?? []).map((r: any) => ({
-                url: r.image_url,
-                created_at: r.created_at,
-                type: 'archived' as const,
-            }));
-            const sortedByLatest = [...currentTagged, ...archivedTagged].sort(
-                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            );
-            setReviewItems(sortedByLatest.slice(0, 5).map(({url, type}) => ({url, type})));
-        } catch (error: any) {
-            console.warn('[리뷰 조회] 실패:', error?.message);
-        }
-    }, []);
-
     // 카드 본체 / 사진 클릭 시 → 장소 상세 (사진은 그 사진의 타입에 따라 탭 결정)
     const handleCardPress = useCallback((imageIndex?: number) => {
         if (!placeDetail) return;
@@ -170,7 +241,7 @@ export default function HomeScreen(){
     const handleCloseCard = useCallback(()=>{
         setSelectedPlace(null);
         setPlaceDetail(null);
-        setReviewImages([]);
+        setReviewItems([]);
     },[]);
 
     // 알림 토글 (벨 아이콘 클릭)
@@ -183,25 +254,29 @@ export default function HomeScreen(){
             is_subscribed: !placeDetail.is_subscribed,
         });
 
-        // ──────────────────────  API 호출  ──────────────────────
-        // try {
-        //     if (previous.is_subscribed) {
-        //         await unsubscribe(previous.id);
-        //     } else {
-        //         await subscribe(previous.id);
-        //     }
-        // } catch (error) {
-        //     console.error('구독 토글 실패:', error);
-        //     setPlaceDetail(previous);
-        // }
+        //──────────────────────  API 호출  ──────────────────────
+        try {
+            if (previous.is_subscribed) {
+                await unsubscribe(previous.id);
+            } else {
+                await subscribe(previous.id);
+            }
+        } catch (error) {
+            console.error('구독 토글 실패:', error);
+            setPlaceDetail(previous);
+        }
     }, [placeDetail]);
+
+    const handleBellPress = () => {
+        navigation.navigate('Notification');
+    };
 
     // 거리 텍스트 계산 (내 위치 + 선택된 장소 둘 다 있을 때만)
     const distanceText = location && selectedPlace && selectedPlace.latitude != null && selectedPlace.longitude != null
         ? `내 위치에서 ${formatDistance(getDistance(location, {latitude: selectedPlace.latitude, longitude: selectedPlace.longitude}))}`
         : undefined;
 
-    // 위치 잡힐 때까지 로딩 화면 (초기 카메라 안 뜨도록)
+    // 위치 잡힐 때까지 로딩 화면
     if (!location) {
         return (
             <View style={[styles.container, styles.loadingContainer]}>
@@ -219,11 +294,24 @@ export default function HomeScreen(){
                 initialCamera={{latitude: location.latitude, longitude: location.longitude, zoom: 16}}
                 isShowLocationButton={false}   // 기본 위치 버튼 숨김 (커스텀 버튼 사용)
                 onTapMap={handleCloseCard}
+                onCameraChanged={(params) => {
+                    if (cameraDebounceRef.current) clearTimeout(cameraDebounceRef.current);
+                    cameraDebounceRef.current = setTimeout(() => {
+                        const { latitude, longitude, latitudeDelta, longitudeDelta } = params.region;
+                        const padLng = longitudeDelta * 0.3;
+                        const padLat = latitudeDelta  * 0.3;
+                        setZoom(params.zoom);
+                        setBounds([
+                            Math.max(longitude - longitudeDelta / 2 - padLng, -180),
+                            Math.max(latitude  - latitudeDelta  / 2 - padLat,  -90),
+                            Math.min(longitude + longitudeDelta / 2 + padLng,  180),
+                            Math.min(latitude  + latitudeDelta  / 2 + padLat,   90),
+                        ]);
+                    }, 150);
+                }}
                 onInitialized={() => {
-                    console.log('[Map] onInitialized');
                     setMapReady(true);
                     setTimeout(() => {
-                        console.log('[Map] setLocationTrackingMode Follow');
                         mapRef.current?.setLocationTrackingMode('Follow');
                     }, 300);
                 }}
@@ -231,13 +319,7 @@ export default function HomeScreen(){
                     console.log('[Map] onOptionChanged:', params.locationTrackingMode);
                 }}>
 
-                {mapReady && places.map(place => (
-                    <LiveBubble
-                        key={`${place.id}-${readyUrls.has(place.thumbnail_url ?? '')}`}
-                        place={place}
-                        onPress={handlePlacePress}
-                    />
-                ))}
+                {clusterMarkers}
             </MapView>
 
             {/* 커스텀 현위치 버튼 */}
@@ -249,7 +331,6 @@ export default function HomeScreen(){
             />
 
             {/* 지도 검색창 + 알림 버튼 */}
-            {/* ⚠️ 시연용 임시: 알림 버튼 숨김 (복구 시 아래 주석 풀고 위 SearchBar 단독 블록 제거) */}
             <View style={[styles.searchBarWrapper, { top: insets.top + 10 }]}>
                 <SearchBar
                     value={''}
@@ -257,10 +338,14 @@ export default function HomeScreen(){
                     onChangeText={() => {}}
                     onFocus={handleSearchFocus}
                     backgroundColor={colors.surface.white}
-                    width={361} // 검색창 잠깐 폭 늘려둠
+                    width={317}
                 />
-                {/* 데모에서만 ui잠깐 없앰 */}
-                {/* <IconMapBell size={18} color={colors.icon.basic} /> */}
+    
+                { <IconMapBell
+                    size={18}
+                    color={colors.icon.basic}
+                    onPress={handleBellPress}
+                    /> }
             </View>
 
             {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 */}
@@ -281,7 +366,7 @@ export default function HomeScreen(){
                         place={placeDetail}
                         distance={distanceText}
                         images={reviewImages}
-                        // onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
+                        onToggleSubscribe={handleToggleSubscribe}
                         onPress={handleCardPress}
                     />
                 </View>
