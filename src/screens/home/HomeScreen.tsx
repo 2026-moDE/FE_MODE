@@ -113,10 +113,13 @@ export default function HomeScreen(){
         }
     }, []);
 
-    // places 바뀔 때마다 supercluster 인스턴스 재생성
+    // places 바뀔 때마다 supercluster 인스턴스 재생성 (500m 원 안의 장소만)
     const supercluster = useMemo(() => {
         const cluster = new Supercluster({ radius: 60, maxZoom: 14, minPoints: 2 });
-        cluster.load(places.map(p => ({
+        const filtered = location
+            ? places.filter(p => getDistance(location, {latitude: p.latitude, longitude: p.longitude}) <= 500)
+            : places;
+        cluster.load(filtered.map(p => ({
             type: 'Feature' as const,
             geometry: {
                 type: 'Point' as const,
@@ -125,7 +128,7 @@ export default function HomeScreen(){
             properties: { place: p },
         })));
         return cluster;
-    }, [places]);
+    }, [places, location]);
 
     // bounds/zoom 바뀔 때마다 클러스터 계산
     const clusters = useMemo(() => {
