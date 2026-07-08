@@ -1,19 +1,41 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {View, Text, Image, Pressable, Modal, StyleSheet, Animated, PanResponder} from 'react-native';
+import {View, Text, Image, Pressable, Modal, StyleSheet, Animated, PanResponder, ScrollView, Dimensions} from 'react-native';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {formatRelativeTime} from './ReviewCard';
+import {fontSize} from '../../constants/typography';
+import ReviewActionModal from './ReviewActionModal';
 
 type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
     startIndex: number;
-    visible: boolean;
+    visible: boolean; // 리뷰 사진 모달 클릭 여부
+    isOwner: boolean;
     onClose: () => void;
+    onDelete: () => void;
+    onReport: () => void;
 };
 
-export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Props) {
+const THUMBNAIL_WIDTH = 40;
+const THUMBNAIL_GAP = 10;
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+// 하단 리뷰 중앙 정렬을 위한 패딩
+const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
+
+export default function ReviewPhoto({reviews, startIndex, visible, isOwner, onClose, onDelete, onReport}: Props) {
+    // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
+    // ⋮ 클릭 모달 여부
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({top: 0, right: 0});
+    const ellipsisRef = useRef<any>(null);
+    const thumbnailScrollRef = useRef<ScrollView>(null);
+
+    // image_url 있는 리뷰만 썸네일로, 원래 index 보존
+    const thumbnailReviews = reviews
+        .map((r, i) => ({...r, originalIndex: i}))  // originalIndex 필드를 추가 (filter할 때 없어지는 index위함)
+        .filter(r => r.image_url);
 
     // 스와이프 닫기용 위치 값 (Animated)
     const translateY = useRef(new Animated.Value(0)).current;
@@ -23,8 +45,27 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
         if (visible) {
             setCurrentIndex(startIndex);
             translateY.setValue(0);
+        } else {
+            setMenuOpen(false);
         }
     }, [visible, startIndex, translateY]);
+
+    // 썸네일 스크롤 끝났을 때 가운데 있는 것을 currentIndex로
+    const handleThumbnailScrollEnd = (e: any) => {
+        const scrollX = e.nativeEvent.contentOffset.x;  // x방향으로 스크롤된 정도
+        const thumbIdx = Math.round(scrollX / (THUMBNAIL_WIDTH + THUMBNAIL_GAP)); // 반올림해서 스크롤값을 인덱스값으로 
+        const clamped = Math.max(0, Math.min(thumbnailReviews.length - 1, thumbIdx)); // 인덱스는 0~length 사이로 오게끔 방어
+        setCurrentIndex(thumbnailReviews[clamped].originalIndex);
+    };
+
+    // currentIndex 바뀔 때 썸네일 가운데로 스크롤
+    useEffect(() => {
+        const thumbIdx = thumbnailReviews.findIndex(r => r.originalIndex === currentIndex);
+        if (thumbIdx < 0) return;
+        const offset = thumbIdx * (THUMBNAIL_WIDTH + THUMBNAIL_GAP); // 인덱스 활용해서 스크롤값 계산
+        thumbnailScrollRef.current?.scrollTo({x: offset, animated: true});
+    }, [currentIndex]);
+
 
     const review = reviews[currentIndex];
 
@@ -52,7 +93,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
                         duration: 200,
                         useNativeDriver: true,
                     }).start(() => {
-                        onClose();
+                        onClose(); // start함수에 콜백 넣으면 애니메이션 시작 후 끝난 다음에 실행
                     });
                 } else {
                     Animated.spring(translateY, {
@@ -67,6 +108,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
     if (!review) return null;
 
     return (
+        <>
         <Modal
             visible={visible}
             transparent
@@ -74,72 +116,121 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose}: Pro
             onRequestClose={onClose}>
             {/* 어두운 배경 (상하단 검은 여백) */}
             <View style={styles.backdrop}>
-                {/* 이미지 컨테이너 (3:4 비율 + 스와이프 시 같이 이동) */}
                 <Animated.View
-                    style={[styles.imageWrapper, {transform: [{translateY}]}]}
+                    style={{transform: [{translateY}]}}
                     {...panResponder.panHandlers}>
-                    {/* 이미지 */}
-                    <Image
-                        source={{uri: review.image_url}}
-                        style={styles.image}
-                        resizeMode="cover"
-                        resizeMethod="resize"
-                    />
 
-                    {/* 좌측 탭 영역: 이전 사진 */}
-                    <Pressable
-                        style={[styles.tapZone, styles.leftZone]}
-                        onPress={handlePrev}
-                    />
+                    <View style={styles.imageWrapper}>
+                        {/* 이미지 */}
+                        <Image
+                            source={{uri: review.image_url}}
+                            style={styles.image}
+                            resizeMode="cover"
+                            resizeMethod="resize"
+                        />
 
-                    {/* 우측 탭 영역: 다음 사진 */}
-                    <Pressable
-                        style={[styles.tapZone, styles.rightZone]}
-                        onPress={handleNext}
-                    />
+                        {/* 좌측 탭 영역: 이전 사진 */}
+                        <Pressable
+                            style={[styles.tapZone, styles.leftZone]}
+                            onPress={handlePrev}
+                        />
 
-                    {/* ── 닫기 버튼: 원 + 반원이 이미지 상단 중앙에 걸침 ── */}
-                    <View style={styles.closeOuter}>
-                        <Pressable onPress={onClose} style={styles.xCircle} hitSlop={16}>
-                            <Text style={styles.closeIcon}>✕</Text>
+                        {/* 우측 탭 영역: 다음 사진 */}
+                        <Pressable
+                            style={[styles.tapZone, styles.rightZone]}
+                            onPress={handleNext}
+                        />
+
+                        {/* ── 닫기 버튼: 원 + 반원이 이미지 상단 중앙에 걸침 ── */}
+                        <View style={styles.closeOuter}>
+                            <Pressable onPress={onClose} style={styles.xCircle} hitSlop={16}>
+                                <Text style={styles.closeIcon}>✕</Text>
+                            </Pressable>
+                            {/* <View style={styles.semicircle} /> */}
+                        </View>
+
+                        {/* ── 상단: 사용자 (이미지 위에 오버레이) ── */}
+                        <View style={styles.topRow}>
+                            <View style={styles.userGroup}>
+                                <Image
+                                    source={{uri: review.user.profile_image_url}}
+                                    style={styles.avatar}
+                                />
+                                <Text style={styles.nickname} numberOfLines={1}>
+                                    {review.user.nickname}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* ── 우측 상단 ⋮ 버튼 ──  */}
+                        <Pressable
+                            ref={ellipsisRef}
+                            style={styles.verticalEllipsis}
+                            hitSlop={14}
+                            onPress={() => {
+                                ellipsisRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+                                    setMenuPosition({
+                                        top: y + height + 4,
+                                        right: SCREEN_WIDTH - x - width / 2 - 16,
+                                    });
+                                    setMenuOpen(true);
+                                });
+                            }}>
+                            <Text style={styles.verticalEllipsisIcon}>⋮</Text>
                         </Pressable>
-                        {/* <View style={styles.semicircle} /> */}
+
+                        {/* ── 중하단: 시간 + 코멘트 (이미지 위 가운데~하단) ── */}
+                        <View style={styles.commentArea} pointerEvents="none">
+                            <View style={styles.timeBadge}>
+                                <Text style={styles.timeText}>
+                                    {formatRelativeTime(review.created_at)}
+                                </Text>
+                            </View>
+                            <Text style={styles.comment}>{review.comment}</Text>
+                        </View>
+
                     </View>
 
-                    {/* ── 상단: 사용자 (이미지 위에 오버레이) ── */}
-                    <View style={styles.topRow}>
-                        <View style={styles.userGroup}>
-                            <Image
-                                source={{uri: review.user.profile_image_url}}
-                                style={styles.avatar}
-                            />
-                            <Text style={styles.nickname} numberOfLines={1}>
-                                {review.user.nickname}
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* ── 중하단: 시간 + 코멘트 (이미지 위 가운데~하단) ── */}
-                    <View style={styles.commentArea} pointerEvents="none">
-                        <View style={styles.timeBadge}>
-                            <Text style={styles.timeText}>
-                                {formatRelativeTime(review.created_at)}
-                            </Text>
-                        </View>
-                        <Text style={styles.comment}>{review.comment}</Text>
-                    </View>
-
-                    {/* 페이지 인디케이터 (여러 사진일 때) */}
-                    {reviews.length > 1 && (
-                        <View style={styles.indicator} pointerEvents="none">
-                            <Text style={styles.indicatorText}>
-                                {/* {currentIndex + 1} / {reviews.length} */}
-                            </Text>
-                        </View>
+                    {/* 하단 썸네일 스트립 - Animated.View 안에 있어서 스와이프시 함께 이동 */}
+                    {thumbnailReviews.length > 1 && (
+                        <ScrollView
+                            ref={thumbnailScrollRef}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.thumbnailStrip}
+                            contentContainerStyle={[styles.thumbnailContent, {paddingHorizontal: THUMBNAIL_PADDING}]}
+                            decelerationRate="fast"
+                            snapToInterval={THUMBNAIL_WIDTH + THUMBNAIL_GAP} // 간격 맞춰서 스크롤 딱딱 되게
+                            onMomentumScrollEnd={handleThumbnailScrollEnd}
+                            onScrollEndDrag={handleThumbnailScrollEnd}>
+                            {thumbnailReviews.map(r => (
+                                <Pressable key={r.id} onPress={() => setCurrentIndex(r.originalIndex)}>
+                                    <Image
+                                        source={{uri: r.image_url!}}
+                                        style={styles.thumbnail}
+                                        resizeMode="cover"
+                                        resizeMethod="resize"
+                                    />
+                                    {r.originalIndex !== currentIndex && (
+                                        <View style={styles.thumbnailDim} />
+                                    )}
+                                </Pressable>
+                            ))}
+                        </ScrollView>
                     )}
                 </Animated.View>
             </View>
         </Modal>
+
+        <ReviewActionModal
+            visible={menuOpen}
+            isOwner={isOwner}
+            position={menuPosition}
+            onClose={() => setMenuOpen(false)}
+            onDelete={onDelete}
+            onReport={onReport}
+        />
+        </>
     );
 }
 
@@ -150,11 +241,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
 
+// ─────────────────── 리뷰 사진 관련  ─────────────────── 
     imageWrapper: {
         width: '100%',
         aspectRatio: 3 / 4,
         borderRadius: radius.xl,
         backgroundColor: colors.surface.muted,
+        marginBottom : 10,
     },
     image: {
         width: '100%',
@@ -175,6 +268,7 @@ const styles = StyleSheet.create({
         right: 0,
     },
 
+// ─────────────────── X버튼 관련  ─────────────────── 
     closeOuter: {
         position: 'absolute',
         top: -27,
@@ -192,6 +286,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
 
+        closeIcon: {
+        color: colors.text.inverse,
+        fontSize: 30,
+        fontWeight: '400',
+    },
+
+// ─────────────────── 리뷰 프로필 관련  ─────────────────── 
     topRow: {
         position: 'absolute',
         top: 16,
@@ -208,43 +309,39 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     avatar: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         backgroundColor: colors.surface.muted,
         borderColor: colors.surface.white,
     },
     nickname: {
         color: colors.text.inverse,
-        fontSize: 14,
+        fontSize: fontSize.b1,
         fontWeight: '700',
         flexShrink: 1,
         textShadowColor: 'rgba(0,0,0,0.5)',
         textShadowOffset: {width: 0, height: 1},
         textShadowRadius: 3,
     },
-    closeIcon: {
-        color: colors.text.inverse,
-        fontSize: 30,
-        fontWeight: '400',
-    },
 
-    indicator: {
+    // ─────────────────── 점3개 관련  ─────────────────── 
+    verticalEllipsis:{
         position: 'absolute',
         top: 16,
-        alignSelf: 'center',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: 9999,
-        paddingHorizontal: 10,
-        paddingVertical: 3,
-        zIndex: 1,
+        right: 25,
+        zIndex: 2,
+        height: 30,
+        width : 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    indicatorText: {
+    verticalEllipsisIcon: {
         color: colors.text.inverse,
-        fontSize: 12,
-        fontWeight: '500',
+        fontSize: 20,
     },
 
+// ─────────────────── 텍스트 관련  ─────────────────── 
     commentArea: {
         position: 'absolute',
         top: '40%',
@@ -255,6 +352,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         zIndex: 1,
     },
+
+    // ─────────────────── 작성 시간 관련  ─────────────────── 
     timeBadge: {
         backgroundColor: 'rgba(0,0,0,0.5)',
         borderRadius: 9999,
@@ -274,5 +373,31 @@ const styles = StyleSheet.create({
         textShadowColor: 'rgba(0,0,0,0.7)',
         textShadowOffset: {width: 0, height: 1},
         textShadowRadius: 4,
+    },
+// ─────────────────── 하단 리뷰 관련  ─────────────────── 
+    thumbnailStrip: {
+        width: '100%',
+        
+        
+    },
+    thumbnailContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        gap: THUMBNAIL_GAP,
+    },
+    thumbnail: {
+        width: THUMBNAIL_WIDTH,
+        aspectRatio: 3 / 4,
+        borderRadius: 8,
+    },
+    thumbnailDim: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 8,
+        backgroundColor: 'rgba(0,0,0,0.55)',
     },
 });

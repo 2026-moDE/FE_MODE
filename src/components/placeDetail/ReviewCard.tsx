@@ -98,12 +98,10 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     avatar: {
-        width: 22,
-        height: 22,
+        width: 18,
+        height: 18,
         borderRadius: radius.full,
         backgroundColor: colors.surface.muted,
-        borderWidth: 1,
-        borderColor: colors.surface.white,
     },
     nickname: {
         ...typography.caption1,

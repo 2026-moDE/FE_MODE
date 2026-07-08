@@ -58,10 +58,10 @@ export default function PlaceDetailInfo({
                 </View>
 
                 {/* 영업 시간 */}
-                <View style={styles.infoRow}>
+                {/* <View style={styles.infoRow}>
                     <IconClock size={24} color={colors.icon.subtle} />
                     <Text style={styles.businessText}>{business_hours}</Text>
-                </View>
+                </View> */}
             </View>
         </View>
     );
