@@ -6,10 +6,12 @@ import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 
 // 혼잡도별 테두리 색 매핑
-const CONGESTION_COLORS: Record<CongestionLevel, string> = {
-    LOW:    '#84E588',   // 여유
-    MEDIUM: '#FFD75E',   // 보통
-    HIGH:   '#FF685D',   // 혼잡
+const CONGESTION_COLORS: Partial<Record<CongestionLevel, string>> = {
+    LOW:      '#84E588',   // 여유
+    MODERATE: '#FFD75E',   // 보통
+    MEDIUM:   '#FFD75E',   // 보통 (별칭)
+    CROWDED:  '#FF685D',   // 혼잡
+    HIGH:     '#FF685D',   // 혼잡 (별칭)
 };
 
 type Props = {
