@@ -21,15 +21,27 @@ export type TabParamList = {
 export type AppStackParamList = {
   Tab: undefined;
   Search:
-      | {
+    | {
         reviewPhotoUri?: string;
       }
     | undefined;
 
-  PlaceDetail: { placeId: number; placeName: string; initialTab?: 'current' | 'archived' };
+  PlaceDetail: {
+    placeId: number;
+    placeName: string;
+    initialTab?: 'current' | 'archived';
+  };
 
-  ReviewStack: { screen: keyof ReviewStackParamList; params?: object } | undefined;
-  Notification : undefined;
+  ReviewStack:
+    | {screen: keyof ReviewStackParamList; params?: object}
+    | undefined;
+
+  ProfileEdit: {
+    nickname: string;
+    profileImageUrl: string | null;
+  };
+
+  Notification: undefined;
 };
 
 // 리뷰 작성 전용 스택
