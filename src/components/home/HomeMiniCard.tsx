@@ -33,7 +33,7 @@ export default function HomeMiniCard({
     return (
         <View style={styles.container}>
             {/* 상단: 카테고리 태그 + 장소명 + 알림 */}
-            <Pressable onPress={onPress}>
+            <Pressable onPress={() => onPress?.()}>
                 <View style={styles.headerRow}>
                     <View style={styles.titleGroup}>
                         <View style={styles.categoryTag}>
@@ -57,7 +57,7 @@ export default function HomeMiniCard({
             </Pressable>
 
             {/* 주소 + 거리 + 영업 시간 */}
-            <Pressable onPress={onPress}>
+            <Pressable onPress={() => onPress?.()}>
                 <View style={styles.infoGroup}>
                     {/* 주소 행 */}
                     <View style={styles.infoRow}>

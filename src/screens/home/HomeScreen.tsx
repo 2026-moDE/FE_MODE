@@ -300,7 +300,7 @@ export default function HomeScreen(){
                         const { latitude, longitude, latitudeDelta, longitudeDelta } = params.region;
                         const padLng = longitudeDelta * 0.3;
                         const padLat = latitudeDelta  * 0.3;
-                        setZoom(params.zoom);
+                        setZoom(params.zoom ?? 14);
                         setBounds([
                             Math.max(longitude - longitudeDelta / 2 - padLng, -180),
                             Math.max(latitude  - latitudeDelta  / 2 - padLat,  -90),
