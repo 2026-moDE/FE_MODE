@@ -16,6 +16,12 @@ export const socialLoginApi = async ({
   accessToken: string;
   fcmToken?: string;
 }) => {
+  console.log('[소셜 로그인 요청]', {
+    provider,
+    accessToken,
+    fcmToken,
+  });
+  
   const response = await fetch(`${BASE_URL}/api/auth/social-login`, {
     method: 'POST',
     headers: {

@@ -15,6 +15,8 @@ import {useAuth} from '../../context/AuthContext';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
+import {getFcmToken} from '../../utils/fcm';
+
 import type {AuthStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
 
@@ -37,9 +39,12 @@ export default function LoginScreen({navigation}: Props) {
       const kakaoToken = await loginWithKakaoAccount();
       console.log('[2] 카카오 토큰 획득:', kakaoToken.accessToken);
 
+      const fcmToken = await getFcmToken();
+
       const result = await socialLoginApi({
         provider: 'KAKAO',
         accessToken: kakaoToken.accessToken,
+        fcmToken,
       });
 
       console.log('[3] 백엔드 응답:', JSON.stringify(result));
