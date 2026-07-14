@@ -116,9 +116,10 @@ export default function HomeScreen(){
     // places 바뀔 때마다 supercluster 인스턴스 재생성 (500m 원 안의 장소만)
     const supercluster = useMemo(() => {
         const cluster = new Supercluster({ radius: 60, maxZoom: 14, minPoints: 2 });
-        const filtered = location
-            ? places.filter(p => getDistance(location, {latitude: p.latitude, longitude: p.longitude}) <= 500)
-            : places;
+        // const filtered = location && zoom >= 14
+        //     ? places.filter(p => getDistance(location, {latitude: p.latitude, longitude: p.longitude}) <= 500)
+        //     : places;
+        const filtered = places;
         cluster.load(filtered.map(p => ({
             type: 'Feature' as const,
             geometry: {
@@ -128,7 +129,7 @@ export default function HomeScreen(){
             properties: { place: p },
         })));
         return cluster;
-    }, [places, location]);
+    }, [places, location, zoom]);
 
     // bounds/zoom 바뀔 때마다 클러스터 계산
     const clusters = useMemo(() => {
@@ -291,6 +292,7 @@ export default function HomeScreen(){
 
             <MapView
                 ref={mapRef}
+                // showCircle={zoom >= 14} // 파란 원 반경
                 initialCamera={{latitude: location.latitude, longitude: location.longitude, zoom: 16}}
                 isShowLocationButton={false}   // 기본 위치 버튼 숨김 (커스텀 버튼 사용)
                 onTapMap={handleCloseCard}

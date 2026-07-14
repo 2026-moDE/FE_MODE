@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, Image, Pressable, StyleSheet} from 'react-native';
+import {View, Text, Image, Pressable, StyleSheet, PixelRatio} from 'react-native';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
@@ -7,6 +7,8 @@ import {Notification} from '../../types/notifications';
 import {formatRelativeTime} from '../placeDetail/ReviewCard';
 
 const IconRun = require('../../assets/icons/IconRun.png');
+// 기기마다 화면 밀도 차이로 ui깨짐
+const ICON_SIZE = PixelRatio.roundToNearestPixel(40 / PixelRatio.get()); 
 
 type Props = {
     item: Notification;
@@ -48,8 +50,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface.white,
     },
     icon: {
-        width: 40,
-        height: 40,
+        width: ICON_SIZE,
+        height: ICON_SIZE,
         resizeMode: 'contain',
     },
     iconRead: {

@@ -38,11 +38,12 @@ export default function ReviewActionModal({visible, isOwner, position, onClose, 
         return (
             <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
                 <Pressable style={styles.overlay} onPress={onClose}>
-                    <View style={[styles.menuContainer, {top: position.top, right: position.right}]}>
+                    <View style={[styles.menuContainer, {top: position.top, right: position.right}]} onStartShouldSetResponder={() => true}>
                         <View style={styles.triangle} />
                         <View style={styles.menu}>
                             <Pressable
                                 style={styles.menuItem}
+                                hitSlop={12}
                                 onPress={() => setStep('confirm')}>
                                 {isOwner ? (
                                     <>

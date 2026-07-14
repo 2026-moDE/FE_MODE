@@ -82,7 +82,8 @@ export type CurrentReview = {
     congestion_level: CongestionLevel;
     comment: string;
     helpful_count: number;
-    is_helpful: boolean;          
+    is_helpful: boolean;
+    is_mine : boolean;          
     user: ReviewUser;             
     created_at: string;
 };
@@ -100,6 +101,7 @@ export type ArchivedReview = {
     congestion_level: CongestionLevel;
     comment: string;
     helpful_count: number;
+    is_mine : boolean; 
     user: ReviewUser;
     created_at: string;
 };
