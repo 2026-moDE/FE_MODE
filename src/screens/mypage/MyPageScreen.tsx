@@ -1,4 +1,4 @@
-﻿import React, {useRef, useState} from 'react';
+﻿import React, {useCallback, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -7,16 +7,20 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 
 import {fontFamily} from '../../constants/typography';
 import ProfileSection from '../../components/mypage/ProfileSection';
 import ReviewSection from '../../components/mypage/ReviewSection';
-import MapView from '../../components/map/MapView';
+import MyMapSection from '../../components/mypage/MyMapSection';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
+import {logoutApi} from '../../api/auth';
+import {useAuth} from '../../context/AuthContext';
+import {getMyProfile, MyProfile} from '../../api/mypage';
 
 const settingIcon = require('../../assets/image/setting.png');
 
@@ -31,6 +35,46 @@ export default function MypageScreen() {
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<TabType>('review');
   const mapRef = useRef<NaverMapViewRef>(null);
+  const {setIsLoggedIn} = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [profile, setProfile] = useState<MyProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      const result = await getMyProfile();
+
+      console.log('[프로필 재조회 성공]', result);
+      setProfile(result);
+    } catch (error) {
+      console.log('[프로필 재조회 실패]', error);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile]),
+  );
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    try {
+      setIsLoggingOut(true);
+      await logoutApi();
+      setIsLoggedIn(false);
+    } catch (error) {
+      console.log('[로그아웃 실패]', error);
+      Alert.alert('로그아웃 실패', '잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -56,7 +100,23 @@ export default function MypageScreen() {
           </TouchableOpacity>
         </View>
 
-        <ProfileSection />
+        <ProfileSection
+          profile={profile}
+          isLoading={isProfileLoading}
+        />
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[
+            styles.logoutButton,
+            isLoggingOut && styles.logoutButtonDisabled,
+          ]}
+          onPress={handleLogout}
+          disabled={isLoggingOut}>
+          <Text style={styles.logoutButtonText}>
+            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+          </Text>
+        </TouchableOpacity>
 
         <View style={styles.tabRow}>
           <TouchableOpacity
@@ -98,18 +158,9 @@ export default function MypageScreen() {
         {activeTab === 'review' ? (
           <ReviewSection />
         ) : (
-          <View style={styles.myMapContainer}>
-            <MapView
-              ref={mapRef}
-              initialCamera={{
-                latitude: 37.5665,
-                longitude: 126.978,
-                zoom: 6,
-              }}
-              isShowLocationButton={false}
-            />
-          </View>
+          <MyMapSection mapRef={mapRef} />
         )}
+
       </View>
     </SafeAreaView>
   );
@@ -153,6 +204,30 @@ const styles = StyleSheet.create({
     tintColor: '#2C343F',
   },
 
+  logoutButton: {
+    alignSelf: 'center',
+    minWidth: px(96),
+    height: px(34),
+    paddingHorizontal: px(18),
+    marginBottom: px(14),
+    borderRadius: px(17),
+    borderWidth: 1,
+    borderColor: '#E0E0E4',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+
+  logoutButtonDisabled: {
+    opacity: 0.5,
+  },
+
+  logoutButtonText: {
+    fontSize: px(13),
+    fontFamily: fontFamily.medium,
+    color: '#5C5D68',
+  },
+
   tabRow: {
     height: px(38),
     flexDirection: 'row',
@@ -190,10 +265,5 @@ const styles = StyleSheet.create({
 
   activeLineRight: {
     marginLeft: SCREEN_WIDTH / 2,
-  },
-
-  myMapContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
   },
 });
