@@ -1,5 +1,6 @@
 import React from 'react';
-import {View, Image, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
@@ -30,11 +31,10 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
             <View collapsable={false} style={styles.container}>
                 <View collapsable={false} style={styles.bubble}>
                     {thumbnailUrl ? (
-                        <Image
-                            source={{uri: thumbnailUrl}}
+                        <FastImage
+                            source={{uri: thumbnailUrl, priority: FastImage.priority.high}}
                             style={styles.thumbnail}
-                            resizeMode="cover"
-                            resizeMethod="resize"
+                            resizeMode={FastImage.resizeMode.cover}
                         />
                     ) : null}
                     {/* 숫자 오버레이 */}

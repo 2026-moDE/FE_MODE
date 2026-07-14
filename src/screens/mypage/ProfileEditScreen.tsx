@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
@@ -155,10 +156,10 @@ if (previewImage) {
       </View>
 
       <View style={styles.previewImageWrapper}>
-        <Image
+        <FastImage
           source={{uri: previewImage.uri}}
           style={styles.previewImage}
-          resizeMode="contain"
+          resizeMode={FastImage.resizeMode.contain}
         />
       </View>
     </SafeAreaView>

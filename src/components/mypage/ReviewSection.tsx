@@ -5,10 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  Image,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {Shadow} from 'react-native-shadow-2';
 
 import {fontFamily} from '../../constants/typography';
@@ -139,10 +139,10 @@ export default function ReviewSection({profile}: Props) {
                   style={styles.reviewShadow}>
                   <View style={styles.reviewImageBox}>
                     {review.image_url ? (
-                      <Image
+                      <FastImage
                         source={{uri: review.image_url}}
                         style={styles.reviewImage}
-                        resizeMode="cover"
+                        resizeMode={FastImage.resizeMode.cover}
                       />
                     ) : (
                       <>

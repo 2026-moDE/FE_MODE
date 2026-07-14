@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 
 const pencilIcon = require('../../assets/image/pencil.png');
 
@@ -30,10 +31,10 @@ export default function ProfileImageEditor({
     <View style={styles.profileImageWrapper}>
       <View style={styles.profileImageBox}>
         {imageUrl ? (
-          <Image
+          <FastImage
             source={{uri: imageUrl}}
             style={styles.profileImage}
-            resizeMode="cover"
+            resizeMode={FastImage.resizeMode.cover}
           />
         ) : null}
       </View>

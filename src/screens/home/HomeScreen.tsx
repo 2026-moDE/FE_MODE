@@ -1,5 +1,6 @@
 import React, {useRef, useEffect, useState, useCallback, useMemo} from "react";
-import {View, Text, Image, StyleSheet, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";
@@ -352,12 +353,12 @@ export default function HomeScreen(){
 
             {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 */}
             {places.map(place => place.thumbnail_url && !readyUrls.has(place.thumbnail_url) ? (
-                <Image
+                <FastImage
                     key={place.id}
-                    source={{uri: place.thumbnail_url}}
+                    source={{uri: place.thumbnail_url, priority: FastImage.priority.high}}
                     style={styles.preloader}
-                    resizeMethod="resize"
-                    onLoad={() => setTimeout(() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!])), 100)}
+                    resizeMode={FastImage.resizeMode.cover}
+                    onLoad={() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!]))}
                     onError={() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!]))}
                 />
             ) : null)}

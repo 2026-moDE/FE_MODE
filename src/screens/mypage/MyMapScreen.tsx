@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
@@ -277,10 +277,10 @@ export default function MyMapScreen({navigation}: Props) {
                   key={review.id}
                   activeOpacity={0.85}
                   onPress={() => setImageIndex(index)}>
-                  <Image
+                  <FastImage
                     source={{uri: review.image_url!}}
                     style={styles.photoGridItem}
-                    resizeMode="cover"
+                    resizeMode={FastImage.resizeMode.cover}
                   />
                 </TouchableOpacity>
               ))}
@@ -292,10 +292,10 @@ export default function MyMapScreen({navigation}: Props) {
                   key={review.id}
                   activeOpacity={0.85}
                   onPress={() => setImageIndex(index)}>
-                  <Image
+                  <FastImage
                     source={{uri: review.image_url!}}
                     style={styles.photoGridItem}
-                    resizeMode="cover"
+                    resizeMode={FastImage.resizeMode.cover}
                   />
                 </TouchableOpacity>
               ))}

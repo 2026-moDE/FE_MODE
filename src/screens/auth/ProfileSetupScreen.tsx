@@ -6,9 +6,8 @@ import {
   TextInput,
   Pressable,
   StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-  Image
+  Image,
+  ScrollView,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -66,51 +65,51 @@ const ProfileSetupScreen = ({navigation}: Props) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>프로필설정</Text>
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>프로필설정</Text>
+      </View>
 
-        <View style={styles.content}>
-          <View style={styles.profileSection}>
-            <View style={styles.imageBox}>
-              <View style={styles.checkPattern} />
-            </View>
-
-            <Pressable style={styles.editButton}>
-              <Image source={pencilIcon} style={styles.pencilIcon} />
-            </Pressable>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}>
+        <View style={styles.profileSection}>
+          <View style={styles.imageBox}>
+            <View style={styles.checkPattern} />
           </View>
 
-          <View style={styles.inputSection}>
-            <Text style={styles.label}>닉네임</Text>
-
-            <TextInput
-              style={styles.input}
-              value={nickname}
-              onChangeText={setNickname}
-              placeholder="닉네임을 입력해주세요."
-              placeholderTextColor="#A3A3AA"
-              maxLength={12}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        </View>
-
-        <View style={styles.bottomArea}>
-          <Pressable
-            style={[
-              styles.nextButton,
-              !isActive && styles.nextButtonInactive,
-            ]}
-            onPress={handleNext}>
-            <Text style={styles.nextButtonText}>다음</Text>
+          <Pressable style={styles.editButton}>
+            <Image source={pencilIcon} style={styles.pencilIcon} />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+
+        <View style={styles.inputSection}>
+          <Text style={styles.label}>닉네임</Text>
+
+          <TextInput
+            style={styles.input}
+            value={nickname}
+            onChangeText={setNickname}
+            placeholder="닉네임을 입력해주세요."
+            placeholderTextColor="#A3A3AA"
+            maxLength={12}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+      </ScrollView>
+
+      <View style={styles.bottomArea}>
+        <Pressable
+          style={[
+            styles.nextButton,
+            !isActive && styles.nextButtonInactive,
+          ]}
+          onPress={handleNext}>
+          <Text style={styles.nextButtonText}>다음</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -137,7 +136,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: 27,
+    flexGrow: 1,
   },
   profileSection: {
     width: 178,

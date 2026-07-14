@@ -1,5 +1,6 @@
 import React from 'react';
-import {View, Image, StyleSheet} from 'react-native';
+import {View, StyleSheet} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import {NearbyPlace, CongestionLevel} from '../../types/place';
 import {colors} from '../../constants/colors';
@@ -44,11 +45,10 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress}: Props) {
                         {borderColor: congestionColor ?? colors.surface.white},
                     ]}>
                     {place.thumbnail_url ? (
-                        <Image
-                            source={{uri: place.thumbnail_url}}
+                        <FastImage
+                            source={{uri: place.thumbnail_url, priority: FastImage.priority.high}}
                             style={styles.thumbnail}
-                            resizeMode="cover"
-                            resizeMethod="resize"
+                            resizeMode={FastImage.resizeMode.cover}
                         />
                     ) : null}
                 </View>
