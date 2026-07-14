@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,10 @@ import {
 import {Shadow} from 'react-native-shadow-2';
 
 import {fontFamily} from '../../constants/typography';
-import {getMyReviews, MyReview} from '../../api/mypage';
+import {getMyReviews, MyReview, MyProfile} from '../../api/mypage';
+import {CurrentReview} from '../../types/place';
+import ReviewPhoto from '../placeDetail/ReviewPhoto';
+import {deleteReview} from '../../api/review';
 
 const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -24,10 +27,15 @@ type ReviewGroup = {
   reviews: MyReview[];
 };
 
-export default function ReviewSection() {
+type Props = {
+  profile: MyProfile | null;
+};
+
+export default function ReviewSection({profile}: Props) {
   const [reviews, setReviews] = useState<MyReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [imageIndex, setImageIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetchReviews();
@@ -49,6 +57,33 @@ export default function ReviewSection() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // MyReview → CurrentReview 변환 (ReviewPhoto용)
+  const photoReviews: CurrentReview[] = useMemo(() =>
+    reviews
+      .filter(r => r.image_url)
+      .map(r => ({
+        id: r.id,
+        image_url: r.image_url!,
+        congestion_level: r.congestion_level as CurrentReview['congestion_level'],
+        comment: r.comment ?? '',
+        helpful_count: r.helpful_count,
+        is_helpful: false,
+        is_mine: true,
+        user: {
+          id: profile?.id ?? 0,
+          nickname: profile?.nickname ?? '',
+          profile_image_url: profile?.profile_image_url ?? '',
+        },
+        created_at: r.created_at,
+      })),
+    [reviews, profile],
+  );
+
+  // 전체 리뷰 리스트에서의 index → photoReviews에서의 index 찾기
+  const findPhotoIndex = (reviewId: number) => {
+    return photoReviews.findIndex(r => r.id === reviewId);
   };
 
   const groupedReviews = groupReviewsByMonth(reviews);
@@ -78,6 +113,7 @@ export default function ReviewSection() {
   }
 
   return (
+    <>
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}>
@@ -87,7 +123,14 @@ export default function ReviewSection() {
 
           <View style={styles.reviewGrid}>
             {group.reviews.map(review => (
-              <TouchableOpacity key={review.id} activeOpacity={0.85}>
+              <TouchableOpacity
+                key={review.id}
+                activeOpacity={0.85}
+                onPress={() => {
+                  if (!review.image_url) return;
+                  const idx = findPhotoIndex(review.id);
+                  if (idx >= 0) setImageIndex(idx);
+                }}>
                 <Shadow
                   distance={5}
                   startColor="rgba(0, 0, 0, 0.06)"
@@ -121,6 +164,27 @@ export default function ReviewSection() {
         </View>
       ))}
     </ScrollView>
+
+    {/* 리뷰 사진 풀스크린 뷰어 */}
+    <ReviewPhoto
+      reviews={photoReviews}
+      startIndex={imageIndex ?? 0}
+      visible={imageIndex !== null}
+      onClose={() => setImageIndex(null)}
+      onDelete={async () => {
+        if (imageIndex === null) return;
+        try {
+          await deleteReview(photoReviews[imageIndex].id);
+          setReviews(prev => prev.filter(r => r.id !== photoReviews[imageIndex].id));
+          setImageIndex(null);
+        } catch (error) {
+          console.error('리뷰 삭제 실패:', error);
+        }
+      }}
+      onReport={() => setImageIndex(null)}
+      useAbsoluteDate
+    />
+    </>
   );
 }
 

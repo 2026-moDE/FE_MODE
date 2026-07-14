@@ -77,7 +77,7 @@ export default function MypageScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <View style={styles.container}>
@@ -155,11 +155,13 @@ export default function MypageScreen() {
           />
         </View>
 
-        {activeTab === 'review' ? (
-          <ReviewSection />
-        ) : (
-          <MyMapSection mapRef={mapRef} />
-        )}
+        <View style={{flex: 1}}>
+          {activeTab === 'review' ? (
+            <ReviewSection profile={profile} />
+          ) : (
+            <MyMapSection mapRef={mapRef} />
+          )}
+        </View>
 
       </View>
     </SafeAreaView>

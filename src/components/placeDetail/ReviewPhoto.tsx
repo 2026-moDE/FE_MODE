@@ -14,6 +14,7 @@ type Props = {
     onClose: () => void;
     onDelete: () => void;
     onReport: () => void;
+    useAbsoluteDate?: boolean;
 };
 
 const THUMBNAIL_WIDTH = 40;
@@ -22,7 +23,15 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDelete, onReport}: Props) {
+function formatAbsoluteDate(isoString: string): string {
+    const date = new Date(isoString);
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    return `${y}년 ${m}월 ${d}일`;
+}
+
+export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDelete, onReport, useAbsoluteDate}: Props) {
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const isOwner = reviews[currentIndex]?.is_mine ?? false;
@@ -108,7 +117,6 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
     if (!review) return null;
 
     return (
-        <>
         <Modal
             visible={visible}
             transparent
@@ -183,7 +191,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
                         <View style={styles.commentArea} pointerEvents="none">
                             <View style={styles.timeBadge}>
                                 <Text style={styles.timeText}>
-                                    {formatRelativeTime(review.created_at)}
+                                    {useAbsoluteDate ? formatAbsoluteDate(review.created_at) : formatRelativeTime(review.created_at)}
                                 </Text>
                             </View>
                             <Text style={styles.comment}>{review.comment}</Text>
@@ -220,17 +228,16 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
                     )}
                 </Animated.View>
             </View>
-        </Modal>
 
-        <ReviewActionModal
-            visible={menuOpen}
-            isOwner={isOwner}
-            position={menuPosition}
-            onClose={() => setMenuOpen(false)}
-            onDelete={onDelete}
-            onReport={onReport}
-        />
-        </>
+            <ReviewActionModal
+                visible={menuOpen}
+                isOwner={isOwner}
+                position={menuPosition}
+                onClose={() => setMenuOpen(false)}
+                onDelete={onDelete}
+                onReport={onReport}
+            />
+        </Modal>
     );
 }
 

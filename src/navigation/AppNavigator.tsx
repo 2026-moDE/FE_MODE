@@ -11,6 +11,7 @@ import ReviewStack from './ReviewStack';
 import ProfileEditScreen from '../screens/mypage/ProfileEditScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
+import MyMapScreen from '../screens/mypage/MyMapScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -41,6 +42,7 @@ export default function AppNavigator() {
       <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <Stack.Screen name='Notification' component={NotificationScreen}/>
       <Stack.Screen name='ReviewReport' component={ReviewReportScreen}/>
+      <Stack.Screen name='MyMap' component={MyMapScreen} options={{animation: 'slide_from_bottom'}} />
     </Stack.Navigator>
   );
 }

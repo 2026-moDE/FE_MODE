@@ -4,11 +4,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   Text,
-  Image,
-  ScrollView,
   TouchableOpacity,
 } from 'react-native';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import MapView from '../map/MapView';
 import {getMyReviews, MyReview} from '../../api/mypage';
@@ -19,6 +19,7 @@ import type {
   NearbyPlace,
   CongestionLevel,
 } from '../../types/place';
+import {AppStackParamList} from '../../types/navigation';
 
 type Props = {
   mapRef: React.RefObject<NaverMapViewRef | null>;
@@ -38,6 +39,7 @@ type LocatedPlaceReviewGroup = PlaceReviewGroup & {
 };
 
 export default function MyMapSection({mapRef}: Props) {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const [reviews, setReviews] = useState<MyReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -45,8 +47,6 @@ export default function MyMapSection({mapRef}: Props) {
     LocatedPlaceReviewGroup[]
   >([]);
 
-  const [selectedGroup, setSelectedGroup] =
-    useState<LocatedPlaceReviewGroup | null>(null);
 
   const myMapPlaces = useMemo<NearbyPlace[]>(() => {
     return locatedGroups.map(group => ({
@@ -188,25 +188,6 @@ export default function MyMapSection({mapRef}: Props) {
     loadMyReviews();
   }, []);
 
-  const handlePlacePress = (place: NearbyPlace) => {
-    const group = locatedGroups.find(
-        item => item.placeId === place.id,
-    );
-
-    if (!group) {
-        return;
-    }
-
-    setSelectedGroup(group);
-
-    mapRef.current?.animateCameraTo({
-        latitude: group.latitude,
-        longitude: group.longitude,
-        zoom: 15,
-    });
-
-    console.log('[마이맵 장소 선택]', group.placeName);
-    };
 
   const loadMyReviews = async () => {
     try {
@@ -241,63 +222,27 @@ export default function MyMapSection({mapRef}: Props) {
             zoom: 6,
         }}
         isShowLocationButton={false}
-        onTapMap={() => setSelectedGroup(null)}>
+        isScrollGesturesEnabled={false}
+        isZoomGesturesEnabled={false}
+        isTiltGesturesEnabled={false}
+        isRotateGesturesEnabled={false}
+        isStopGesturesEnabled={false}
+        onTapMap={() => navigation.navigate('MyMap')}>
         {myMapPlaces.map(place => (
             <LiveBubble
             key={`my-map-${place.id}`}
             place={place}
-            onPress={handlePlacePress}
+            onPress={() => navigation.navigate('MyMap')}
             />
         ))}
-       </MapView>
+      </MapView>
 
-       {selectedGroup && (
-        <View style={styles.reviewPanel}>
-            <View style={styles.dragHandle} />
-
-            <View style={styles.panelHeader}>
-            <View>
-                <Text style={styles.panelTitle}>
-                {selectedGroup.placeName}
-                </Text>
-
-                <Text style={styles.panelCount}>
-                내가 작성한 리뷰 {selectedGroup.reviews.length}개
-                </Text>
-            </View>
-
-            <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setSelectedGroup(null)}>
-                <Text style={styles.closeText}>닫기</Text>
-            </TouchableOpacity>
-            </View>
-
-            <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.reviewImageList}>
-            {selectedGroup.reviews.map(review => (
-                <TouchableOpacity
-                key={review.id}
-                activeOpacity={0.85}
-                onPress={() => {
-                    console.log('[마이맵 리뷰 사진 클릭]', review.id);
-                }}>
-                <View style={styles.reviewImageBox}>
-                    {review.image_url ? (
-                    <Image
-                        source={{uri: review.image_url}}
-                        style={styles.reviewImage}
-                        resizeMode="cover"
-                    />
-                    ) : null}
-                </View>
-                </TouchableOpacity>
-            ))}
-            </ScrollView>
-        </View>
-        )}
+      {/* 지도 위 터치 오버레이 */}
+      <TouchableOpacity
+        activeOpacity={1}
+        style={StyleSheet.absoluteFill}
+        onPress={() => navigation.navigate('MyMap')}
+      />
 
       {loading && (
         <View style={styles.statusBox}>
@@ -334,77 +279,4 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   
-  reviewPanel: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: 8,
-    paddingBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    elevation: 10,
-    shadowColor: '#000000',
-    shadowOffset: {
-        width: 0,
-        height: -3,
-    },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    },
-
-    dragHandle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#D9D9D9',
-    marginBottom: 14,
-    },
-
-    panelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    },
-
-    panelTitle: {
-    fontSize: 17,
-    fontFamily: fontFamily.bold,
-    color: '#111114',
-    },
-
-    panelCount: {
-    marginTop: 4,
-    fontSize: 12,
-    fontFamily: fontFamily.medium,
-    color: '#777777',
-    },
-
-    closeText: {
-    fontSize: 13,
-    fontFamily: fontFamily.medium,
-    color: '#6489F2',
-    },
-
-    reviewImageList: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    gap: 8,
-    },
-
-    reviewImageBox: {
-    width: 84,
-    height: 84,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#E0E0E4',
-    },
-
-    reviewImage: {
-    width: '100%',
-    height: '100%',
-    },
 });

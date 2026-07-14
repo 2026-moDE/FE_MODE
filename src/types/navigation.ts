@@ -46,6 +46,8 @@ export type AppStackParamList = {
   ReviewReport: {
     reviewId: number;
   };
+
+  MyMap: undefined;
 };
 
 // 리뷰 작성 전용 스택

@@ -80,7 +80,7 @@ export default function LoginScreen({navigation}: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#2C343F" />
 
       <View style={styles.topSection}>
@@ -149,11 +149,10 @@ const styles = StyleSheet.create({
 
   bottomSection: {
     width: '100%',
-    height: 254,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 30,
-    paddingBottom: 41,
+    paddingBottom: 50,
     alignItems: 'center',
   },
 

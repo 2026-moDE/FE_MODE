@@ -20,7 +20,7 @@ export default function RecentSearchList({ history, onSelect, onDelete }: Props)
 
             {/* 칩 목록 → 가로로 나열하다가 넘치면 다음 줄로 */}
             <View style={styles.chipList}>
-                {history.map(item => (
+                {history.slice(0, 5).map(item => (
                     <View key={String(item.id)} style={styles.chip}>
 
                         {/* 검색어 텍스트 → 누르면 검색 실행 */}

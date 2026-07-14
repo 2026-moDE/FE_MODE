@@ -3,6 +3,7 @@ import {StatusBar, LogBox} from 'react-native';
 import RootNavigation from './src/navigation/RootNavigation';
 
 LogBox.ignoreLogs(['[gps]', 'new NativeEventEmitter']);
+LogBox.ignoreAllLogs();
 
 function App() {
   return (
