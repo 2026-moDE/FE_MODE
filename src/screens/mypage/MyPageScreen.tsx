@@ -1,4 +1,4 @@
-﻿import React, {useRef, useState} from 'react';
+﻿import React, {useCallback, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,20 @@ import {
   Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 
 import {fontFamily} from '../../constants/typography';
 import ProfileSection from '../../components/mypage/ProfileSection';
 import ReviewSection from '../../components/mypage/ReviewSection';
-import MapView from '../../components/map/MapView';
+import MyMapSection from '../../components/mypage/MyMapSection';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {logoutApi} from '../../api/auth';
 import {useAuth} from '../../context/AuthContext';
+<<<<<<< HEAD
+import {getMyProfile, MyProfile} from '../../api/mypage';
+=======
+>>>>>>> origin/demo/1st-final
 
 const settingIcon = require('../../assets/image/setting.png');
 
@@ -36,6 +40,30 @@ export default function MypageScreen() {
   const mapRef = useRef<NaverMapViewRef>(null);
   const {setIsLoggedIn} = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+<<<<<<< HEAD
+  const [profile, setProfile] = useState<MyProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      const result = await getMyProfile();
+
+      console.log('[프로필 재조회 성공]', result);
+      setProfile(result);
+    } catch (error) {
+      console.log('[프로필 재조회 실패]', error);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile]),
+  );
+=======
+>>>>>>> origin/demo/1st-final
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -78,7 +106,23 @@ export default function MypageScreen() {
           </TouchableOpacity>
         </View>
 
-        <ProfileSection />
+        <ProfileSection
+          profile={profile}
+          isLoading={isProfileLoading}
+        />
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[
+            styles.logoutButton,
+            isLoggingOut && styles.logoutButtonDisabled,
+          ]}
+          onPress={handleLogout}
+          disabled={isLoggingOut}>
+          <Text style={styles.logoutButtonText}>
+            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+          </Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.8}
@@ -133,18 +177,9 @@ export default function MypageScreen() {
         {activeTab === 'review' ? (
           <ReviewSection />
         ) : (
-          <View style={styles.myMapContainer}>
-            <MapView
-              ref={mapRef}
-              initialCamera={{
-                latitude: 37.5665,
-                longitude: 126.978,
-                zoom: 6,
-              }}
-              isShowLocationButton={false}
-            />
-          </View>
+          <MyMapSection mapRef={mapRef} />
         )}
+
       </View>
     </SafeAreaView>
   );
@@ -250,9 +285,12 @@ const styles = StyleSheet.create({
   activeLineRight: {
     marginLeft: SCREEN_WIDTH / 2,
   },
+<<<<<<< HEAD
+=======
 
   myMapContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+>>>>>>> origin/demo/1st-final
 });
