@@ -20,10 +20,7 @@ import MyMapSection from '../../components/mypage/MyMapSection';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {logoutApi} from '../../api/auth';
 import {useAuth} from '../../context/AuthContext';
-<<<<<<< HEAD
 import {getMyProfile, MyProfile} from '../../api/mypage';
-=======
->>>>>>> origin/demo/1st-final
 
 const settingIcon = require('../../assets/image/setting.png');
 
@@ -40,7 +37,6 @@ export default function MypageScreen() {
   const mapRef = useRef<NaverMapViewRef>(null);
   const {setIsLoggedIn} = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-<<<<<<< HEAD
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
@@ -62,8 +58,6 @@ export default function MypageScreen() {
       loadProfile();
     }, [loadProfile]),
   );
-=======
->>>>>>> origin/demo/1st-final
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -110,19 +104,6 @@ export default function MypageScreen() {
           profile={profile}
           isLoading={isProfileLoading}
         />
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[
-            styles.logoutButton,
-            isLoggingOut && styles.logoutButtonDisabled,
-          ]}
-          onPress={handleLogout}
-          disabled={isLoggingOut}>
-          <Text style={styles.logoutButtonText}>
-            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
-          </Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.8}
@@ -285,12 +266,4 @@ const styles = StyleSheet.create({
   activeLineRight: {
     marginLeft: SCREEN_WIDTH / 2,
   },
-<<<<<<< HEAD
-=======
-
-  myMapContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
->>>>>>> origin/demo/1st-final
 });
