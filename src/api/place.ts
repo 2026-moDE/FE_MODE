@@ -60,12 +60,19 @@ export async function fetchCongestion(id:number):Promise<CongestionResponse>{
 
 // 알림 구독 설정
 export async function subscribe(id:number):Promise<SubscribeResponse>{
+  console.log('[장소 구독 요청]', id);
+  
   const response = await apiClient.post<ApiResponse<SubscribeResponse>>(`/api/places/${id}/subscribe`);
+  console.log('[장소 구독 응답]', response.data);
+
   return response.data.data;
 }
 
 // 알림 구독 취소
 export async function unsubscribe(id:number):Promise<SubscribeResponse>{
+  console.log('[장소 구독 취소 요청]', id);
+
   const response = await apiClient.delete<ApiResponse<SubscribeResponse>>(`/api/places/${id}/subscribe`);
+  console.log('[장소 구독 취소 응답]', response.data);
   return response.data.data;
 }

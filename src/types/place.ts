@@ -4,7 +4,7 @@
 export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'BAR' | 'PARK' | 'SHOPPING';
 
 // 혼잡도 레벨
-export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED';
+export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED' | 'MEDIUM' | 'HIGH';
 
 // 요일
 export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
@@ -26,6 +26,8 @@ export type Place = {
     category: PlaceCategory;
     congestion_level: CongestionLevel;
     thumbnail_url: string;
+    latitude?: number;
+    longitude?: number;
 };
 
 export type PlaceResponse = {
@@ -52,6 +54,8 @@ export type NearbyPlace = {
     longitude: number;
     congestion_level: CongestionLevel;
     thumbnail_url: string;
+    category?: PlaceCategory;
+    address?: string;
 };
 
 export type NearbyPlaceResponse = {
@@ -78,7 +82,8 @@ export type CurrentReview = {
     congestion_level: CongestionLevel;
     comment: string;
     helpful_count: number;
-    is_helpful: boolean;          
+    is_helpful: boolean;
+    is_mine : boolean;          
     user: ReviewUser;             
     created_at: string;
 };
@@ -96,6 +101,7 @@ export type ArchivedReview = {
     congestion_level: CongestionLevel;
     comment: string;
     helpful_count: number;
+    is_mine : boolean; 
     user: ReviewUser;
     created_at: string;
 };

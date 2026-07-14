@@ -22,7 +22,8 @@ import {
     subscribe,
     unsubscribe,
 } from '../../api/place';
-import { reportReview } from '../../api/review';
+import { reportReview, deleteReview } from '../../api/review';
+
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
@@ -179,10 +180,25 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 reviews={reviews}
                 startIndex={imageIndex ?? 0}
                 visible={imageIndex !== null}
-                isOwner={false}
+
                 onClose={() => setImageIndex(null)}
-                onDelete={() => {}}
-                onReport={() => {}}
+                onDelete={async () => {
+                    if (imageIndex === null) return;
+                    try {
+                        await deleteReview(reviews[imageIndex].id);
+                        setReviews(prev => prev.filter((_, i) => i !== imageIndex));
+                        setImageIndex(null);
+                    } catch (error) {
+                        console.error('리뷰 삭제 실패:', error);
+                    }
+                }}
+                onReport={() => {
+                    if (imageIndex === null) return;
+                    const reviewId = reviews[imageIndex].id;
+                    // 우선 주석 처리
+                    //navigation.navigate('ReviewReport', {reviewId});
+                    setTimeout(() => setImageIndex(null), 350);
+                }}
             />
 
             {/* 리뷰 바로 쓰기 플로팅 버튼 (사진 클릭시 숨김) */}

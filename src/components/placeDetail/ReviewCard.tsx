@@ -39,7 +39,7 @@ export default function ReviewCard({review, onPress}: Props) {
                 style={styles.image}
                 imageStyle={styles.imageRadius}
                 resizeMethod="resize">
-                {/* 상단: 사용자 정보(좌) + 시간(우) */}
+                {/* 상단: 사용자 정보 + 시간 */}
                 <View style={styles.topRow}>
                     {/* 사용자 (아바타 + 닉네임) */}
                     <View style={styles.userGroup}>
@@ -52,7 +52,7 @@ export default function ReviewCard({review, onPress}: Props) {
                         </Text>
                     </View>
 
-                    {/* 시간 뱃지 (어두운 캡슐) */}
+                    {/* 시간 */}
                     <View style={styles.timeBadge}>
                         <Text style={styles.timeText}>{timeAgo}</Text>
                     </View>
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     },
     image: {
         flex: 1,
-        justifyContent: 'space-between',                    // 상단/하단 분리
+        justifyContent: 'flex-start',
         backgroundColor: colors.surface.muted,
     },
     imageRadius: {
@@ -122,8 +122,13 @@ const styles = StyleSheet.create({
         color: colors.text.inverse,
     },
     commentArea: {
-        paddingHorizontal: spacing.lg,                      // 16
-        paddingBottom: spacing['2xl'],                      // 24 - 하단에서 띄움
+        position: 'absolute',
+        top: '50%',
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        paddingHorizontal: spacing.lg,
+        zIndex: 1,
     },
     comment: {
         ...typography.b3,                                   // fontSize: 12, bold

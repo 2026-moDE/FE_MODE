@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function SubscriptionCard({place, onToggle}: Props) {
-    const {id, place: {name, address}, is_active} = place;
+    const {place: {id: placeId, name, address}, is_active} = place;
 
     return (
         <View style={styles.container}>
@@ -23,7 +23,7 @@ export default function SubscriptionCard({place, onToggle}: Props) {
                 <Text style={styles.name} numberOfLines={1}>{name}</Text>
                 <Text style={styles.address} numberOfLines={1}>{address}</Text>
             </View>
-            <Pressable hitSlop={12} onPress={() => onToggle(id, is_active)}>
+            <Pressable hitSlop={12} onPress={() => onToggle(placeId, is_active)}>
                 {is_active
                     ? <IconBellOn color={colors.icon.basic} />
                     : <IconBellOff color={colors.icon.tertiary} />}

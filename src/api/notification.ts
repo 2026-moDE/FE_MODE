@@ -1,14 +1,41 @@
-import { apiClient } from "./client"
-import { NotificationsResponse, Subscription, SubscriptionsResponse } from "../types/notifications";
+import {apiClient} from './client';
+import {
+  NotificationsResponse,
+  SubscriptionsResponse,
+} from '../types/notifications';
 
-export async function fetchNotifications(cursor?: number, limit?: number): Promise<NotificationsResponse> {
-    const response = await apiClient.get<NotificationsResponse>('/api/users/me/notifications', {
-        params: { cursor, limit },
-    });
-    return response.data;
+type ApiResponse<T> = {
+  success: boolean;
+  message: string | null;
+  data: T;
+};
+
+export async function fetchNotifications(
+  cursor?: number,
+  limit?: number,
+): Promise<NotificationsResponse> {
+  console.log('[알림 목록 조회 요청]', {cursor, limit});
+
+  const response = await apiClient.get<ApiResponse<NotificationsResponse>>(
+    '/api/users/me/notifications',
+    {
+      params: {cursor, limit},
+    },
+  );
+
+  console.log('[알림 목록 조회 응답]', response.data);
+
+  return response.data.data;
 }
 
 export async function fetchSubscriptions(): Promise<SubscriptionsResponse> {
-    const response = await apiClient.get<SubscriptionsResponse>('/api/users/me/subscriptions');
-    return response.data;
+  console.log('[구독 장소 목록 조회 요청]');
+
+  const response = await apiClient.get<ApiResponse<SubscriptionsResponse>>(
+    '/api/users/me/subscriptions',
+  );
+
+  console.log('[구독 장소 목록 조회 응답]', response.data);
+
+  return response.data.data;
 }

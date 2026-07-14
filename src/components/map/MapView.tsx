@@ -6,9 +6,10 @@ import { useLocation } from '../../context/LocationContext';
 
 type Props = Omit<NaverMapViewProps,'style'>&{
     ref?: React.Ref<NaverMapViewRef>;
+    showCircle?: boolean;
 }
 
-const MapView=({ref, children, ...props}:Props)=>{
+const MapView=({ref, children, showCircle = true, ...props}:Props)=>{
     const { location } = useLocation();
 
     return (
@@ -22,7 +23,7 @@ const MapView=({ref, children, ...props}:Props)=>{
             {...props}
         >
             {children}
-            {location && (
+            {/* {location && showCircle && (
                 <NaverMapCircleOverlay
                     latitude={location.latitude}
                     longitude={location.longitude}
@@ -31,7 +32,7 @@ const MapView=({ref, children, ...props}:Props)=>{
                     outlineColor="rgba(131, 166, 255, 0.5)"
                     outlineWidth={1}
                 />
-            )}
+            )} */}
         </NaverMapView>
     );
 };

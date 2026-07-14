@@ -42,6 +42,10 @@ export type AppStackParamList = {
   };
 
   Notification: undefined;
+
+  ReviewReport: {
+    reviewId: number;
+  };
 };
 
 // 리뷰 작성 전용 스택
