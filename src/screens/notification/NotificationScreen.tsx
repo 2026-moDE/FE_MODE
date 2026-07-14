@@ -42,7 +42,10 @@ export default function NotificationScreen({navigation}: Props) {
 
     useFocusEffect(useCallback(() => {
         fetchSubscriptions()
-            .then(res => setPlaces(res.subscriptions ?? []))
+            .then(res => {
+                console.log('구독 응답:', JSON.stringify(res));
+                setPlaces(res.subscriptions ?? []);
+            })
             .catch(err => console.warn('구독 장소 조회 실패:', err?.message));
     }, []));
 
@@ -55,7 +58,7 @@ export default function NotificationScreen({navigation}: Props) {
     }, [notifications, navigation]);
 
     const handleSubscriptions = useCallback((id: number, current: boolean) => {
-        setPlaces(prev => prev.map(p => p.id === id ? {...p, is_active: !current} : p));
+        setPlaces(prev => prev.map(p => p.place.id === id ? {...p, is_active: !current} : p));
         if (current) {
             unsubscribe(id).catch(err => console.warn('구독 취소 실패:', err?.message));
         } else {
@@ -129,6 +132,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface.default,
     },
     content: {
+        paddingTop: spacing.s * 2,
         paddingBottom: spacing['3xl'],
     },
     sectionGap: {

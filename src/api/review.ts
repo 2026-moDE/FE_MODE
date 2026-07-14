@@ -109,3 +109,7 @@ export async function reportReview(id:number, reason:string) {
 }
 
 // 리뷰 삭제 api
+export async function deleteReview(id:number){
+  const response = await apiClient.delete(`/api/reviews/${id}`)
+  return response.data;
+}

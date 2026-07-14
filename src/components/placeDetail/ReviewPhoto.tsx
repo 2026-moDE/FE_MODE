@@ -11,7 +11,6 @@ type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
     startIndex: number;
     visible: boolean; // 리뷰 사진 모달 클릭 여부
-    isOwner: boolean;
     onClose: () => void;
     onDelete: () => void;
     onReport: () => void;
@@ -23,9 +22,10 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, isOwner, onClose, onDelete, onReport}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDelete, onReport}: Props) {
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
+    const isOwner = reviews[currentIndex]?.is_mine ?? false;
     // ⋮ 클릭 모달 여부
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({top: 0, right: 0});

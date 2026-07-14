@@ -10,6 +10,7 @@ import CustomTabBar from '../components/map/CustomTabBar';
 import ReviewStack from './ReviewStack';
 import ProfileEditScreen from '../screens/mypage/ProfileEditScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
+import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -39,6 +40,7 @@ export default function AppNavigator() {
       <Stack.Screen name="ReviewStack" component={ReviewStack} />
       <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <Stack.Screen name='Notification' component={NotificationScreen}/>
+      <Stack.Screen name='ReviewReport' component={ReviewReportScreen}/>
     </Stack.Navigator>
   );
 }

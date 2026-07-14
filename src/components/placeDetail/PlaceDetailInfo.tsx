@@ -53,8 +53,10 @@ export default function PlaceDetailInfo({
                 {/* 주소 + 거리 */}
                 <View style={styles.infoRow}>
                     <IconPlaceLocation size={24} color={colors.icon.subtle} />
-                    <Text style={styles.addressText}>{address}</Text>
-                    {distance && <Text style={styles.distanceText}>{distance}</Text>}
+                    <View style={styles.addressWrapper}>
+                        <Text style={styles.addressText}>{address}</Text>
+                        {distance && <Text style={styles.distanceText}>{distance}</Text>}
+                    </View>
                 </View>
 
                 {/* 영업 시간 */}
@@ -113,8 +115,11 @@ const styles = StyleSheet.create({
     },
     infoRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: spacing.md,                                 // 12
+    },
+    addressWrapper: {
+        flex: 1,
     },
     addressText: {
         ...typography.b2,                                // fontSize: 14
