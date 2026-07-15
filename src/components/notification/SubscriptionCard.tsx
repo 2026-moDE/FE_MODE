@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
@@ -11,14 +12,23 @@ import IconBellOff from '../../assets/icons/IconBellOff';
 type Props = {
     place: Subscription;
     onToggle: (id: number, current: boolean) => void;
+    onPress: (placeId: number, placeName: string) => void;
 };
 
-export default function SubscriptionCard({place, onToggle}: Props) {
-    const {place: {id: placeId, name, address}, is_active} = place;
+export default function SubscriptionCard({place, onToggle, onPress}: Props) {
+    const {place: {id: placeId, name, address, thumbnail_url}, is_active} = place;
 
     return (
-        <View style={styles.container}>
-            <View style={[styles.thumbnail, styles.thumbnailFallback]} />
+        <Pressable style={styles.container} onPress={() => onPress(placeId, name)}>
+            {thumbnail_url ? (
+                <FastImage
+                    source={{uri: thumbnail_url, priority: FastImage.priority.normal}}
+                    style={styles.thumbnail}
+                    resizeMode={FastImage.resizeMode.cover}
+                />
+            ) : (
+                <View style={[styles.thumbnail, styles.thumbnailFallback]} />
+            )}
             <View style={styles.info}>
                 <Text style={styles.name} numberOfLines={1}>{name}</Text>
                 <Text style={styles.address} numberOfLines={1}>{address}</Text>
@@ -28,7 +38,7 @@ export default function SubscriptionCard({place, onToggle}: Props) {
                     ? <IconBellOn color={colors.icon.basic} />
                     : <IconBellOff color={colors.icon.tertiary} />}
             </Pressable>
-        </View>
+        </Pressable>
     );
 }
 

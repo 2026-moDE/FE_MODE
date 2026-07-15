@@ -111,6 +111,7 @@ export default function NotificationScreen({navigation}: Props) {
                             key={place.id}
                             place={place}
                             onToggle={handleSubscriptions}
+                            onPress={(placeId, placeName) => navigation.navigate('PlaceDetail', {placeId, placeName})}
                         />
                     ))}
                 </ScrollView>
