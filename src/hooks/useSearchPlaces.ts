@@ -8,15 +8,18 @@ export function useSearchPlaces() {
     const [error, setError] = useState<string | null>(null);
     const [hasSearched, setHasSearched] = useState(false);
 
-    const search = useCallback(async (keyword: string) => {
-        if (keyword.trim() === '') return;
+    const search = useCallback(async (
+        keyword: string,
+        locationOptions?: { latitude: number; longitude: number },
+    ) => {
+        if (keyword.trim() === '' && !locationOptions) return;
 
         setHasSearched(true);
         setIsLoading(true);
         setError(null);
 
         try {
-            const data = await searchPlaces(keyword);
+            const data = await searchPlaces(keyword, locationOptions);
             console.log('검색 응답:', JSON.stringify(data));
             const unique = (data.places ?? []).filter(
               (p, i, arr) => arr.findIndex(x => x.id === p.id) === i,

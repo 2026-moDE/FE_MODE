@@ -5,7 +5,7 @@ import { SearchHistory } from '../../types/search';
 type Props = {
     history: SearchHistory[];
     onSelect: (keyword: string) => void;
-    onDelete: (id: number) => void;
+    onDelete: (keyword: string) => void;
 };
 
 export default function RecentSearchList({ history, onSelect, onDelete }: Props) {
@@ -30,7 +30,7 @@ export default function RecentSearchList({ history, onSelect, onDelete }: Props)
 
                         {/* X 버튼 → 누르면 삭제 */}
                         <TouchableOpacity
-                            onPress={() => onDelete(item.id)}
+                            onPress={() => onDelete(item.keyword)}
                             style={styles.deleteButton}
                         >
                             <Text style={styles.deleteText}>✕</Text>

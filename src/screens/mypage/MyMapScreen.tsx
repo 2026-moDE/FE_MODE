@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,8 @@ import {getMyReviews, getMyProfile, MyReview, MyProfile} from '../../api/mypage'
 import {fontFamily} from '../../constants/typography';
 import {searchPlaces} from '../../api/search';
 import LiveBubble from '../../components/home/LiveBubble';
+import ClusterBubble from '../../components/home/ClusterBubble';
+import Supercluster from 'supercluster';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import type {NearbyPlace, CongestionLevel, CurrentReview} from '../../types/place';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
@@ -52,6 +54,9 @@ export default function MyMapScreen({navigation}: Props) {
   const [reviews, setReviews] = useState<MyReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [locatedGroups, setLocatedGroups] = useState<LocatedPlaceReviewGroup[]>([]);
+  const [zoom, setZoom] = useState(6);
+  const [bounds, setBounds] = useState<[number, number, number, number]>([-180, -90, 180, 90]);
+  const cameraDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<LocatedPlaceReviewGroup | null>(null);
   const [profile, setProfile] = useState<MyProfile | null>(null);
 
@@ -112,6 +117,25 @@ export default function MyMapScreen({navigation}: Props) {
       thumbnail_url: group.representativeReview.image_url ?? '',
     }));
   }, [locatedGroups]);
+
+  const supercluster = useMemo(() => {
+    const cluster = new Supercluster({ radius: 60, maxZoom: 14, minPoints: 2 });
+    cluster.load(myMapPlaces.map(p => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [p.longitude, p.latitude] },
+      properties: { place: p },
+    })));
+    return cluster;
+  }, [myMapPlaces]);
+
+  const clusters = useMemo(() => {
+    return supercluster.getClusters(bounds, Math.floor(zoom));
+  }, [supercluster, bounds, zoom]);
+
+  const handleClusterPress = useCallback((clusterId: number, latitude: number, longitude: number) => {
+    const expandZoom = supercluster.getClusterExpansionZoom(clusterId);
+    mapRef.current?.animateCameraTo({latitude, longitude, zoom: expandZoom});
+  }, [supercluster]);
 
   // visibleReviews → CurrentReview 변환 (ReviewPhoto용)
   const photoReviews = useMemo<CurrentReview[]>(() =>
@@ -208,12 +232,17 @@ export default function MyMapScreen({navigation}: Props) {
     const group = locatedGroups.find(item => item.placeId === place.id);
     if (!group) return;
     setSelectedGroup(group);
-    setVisibleReviews(group.reviews.filter(r => r.image_url));
+    const placeReviews = group.reviews.filter(r => r.image_url);
+    setVisibleReviews(placeReviews);
     mapRef.current?.animateCameraTo({
       latitude: group.latitude,
       longitude: group.longitude,
       zoom: 15,
     });
+    // 리뷰 사진이 있으면 바로 뷰어 열기
+    if (placeReviews.length > 0) {
+      setImageIndex(0);
+    }
   };
 
   const handleTapMap = () => {
@@ -239,14 +268,46 @@ export default function MyMapScreen({navigation}: Props) {
         ref={mapRef}
         initialCamera={{latitude: 37.5665, longitude: 126.978, zoom: 6}}
         isShowLocationButton={false}
-        onTapMap={handleTapMap}>
-        {myMapPlaces.map(place => (
-          <LiveBubble
-            key={`my-map-full-${place.id}`}
-            place={place}
-            onPress={handlePlacePress}
-          />
-        ))}
+        showLocationMarker={false}
+        onTapMap={handleTapMap}
+        onCameraChanged={(params) => {
+          if (cameraDebounceRef.current) clearTimeout(cameraDebounceRef.current);
+          cameraDebounceRef.current = setTimeout(() => {
+            const { latitude, longitude, latitudeDelta, longitudeDelta } = params.region;
+            const padLng = longitudeDelta * 0.3;
+            const padLat = latitudeDelta * 0.3;
+            setZoom(params.zoom ?? 6);
+            setBounds([
+              Math.max(longitude - longitudeDelta / 2 - padLng, -180),
+              Math.max(latitude - latitudeDelta / 2 - padLat, -90),
+              Math.min(longitude + longitudeDelta / 2 + padLng, 180),
+              Math.min(latitude + latitudeDelta / 2 + padLat, 90),
+            ]);
+          }, 150);
+        }}>
+        {clusters.map(cluster => {
+          const [lng, lat] = cluster.geometry.coordinates;
+          if (cluster.properties.cluster) {
+            return (
+              <ClusterBubble
+                key={`my-map-cluster-${cluster.properties.cluster_id}`}
+                latitude={lat}
+                longitude={lng}
+                count={cluster.properties.point_count}
+                thumbnailUrl={supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place.thumbnail_url}
+                onPress={() => handleClusterPress(cluster.properties.cluster_id, lat, lng)}
+              />
+            );
+          }
+          const place = cluster.properties.place;
+          return (
+            <LiveBubble
+              key={`my-map-full-${place.id}`}
+              place={place}
+              onPress={handlePlacePress}
+            />
+          );
+        })}
       </MapView>
 
       {loading && (

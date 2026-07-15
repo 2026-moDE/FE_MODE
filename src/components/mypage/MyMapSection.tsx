@@ -15,6 +15,8 @@ import {getMyReviews, MyReview} from '../../api/mypage';
 import {fontFamily} from '../../constants/typography';
 import {searchPlaces} from '../../api/search';
 import LiveBubble from '../home/LiveBubble';
+import ClusterBubble from '../home/ClusterBubble';
+import Supercluster from 'supercluster';
 import type {
   NearbyPlace,
   CongestionLevel,
@@ -61,6 +63,21 @@ export default function MyMapSection({mapRef}: Props) {
         group.representativeReview.image_url ?? '',
     }));
     }, [locatedGroups]);
+
+  // 클러스터링 (줌 6 고정이라 넓은 범위)
+  const supercluster = useMemo(() => {
+    const cluster = new Supercluster({ radius: 60, maxZoom: 14, minPoints: 2 });
+    cluster.load(myMapPlaces.map(p => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [p.longitude, p.latitude] },
+      properties: { place: p },
+    })));
+    return cluster;
+  }, [myMapPlaces]);
+
+  const clusters = useMemo(() => {
+    return supercluster.getClusters([-180, -90, 180, 90], 6);
+  }, [supercluster]);
 
   const groupedReviews = useMemo<PlaceReviewGroup[]>(() => {
   const groupMap = new Map<number, MyReview[]>();
@@ -222,19 +239,36 @@ export default function MyMapSection({mapRef}: Props) {
             zoom: 6,
         }}
         isShowLocationButton={false}
+        showLocationMarker={false}
         isScrollGesturesEnabled={false}
         isZoomGesturesEnabled={false}
         isTiltGesturesEnabled={false}
         isRotateGesturesEnabled={false}
         isStopGesturesEnabled={false}
         onTapMap={() => navigation.navigate('MyMap')}>
-        {myMapPlaces.map(place => (
-            <LiveBubble
-            key={`my-map-${place.id}`}
-            place={place}
-            onPress={() => navigation.navigate('MyMap')}
-            />
-        ))}
+        {clusters.map(cluster => {
+            const [lng, lat] = cluster.geometry.coordinates;
+            if (cluster.properties.cluster) {
+                return (
+                    <ClusterBubble
+                        key={`my-map-cluster-${cluster.properties.cluster_id}`}
+                        latitude={lat}
+                        longitude={lng}
+                        count={cluster.properties.point_count}
+                        thumbnailUrl={supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place.thumbnail_url}
+                        onPress={() => navigation.navigate('MyMap')}
+                    />
+                );
+            }
+            const place = cluster.properties.place;
+            return (
+                <LiveBubble
+                    key={`my-map-${place.id}`}
+                    place={place}
+                    onPress={() => navigation.navigate('MyMap')}
+                />
+            );
+        })}
       </MapView>
 
       {/* 지도 위 터치 오버레이 */}

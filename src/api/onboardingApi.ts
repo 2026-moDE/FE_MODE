@@ -8,6 +8,7 @@ export type OnboardingRequest = {
   location_terms_agreed: boolean;
   privacy_agreed?: boolean;
   marketing_agreed?: boolean;
+  profile_image_url?: string;
 };
 
 export const onboardingApi = async (body: OnboardingRequest) => {

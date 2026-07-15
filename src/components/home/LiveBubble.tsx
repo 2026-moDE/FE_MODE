@@ -44,9 +44,13 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress}: Props) {
                         styles.bubble,
                         {borderColor: congestionColor ?? colors.surface.white},
                     ]}>
-                    {place.thumbnail_url ? (
+                    {place.thumbnail_url && place.thumbnail_url.length > 0 ? (
                         <FastImage
-                            source={{uri: place.thumbnail_url, priority: FastImage.priority.high}}
+                            source={{
+                                uri: place.thumbnail_url,
+                                priority: FastImage.priority.high,
+                                cache: FastImage.cacheControl.immutable,
+                            }}
                             style={styles.thumbnail}
                             resizeMode={FastImage.resizeMode.cover}
                         />

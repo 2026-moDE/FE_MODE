@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {View, Text, Image, Pressable, Modal, StyleSheet, Animated, PanResponder, ScrollView, Dimensions} from 'react-native';
+import {View, Text, Pressable, Modal, StyleSheet, Animated, PanResponder, ScrollView, Dimensions} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
@@ -130,11 +131,10 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
 
                     <View style={styles.imageWrapper}>
                         {/* 이미지 */}
-                        <Image
-                            source={{uri: review.image_url}}
+                        <FastImage
+                            source={{uri: review.image_url, priority: FastImage.priority.high}}
                             style={styles.image}
-                            resizeMode="cover"
-                            resizeMethod="resize"
+                            resizeMode={FastImage.resizeMode.cover}
                         />
 
                         {/* 좌측 탭 영역: 이전 사진 */}
@@ -160,9 +160,10 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
                         {/* ── 상단: 사용자 (이미지 위에 오버레이) ── */}
                         <View style={styles.topRow}>
                             <View style={styles.userGroup}>
-                                <Image
+                                <FastImage
                                     source={{uri: review.user.profile_image_url}}
                                     style={styles.avatar}
+                                    resizeMode={FastImage.resizeMode.cover}
                                 />
                                 <Text style={styles.nickname} numberOfLines={1}>
                                     {review.user.nickname}
@@ -213,11 +214,10 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
                             onScrollEndDrag={handleThumbnailScrollEnd}>
                             {thumbnailReviews.map(r => (
                                 <Pressable key={r.id} onPress={() => setCurrentIndex(r.originalIndex)}>
-                                    <Image
-                                        source={{uri: r.image_url!}}
+                                    <FastImage
+                                        source={{uri: r.image_url!, priority: FastImage.priority.normal}}
                                         style={styles.thumbnail}
-                                        resizeMode="cover"
-                                        resizeMethod="resize"
+                                        resizeMode={FastImage.resizeMode.cover}
                                     />
                                     {r.originalIndex !== currentIndex && (
                                         <View style={styles.thumbnailDim} />

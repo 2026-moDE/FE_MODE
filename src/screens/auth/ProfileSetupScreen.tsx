@@ -14,6 +14,7 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useRoute} from '@react-navigation/native';
 import type {RouteProp} from '@react-navigation/native';
 import {onboardingApi} from '../../api/onboardingApi';
+import {useProfileImageUpload, PickedProfileImage} from '../../hooks/useProfileImageUpload';
 import type {AuthStackParamList} from '../../types/navigation';
 
 import {fontFamily, fontSize} from '../../constants/typography';
@@ -32,8 +33,17 @@ type ProfileSetupRouteProp = RouteProp<AuthStackParamList, 'ProfileSetup'>;
 const ProfileSetupScreen = ({navigation}: Props) => {
   const route = useRoute<ProfileSetupRouteProp>();
   const [nickname, setNickname] = useState('');
+  const [pickedImage, setPickedImage] = useState<PickedProfileImage | null>(null);
+  const {pickProfileImage, uploadProfileImage, uploading} = useProfileImageUpload();
 
-  const isActive = nickname.trim().length > 0;
+  const isActive = nickname.trim().length > 0 && !uploading;
+
+  const handlePickImage = async () => {
+    const image = await pickProfileImage();
+    if (image) {
+      setPickedImage(image);
+    }
+  };
 
   const handleNext = async () => {
     if (!isActive) {
@@ -41,12 +51,22 @@ const ProfileSetupScreen = ({navigation}: Props) => {
     }
 
     try {
+      let profileImageUrl: string | undefined;
+
+      if (pickedImage) {
+        const url = await uploadProfileImage(pickedImage);
+        if (url) {
+          profileImageUrl = url;
+        }
+      }
+
       const body = {
         nickname: nickname.trim(),
         terms_agreed: route.params.terms_agreed,
         location_terms_agreed: route.params.location_terms_agreed,
         privacy_agreed: route.params.privacy_agreed,
         marketing_agreed: route.params.marketing_agreed,
+        ...(profileImageUrl && { profile_image_url: profileImageUrl }),
       };
 
       console.log('온보딩 요청 body:', body);
@@ -76,10 +96,14 @@ const ProfileSetupScreen = ({navigation}: Props) => {
         bounces={false}>
         <View style={styles.profileSection}>
           <View style={styles.imageBox}>
-            <View style={styles.checkPattern} />
+            {pickedImage ? (
+              <Image source={{uri: pickedImage.uri}} style={styles.profileImage} />
+            ) : (
+              <View style={styles.checkPattern} />
+            )}
           </View>
 
-          <Pressable style={styles.editButton}>
+          <Pressable style={styles.editButton} onPress={handlePickImage}>
             <Image source={pencilIcon} style={styles.pencilIcon} />
           </Pressable>
         </View>
@@ -160,6 +184,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3F3F3',
     opacity: 0.65,
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 22,
   },
   editButton: {
     position: 'absolute',

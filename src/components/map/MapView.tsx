@@ -1,15 +1,18 @@
 import React from 'react';
-import {StyleSheet} from 'react-native';
-import {NaverMapView, NaverMapViewProps, NaverMapViewRef, NaverMapCircleOverlay} from '@mj-studio/react-native-naver-map';
+import {StyleSheet, View, Platform} from 'react-native';
+import {NaverMapView, NaverMapViewProps, NaverMapViewRef, NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import { INITIAL_CAMERA } from '../../constants/map';
 import { useLocation } from '../../context/LocationContext';
 
 type Props = Omit<NaverMapViewProps,'style'>&{
     ref?: React.Ref<NaverMapViewRef>;
     showCircle?: boolean;
+    showLocationMarker?: boolean;
 }
 
-const MapView=({ref, children, showCircle = true, ...props}:Props)=>{
+const MARKER_SIZE = 36;
+
+const MapView=({ref, children, showCircle = true, showLocationMarker = true, ...props}:Props)=>{
     const { location } = useLocation();
 
     return (
@@ -20,19 +23,10 @@ const MapView=({ref, children, showCircle = true, ...props}:Props)=>{
             isShowCompass={false}
             isShowScaleBar={false}
             isShowZoomControls={false}
+            locationOverlay={{isVisible: false}}
             {...props}
         >
             {children}
-            {/* {location && showCircle && (
-                <NaverMapCircleOverlay
-                    latitude={location.latitude}
-                    longitude={location.longitude}
-                    radius={500}
-                    color="rgba(131, 166, 255, 0.2)"
-                    outlineColor="rgba(131, 166, 255, 0.5)"
-                    outlineWidth={1}
-                />
-            )} */}
         </NaverMapView>
     );
 };
@@ -41,4 +35,30 @@ export default MapView;
 
 const styles=StyleSheet.create({
     map:{flex:1},
+    markerWrap:{
+        width: MARKER_SIZE,
+        height: MARKER_SIZE,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pulse:{
+        position: 'absolute',
+        width: MARKER_SIZE,
+        height: MARKER_SIZE,
+        borderRadius: MARKER_SIZE / 2,
+        backgroundColor: 'rgba(66, 133, 244, 0.2)',
+    },
+    dot:{
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#4285F4',
+        borderWidth: 2.5,
+        borderColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 3,
+    },
 });

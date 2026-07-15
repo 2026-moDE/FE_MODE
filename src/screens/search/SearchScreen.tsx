@@ -15,6 +15,8 @@ import { useSearchHistory } from '../../hooks/useSearchHistory';
 import { useAutocomplete } from '../../hooks/useAutocomplete';
 import SearchItemList from '../../components/search/SearchItemList';
 import LocationButton from '../../components/search/LocationButton';
+import { useLocation } from '../../context/LocationContext';
+import { getDistance, formatDistance } from '../../utils/distance';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 // 디폴트(최근,추천 검색어) / 검색어 타이핑 / 검색 완료 / 현위치로 검색
@@ -33,9 +35,11 @@ export default function SearchScreen() {
 
     // 장소 검색 훅
     const { search, places } = useSearchPlaces();
+    // 현재 위치
+    const { location } = useLocation();
 
     // 최근 검색어 훅 → 화면 들어오면 자동으로 조회
-    const { history, fetchHistory, deleteHistory } = useSearchHistory();
+    const { history, fetchHistory, saveHistory, deleteHistory } = useSearchHistory();
 
     // 검색어 자동 완성
     const { suggestions, search: searchAutocomplete } = useAutocomplete();
@@ -69,24 +73,24 @@ export default function SearchScreen() {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
             searchAutocomplete(text);
-            search(text);
-        }, 300); // 3초마다 실행
+            search(text, location ? { latitude: location.latitude, longitude: location.longitude } : undefined);
+        }, 300);
     };
 
     // 검색 실행
     const handleSubmit = useCallback(() => {
         setMode('searched');
-        search(searchText);
+        search(searchText, location ? { latitude: location.latitude, longitude: location.longitude } : undefined);
         fetchHistory();
-    }, [searchText, search, fetchHistory]);
+    }, [searchText, search, fetchHistory, location]);
 
     // 최근/추천 검색어 클릭 → 검색 실행
     const handleSelectKeyword = useCallback((keyword: string) => {
         setSearchText(keyword);
         setMode('searched');
-        search(keyword);
+        search(keyword, location ? { latitude: location.latitude, longitude: location.longitude } : undefined);
         fetchHistory();
-    }, [search, fetchHistory]);
+    }, [search, fetchHistory, location]);
 
     // 검색창 X → 텍스트 초기화 (gui상 아직 없음)
     const handleClear = () => {
@@ -96,6 +100,7 @@ export default function SearchScreen() {
 
     // 특정 장소를 클릭하면 장소 상세페이지로 이동 (리뷰 모드면 ReviewWrite로)
     const handleSelectPlace = useCallback((place: Place) => {
+        saveHistory(place.name);
         if (reviewPhotoUri) {
             navigation.navigate('ReviewStack', {
                 screen: 'ReviewLocationConfirm',
@@ -104,7 +109,9 @@ export default function SearchScreen() {
                     placeId: place.id,
                     placeName: place.name,
                     placeCategory: CATEGORY_LABEL[place.category] ?? place.category,
-                    placeDistance: '',
+                    placeDistance: (location && place.latitude != null && place.longitude != null)
+                        ? formatDistance(getDistance(location, {latitude: place.latitude, longitude: place.longitude}))
+                        : '',
                     placeAddress: place.address,
                     latitude: place.latitude ?? undefined,
                     longitude: place.longitude ?? undefined,
@@ -113,13 +120,16 @@ export default function SearchScreen() {
         } else {
             navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name });
         }
-    }, [navigation, reviewPhotoUri]);
+    }, [navigation, reviewPhotoUri, saveHistory]);
 
     // 현재 위치로 장소 찾기
     const handleLocationSearch = () => {
-        // TODO: 현재 위치 기반 검색
+        if (!location) return;
         setMode('location');
-        // search(...)
+        search(searchText, {
+            latitude: location.latitude,
+            longitude: location.longitude,
+        });
     };
 
     return (

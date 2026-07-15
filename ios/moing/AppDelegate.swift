@@ -5,6 +5,7 @@ import ReactAppDependencyProvider
 import KakaoSDKAuth
 import KakaoSDKCommon
 import NMapsMap
+import FirebaseCore
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,6 +18,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    FirebaseApp.configure()
+
     if let kakaoAppKey = Bundle.main.object(forInfoDictionaryKey: "KAKAO_APP_KEY") as? String {
       KakaoSDK.initSDK(appKey: kakaoAppKey)
     }
@@ -47,6 +50,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     return false
   }
+
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {

@@ -1,6 +1,14 @@
 import React, {createContext, useContext, useState, useEffect} from 'react';
+import {Platform} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import {Location} from '../types/location';
+
+if (Platform.OS === 'ios') {
+    Geolocation.setRNConfiguration({
+        skipPermissionRequests: false,
+        authorizationLevel: 'whenInUse',
+    });
+}
 
 type LocationContextType = {
     location: Location | null;
@@ -37,7 +45,7 @@ export function LocationProvider({children}: {children: React.ReactNode}) {
                 setIsLoading(false);
             },
             {
-                enableHighAccuracy: false,     // GPS + WiFi + 셀룰러 다 사용 (실내도 ㄱㄴ)
+                enableHighAccuracy: true,      // iOS에서 GPS 활성화 (정확도 향상)
                 distanceFilter: 50,            // 50m 이상 이동 시에만 업데이트 
             },
         );

@@ -1,5 +1,6 @@
 import React from 'react';
-import {View, Text, ImageBackground, Image, Pressable, StyleSheet} from 'react-native';
+import {View, Text, Image, Pressable, StyleSheet} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
@@ -34,37 +35,37 @@ export default function ReviewCard({review, onPress}: Props) {
 
     return (
         <Pressable onPress={onPress} style={styles.container}>
-            <ImageBackground
-                source={{uri: image_url}}
+            <FastImage
+                source={{uri: image_url, priority: FastImage.priority.high}}
                 style={styles.image}
-                imageStyle={styles.imageRadius}
-                resizeMethod="resize">
-                {/* 상단: 사용자 정보 + 시간 */}
-                <View style={styles.topRow}>
-                    {/* 사용자 (아바타 + 닉네임) */}
-                    <View style={styles.userGroup}>
-                        <Image
-                            source={{uri: user.profile_image_url}}
-                            style={styles.avatar}
-                        />
-                        <Text style={styles.nickname} numberOfLines={1}>
-                            {user.nickname}
-                        </Text>
-                    </View>
-
-                    {/* 시간 */}
-                    <View style={styles.timeBadge}>
-                        <Text style={styles.timeText}>{timeAgo}</Text>
-                    </View>
-                </View>
-
-                {/* 하단: 코멘트 (하단에서 살짝 위로 올림) */}
-                <View style={styles.commentArea}>
-                    <Text style={styles.comment} numberOfLines={2}>
-                        {comment}
+                resizeMode={FastImage.resizeMode.cover}
+            />
+            {/* 상단: 사용자 정보 + 시간 */}
+            <View style={styles.topRow}>
+                {/* 사용자 (아바타 + 닉네임) */}
+                <View style={styles.userGroup}>
+                    <FastImage
+                        source={{uri: user.profile_image_url}}
+                        style={styles.avatar}
+                        resizeMode={FastImage.resizeMode.cover}
+                    />
+                    <Text style={styles.nickname} numberOfLines={1}>
+                        {user.nickname}
                     </Text>
                 </View>
-            </ImageBackground>
+
+                {/* 시간 */}
+                <View style={styles.timeBadge}>
+                    <Text style={styles.timeText}>{timeAgo}</Text>
+                </View>
+            </View>
+
+            {/* 하단: 코멘트 (하단에서 살짝 위로 올림) */}
+            <View style={styles.commentArea}>
+                <Text style={styles.comment} numberOfLines={2}>
+                    {comment}
+                </Text>
+            </View>
         </Pressable>
     );
 }
@@ -77,12 +78,13 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     image: {
-        flex: 1,
-        justifyContent: 'flex-start',
-        backgroundColor: colors.surface.muted,
-    },
-    imageRadius: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         borderRadius: radius.lg,
+        backgroundColor: colors.surface.muted,
     },
     topRow: {
         flexDirection: 'row',
