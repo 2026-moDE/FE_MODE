@@ -43,7 +43,7 @@ const mapRef = useRef<NaverMapViewRef>(null);
 
 const [locationFailVisible, setLocationFailVisible] = useState(false);
 
-const LOCATION_LIMIT_M = 100;
+const LOCATION_LIMIT_M = 200;
 
 const getDistanceNumber = (distance: string | number | undefined) => {
   if (typeof distance === 'number') {
@@ -188,7 +188,7 @@ const handleLocationFailConfirm = () => {
             <Text style={styles.modalTitle}>위치 인증에 실패했어요</Text>
 
             <Text style={styles.modalDescription}>
-              내 위치 기준 100m 이내의 장소만{'\n'}
+              내 위치 기준 200m 이내의 장소만{'\n'}
               리뷰 작성이 가능해요
             </Text>
 
