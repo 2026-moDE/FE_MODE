@@ -37,6 +37,8 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
     placeAddress,
     latitude,
     longitude,
+    congestion,
+    reviewText,
   } = route.params;
 
 const mapRef = useRef<NaverMapViewRef>(null);
@@ -87,6 +89,8 @@ const handleConfirmLocation = () => {
     photoUri,
     placeId,
     placeName,
+    congestion,
+    reviewText,
   });
 };
 
@@ -96,6 +100,8 @@ const handleLocationFailConfirm = () => {
 
   navigation.navigate('ReviewWrite', {
     photoUri,
+    congestion,
+    reviewText,
   });
 };
 

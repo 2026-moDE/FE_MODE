@@ -23,6 +23,8 @@ export type AppStackParamList = {
   Search:
     | {
         reviewPhotoUri?: string;
+        reviewCongestion?: string;
+        reviewText?: string;
       }
     | undefined;
 
@@ -64,7 +66,9 @@ export type ReviewStackParamList = {
     placeAddress: string;
     latitude?: number;
     longitude?: number;
+    congestion?: string;
+    reviewText?: string;
   };
-  ReviewWrite: { photoUri: string; placeId?: number; placeName?: string };
+  ReviewWrite: { photoUri: string; placeId?: number; placeName?: string; congestion?: string; reviewText?: string };
   ReviewComplete: undefined;
 };

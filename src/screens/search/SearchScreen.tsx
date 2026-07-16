@@ -26,6 +26,8 @@ export default function SearchScreen() {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProp<AppStackParamList, 'Search'>>();
     const reviewPhotoUri = route.params?.reviewPhotoUri;
+    const reviewCongestion = route.params?.reviewCongestion;
+    const reviewTextParam = route.params?.reviewText;
 
     // 검색창 텍스트 state
     const [searchText, setSearchText] = useState('');
@@ -115,6 +117,8 @@ export default function SearchScreen() {
                     placeAddress: place.address,
                     latitude: place.latitude ?? undefined,
                     longitude: place.longitude ?? undefined,
+                    congestion: reviewCongestion,
+                    reviewText: reviewTextParam,
                 },
             } as never);
         } else {

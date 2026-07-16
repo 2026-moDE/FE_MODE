@@ -2,14 +2,13 @@ import React, {useMemo, useState} from 'react';
 import {
   View,
   Text,
-  StyleSheet, 
+  StyleSheet,
   StatusBar,
   Image,
   Pressable,
   TextInput,
   KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
+  ScrollView,
   Platform,
   Dimensions,
   Alert,
@@ -56,12 +55,14 @@ const px = (value: number) => value * scale;
 const MAX_REVIEW_LENGTH = 100;
 
 const ReviewWriteScreen = ({navigation, route}: Props) => {
-  const {photoUri, placeId, placeName} = route.params;
+  const {photoUri, placeId, placeName, congestion, reviewText: savedReviewText} = route.params;
   const {location} = useLocation();
 
   const [selectedCongestion, setSelectedCongestion] =
-    useState<CongestionType | null>(null);
-  const [reviewText, setReviewText] = useState('');
+    useState<CongestionType | null>(
+      (congestion as CongestionType) ?? null,
+    );
+  const [reviewText, setReviewText] = useState(savedReviewText ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exitModalVisible, setExitModalVisible] = useState(false);
 
@@ -76,6 +77,8 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
     const handlePressPlace = () => {
       navigation.getParent()?.navigate('Search', {
         reviewPhotoUri: photoUri,
+        reviewCongestion: selectedCongestion ?? undefined,
+        reviewText: reviewText || undefined,
       } as never);
     };
 
@@ -149,8 +152,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.keyboardView}>
         {/* 헤더 */}
         <View style={styles.header}>
           <Pressable
@@ -163,7 +164,11 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
           <Text style={styles.headerTitle}>후기 작성</Text>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentInner}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
 
           <View style={styles.placeSection}>
             <View style={styles.photoWrapper}>
@@ -254,7 +259,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
               </Text>
             </View>
           </View>
-        </View>
+        </ScrollView>
 
         {/* 하단 버튼 */}
        <Pressable
@@ -293,8 +298,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
               );
             }}
           />
-        </View>
-        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -338,6 +341,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: px(16),
+  },
+
+  contentInner: {
     paddingTop: px(16),
     paddingBottom: px(90),
   },
