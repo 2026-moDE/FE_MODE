@@ -1,3 +1,17 @@
+/**
+ * 장소 검색 커스텀 훅
+ *
+ * 검색 API(searchPlaces) 호출과 그에 딸린 상태(결과 목록, 로딩, 에러)를
+ * 한 묶음으로 관리한다. 화면에서는 search()만 부르면 되고,
+ * 결과는 places로 자동 반영된다.
+ *
+ * 사용 예시:
+ *   const {search, places} = useSearchPlaces();
+ *   search('성수동');                              // 키워드 검색
+ *   search('', {latitude: 37.5, longitude: 127})  // 현위치 기반 검색 (키워드 없이도 가능)
+ *
+ * 쓰는 곳: SearchScreen (타이핑 자동검색, 검색 실행, 현위치로 찾기)
+ */
 import { useState, useCallback } from 'react';
 import { Place } from '../types/place';
 import { searchPlaces } from '../api/search';
