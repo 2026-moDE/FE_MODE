@@ -68,7 +68,7 @@ export default function ReviewReportScreen({navigation, route}: Props) {
                     onPress={async () => {
                         if (!selected) return;
                         try {
-                            await reportReview(reviewId, selected);
+                            await reportReview(reviewId, {reason: selected, detail:comment||undefined});
                             setSubmitted(true);
                             setShowToast(true);
                             setTimeout(() => {

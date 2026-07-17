@@ -103,8 +103,10 @@ export async function verifyPlaceLocation(
 }
 
 // 리뷰 신고 api
-export async function reportReview(id:number, reason:string) {
-  const response =  await apiClient.post(`/api/reviews/${id}/report`,{reason})
+export async function reportReview(
+  id:number, 
+  body : {reason:string; detail?:string;}){
+  const response =  await apiClient.post(`/api/reviews/${id}/report`, body)
   return response.data;
 }
 

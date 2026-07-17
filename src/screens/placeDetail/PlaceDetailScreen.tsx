@@ -195,8 +195,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 onReport={() => {
                     if (imageIndex === null) return;
                     const reviewId = reviews[imageIndex].id;
-                    // 우선 주석 처리
-                    //navigation.navigate('ReviewReport', {reviewId});
+                    navigation.navigate('ReviewReport', {reviewId});
                     setTimeout(() => setImageIndex(null), 350);
                 }}
             />
