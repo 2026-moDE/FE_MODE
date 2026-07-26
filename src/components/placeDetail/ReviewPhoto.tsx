@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {View, Text, Pressable, Modal, StyleSheet, Animated, PanResponder, ScrollView, Dimensions} from 'react-native';
+import {View, Text, Pressable, Modal, StyleSheet, Animated, PanResponder, ScrollView, Dimensions, TextInput} from 'react-native';
 import FastImage from 'react-native-fast-image';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
@@ -41,6 +41,8 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
     const [menuPosition, setMenuPosition] = useState({top: 0, right: 0});
     const ellipsisRef = useRef<any>(null);
     const thumbnailScrollRef = useRef<ScrollView>(null);
+    // 텍스트 수정
+    const [changedComment, setChangedComment] = useState(reviews[currentIndex]?.comment??'');
 
     // image_url 있는 리뷰만 썸네일로, 원래 index 보존
     const thumbnailReviews = reviews
@@ -49,6 +51,8 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
 
     // 스와이프 닫기용 위치 값 (Animated)
     const translateY = useRef(new Animated.Value(0)).current;
+
+    useEffect(()=> {setChangedComment(reviews[currentIndex]?.comment??'')},[reviews,currentIndex]);
 
     // visible 켜질 때마다 startIndex로 초기화 + 위치 리셋
     useEffect(() => {
@@ -189,13 +193,21 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
                         </Pressable>
 
                         {/* ── 중하단: 시간 + 코멘트 (이미지 위 가운데~하단) ── */}
-                        <View style={styles.commentArea} pointerEvents="none">
+                        <View style={styles.commentArea} pointerEvents={isOwner? 'auto':"none"}>
                             <View style={styles.timeBadge}>
                                 <Text style={styles.timeText}>
                                     {useAbsoluteDate ? formatAbsoluteDate(review.created_at) : formatRelativeTime(review.created_at)}
                                 </Text>
                             </View>
-                            <Text style={styles.comment}>{review.comment}</Text>
+                            {isOwner ?
+                                <TextInput
+                                    style={styles.comment}
+                                    value={changedComment}
+                                    onChangeText={setChangedComment}
+                                    multiline
+                                />
+                                :<Text style={styles.comment}>{review.comment}</Text>
+                            }
                         </View>
 
                     </View>

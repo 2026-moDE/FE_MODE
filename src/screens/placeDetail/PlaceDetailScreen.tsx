@@ -93,10 +93,13 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
         navigation.goBack();
     }, [navigation]);
 
-    // 리뷰 바로 쓰기 (조리개 버튼)
+    // 리뷰 바로 쓰기 (조리개 버튼) - 현재 장소를 미리 실어 보냄
     const handleQuickReview = useCallback(() => {
-        navigation.navigate('ReviewStack', {screen: 'ReviewCamera'});
-    }, [navigation]);
+        navigation.navigate('ReviewStack', {
+            screen: 'ReviewCamera',
+            params: {placeId, placeName},
+        });
+    }, [navigation, placeId, placeName]);
 
     // 알림 토글
     const handleToggleSubscribe = useCallback(async () => {
