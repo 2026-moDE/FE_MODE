@@ -23,6 +23,8 @@ const MapView=({ref, children, showCircle = true, showLocationMarker = true, ...
             isShowCompass={false}
             isShowScaleBar={false}
             isShowZoomControls={false}
+            minZoom={5.5}
+            isExtentBoundedInKorea={true}
             // 기존 locationOverlay을 prop로 안 넘겨서 마커 움직이는 오류 발생했을 확률이 있음
             // mj-studio/react-native-naver-map가 네이티브 기능 가지는데, prop로 안 넘기면서 rn에서 오류 생겼던 듯
             locationOverlay={{isVisible: false} }

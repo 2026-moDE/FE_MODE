@@ -114,12 +114,9 @@ export default function HomeScreen(){
         }
     }, []);
 
-    // places 바뀔 때마다 supercluster 인스턴스 재생성 (500m 원 안의 장소만)
+    // places 바뀔 때마다 supercluster 인스턴스 재생성
     const supercluster = useMemo(() => {
-        const cluster = new Supercluster({ radius: 60, maxZoom: 14, minPoints: 2 });
-        // const filtered = location && zoom >= 14
-        //     ? places.filter(p => getDistance(location, {latitude: p.latitude, longitude: p.longitude}) <= 500)
-        //     : places;
+        const cluster = new Supercluster({ radius: 40, maxZoom: 13, minPoints: 3 });
         const filtered = places;
         cluster.load(filtered.map(p => ({
             type: 'Feature' as const,
@@ -329,7 +326,16 @@ export default function HomeScreen(){
             <IconCurrentLocation
                 style={styles.locationButton}
                 onPress={() => {
-                    mapRef.current?.setLocationTrackingMode('Follow');
+                    mapRef.current?.animateCameraTo({
+                        latitude: location.latitude,
+                        longitude : location. longitude,
+                        easing : 'Fly',
+                        duration: 800,
+                    })
+                    setTimeout(() => {
+                        // 안드로이드에서만 자동 애니메이션
+                        mapRef.current?.setLocationTrackingMode('Follow');
+                    },850);
                 }}
             />
 
