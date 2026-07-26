@@ -13,6 +13,9 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import type {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewComplete'>;
 
@@ -33,7 +36,7 @@ const ReviewCompleteScreen = ({navigation}: Props) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       <View style={styles.container}>
         <View style={styles.centerBox}>
@@ -62,12 +65,12 @@ export default ReviewCompleteScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   centerBox: {
@@ -85,7 +88,7 @@ const styles = StyleSheet.create({
   },
 
   completeText: {
-    marginTop: px(16),
+    marginTop: px(spacing.lg),
     fontFamily: fontFamily.bold,
     fontSize: px(22),
     lineHeight: px(26),
@@ -95,11 +98,11 @@ const styles = StyleSheet.create({
 
   homeButton: {
     position: 'absolute',
-    left: px(16),
-    right: px(16),
+    left: px(spacing.lg),
+    right: px(spacing.lg),
     height: px(52),
-    borderRadius: px(8),
-    backgroundColor: '#2C343F',
+    borderRadius: px(radius.md),
+    backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,7 +111,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: px(18),
     lineHeight: px(21),
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     includeFontPadding: false,
   },
 });

@@ -15,6 +15,9 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RouteProp} from '@react-navigation/native';
 import type {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
@@ -61,12 +64,12 @@ const STATUS_BAR_HEIGHT =
 const figmaY = (value: number) => px(value);
 
 // 사진 영역과 헤더 위치 치수
-const SIDE_MARGIN = px(32);
-const PHOTO_WIDTH = SCREEN_WIDTH - SIDE_MARGIN * 2;
-const PHOTO_HEIGHT = px(585);
+const SIDE_MARGIN = px(spacing['3xl']);
+const MAX_PHOTO_WIDTH = SCREEN_WIDTH - SIDE_MARGIN * 2;
+const MAX_PHOTO_HEIGHT = px(570);
 const TOP_SECTION_HEIGHT = figmaY(129);
 const LOGO_TOP = figmaY(77);
-
+const TOOL_AREA_HEIGHT = px(120);
 const BRUSH_RADIUS = px(24);
 const ERASE_RADIUS = px(28);
 //const BLUR_SIGMA = 12;
@@ -104,6 +107,62 @@ export default function ReviewPhotoConfirmScreen() {
   const canvasRef = useCanvasRef();
   const {photoUri, placeId, placeName} = route.params;
   const photoSkiaImage = useImage(photoUri);
+
+  // 세로 사진은 리뷰(카메라) 화면과 동일한 고정 박스에 cover로 채우고,
+  // 가로 사진은 잘리는 부분 없이 화면 전체 너비로 보이도록 한다.
+  const photoDisplaySize = useMemo(() => {
+    if (!photoSkiaImage) {
+      return {
+        width: MAX_PHOTO_WIDTH,
+        height: MAX_PHOTO_HEIGHT,
+        isLandscape: false,
+      };
+    }
+
+    const originalWidth = photoSkiaImage.width();
+    const originalHeight = photoSkiaImage.height();
+
+    console.log('[Confirm 이미지 크기]', {
+      originalWidth,
+      originalHeight,
+    });
+
+    if (originalWidth <= 0 || originalHeight <= 0) {
+      return {
+        width: MAX_PHOTO_WIDTH,
+        height: MAX_PHOTO_HEIGHT,
+        isLandscape: false,
+      };
+    }
+
+    const aspectRatio = originalWidth / originalHeight;
+    const isLandscape = originalWidth > originalHeight;
+
+    // 가로 사진도 세로와 동일한 좌우 여백 유지
+    if (isLandscape) {
+      const width = MAX_PHOTO_WIDTH;
+      const height = width / aspectRatio;
+
+      return {
+        width,
+        height,
+        isLandscape: true,
+      };
+    }
+
+    // 세로 사진은 리뷰(카메라) 화면과 동일한 고정 박스 크기 유지
+    return {
+      width: MAX_PHOTO_WIDTH,
+      height: MAX_PHOTO_HEIGHT,
+      isLandscape: false,
+    };
+  }, [photoSkiaImage]);
+
+  const {
+    width: displayPhotoWidth,
+    height: displayPhotoHeight,
+    isLandscape,
+  } = photoDisplaySize;
     
   const showToastForThreeSeconds = () => {
     setShowBlurToast(true);
@@ -227,7 +286,12 @@ const handleConfirm = async () => {
 
   const handleDraw = useCallback(
     (x: number, y: number) => {
-      if (x < 0 || x > PHOTO_WIDTH || y < 0 || y > PHOTO_HEIGHT) {
+      if (
+        x < 0 ||
+        x > displayPhotoWidth ||
+        y < 0 ||
+        y > displayPhotoHeight
+      ) {
         return;
       }
 
@@ -237,7 +301,13 @@ const handleConfirm = async () => {
         eraseBlurPoint(x, y);
       }
     },
-    [addBlurPoint, eraseBlurPoint, selectedTool],
+    [
+      addBlurPoint,
+      eraseBlurPoint,
+      selectedTool,
+      displayPhotoWidth,
+      displayPhotoHeight,
+    ],
   );
 
   const panResponder = useMemo(
@@ -290,10 +360,27 @@ const handleConfirm = async () => {
       </View>
 
       {/* 사진 영역 */}
-      <View style={styles.photoSection}>
-        <View style={styles.photoWrapper}>
+      <View
+        style={[
+          styles.photoSection,
+          {justifyContent: isLandscape ? 'center' : 'flex-start'},
+        ]}>
+        <View
+          style={[
+            styles.photoWrapper,
+            {
+              width: displayPhotoWidth,
+              height: displayPhotoHeight,
+            },
+          ]}>
           <View
-            style={styles.photoBox}
+            style={[
+              styles.photoBox,
+              {
+                width: displayPhotoWidth,
+                height: displayPhotoHeight,
+              },
+            ]}
             {...(isBlurMode ? panResponder.panHandlers : {})}>
             {photoSkiaImage ? (
               <Canvas ref={canvasRef} style={styles.photo}>
@@ -301,9 +388,9 @@ const handleConfirm = async () => {
                   image={photoSkiaImage}
                   x={0}
                   y={0}
-                  width={PHOTO_WIDTH}
-                  height={PHOTO_HEIGHT}
-                  fit="cover"
+                  width={displayPhotoWidth}
+                  height={displayPhotoHeight}
+                  fit={isLandscape ? 'contain' : 'cover'}
                 />
 
                 {blurPoints.map(point => {
@@ -316,9 +403,9 @@ const handleConfirm = async () => {
                       image={photoSkiaImage}
                       x={0}
                       y={0}
-                      width={PHOTO_WIDTH}
-                      height={PHOTO_HEIGHT}
-                      fit="cover">
+                      width={displayPhotoWidth}
+                      height={displayPhotoHeight}
+                      fit={isLandscape ? 'contain' : 'cover'}>
                       <RuntimeShader source={mosaicRuntimeEffect} />
                     </SkiaImage>
                   </Group>
@@ -326,7 +413,14 @@ const handleConfirm = async () => {
                 })}
               </Canvas>
             ) : (
-              <View style={styles.photoLoadingBox}>
+              <View
+                style={[
+                  styles.photoLoadingBox,
+                  {
+                    width: displayPhotoWidth,
+                    height: displayPhotoHeight,
+                  },
+                ]}>
                 <Text style={styles.photoLoadingText}>이미지 불러오는 중...</Text>
               </View>
             )}
@@ -433,13 +527,13 @@ const styles = StyleSheet.create({
     height: TOP_SECTION_HEIGHT,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: px(16),
+    paddingBottom: px(spacing.lg),
   },
   // 왼쪽 뒤로가기 화살표 버튼
   backButton: {
     position: 'absolute',
     top: LOGO_TOP,
-    left: px(16),
+    left: px(spacing.lg),
     width: px(32),
     height: px(32),
     justifyContent: 'center',
@@ -451,17 +545,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: LOGO_TOP + px(3),
     alignSelf: 'center',
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: px(17),
     fontFamily: fontFamily.bold,
   },
   confirmButton: {
     position: 'absolute',
     top: LOGO_TOP,
-    right: px(16),
+    right: px(spacing.lg),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(8),
+    gap: px(spacing.s),
   },
   checkIcon: {
     width: px(24),
@@ -469,33 +563,34 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   confirmText: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: px(16),
     fontFamily: fontFamily.bold,
   },
 
-  // 사진을 가운데 정렬하는 영역
+  // 사진 영역: 세로는 리뷰 카메라 화면처럼 헤더 바로 아래(flex-start),
+  // 가로는 높이가 짧아지므로 남은 공간에서 가운데 정렬(center)
   photoSection: {
+    flex: 1,
     width: '100%',
     alignItems: 'center',
+    paddingBottom: TOOL_AREA_HEIGHT,
   },
+  
   // 사진과 말풍선을 같이 담는 박스
   photoWrapper: {
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
+    alignSelf: 'center',
   },
+
   photoBox: {
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
     borderRadius: px(20),
     overflow: 'hidden',
-    
     backgroundColor: '#111111',
   },
   photo: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
 
   // 사진 위에 뜨는 AI 안내 말풍선
@@ -505,14 +600,14 @@ const styles = StyleSheet.create({
     bottom: px(-14),
     minWidth: px(207),
     height: px(28),
-    paddingHorizontal: px(12),
-    borderRadius: px(8),
-    backgroundColor: '#83A6FF',
+    paddingHorizontal: px(spacing.md),
+    borderRadius: px(radius.md),
+    backgroundColor: colors.surface.brand,
     justifyContent: 'center',
     alignItems: 'center',
   },
   aiBubbleText: {
-    color: '#111114',
+    color: colors.text.basic,
     fontSize: px(12),
     fontFamily: fontFamily.bold,
   },
@@ -527,44 +622,50 @@ const styles = StyleSheet.create({
     borderTopWidth: px(10),
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#83A6FF',
+    borderTopColor: colors.surface.brand,
   },
 
   // 기본 모드에서 보이는 하단 도구 영역
   toolSection: {
-    flex: 1,
-    paddingTop: px(32),
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: px(spacing['4xl']),
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   toolButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(8),
+    gap: px(spacing.s),
   },
   // 기본 모드의 블러 아이콘
   toolIcon: {
     width: px(32),
     height: px(32),
     resizeMode: 'contain',
-    tintColor: '#FFFFFF',
+    tintColor: colors.icon.inverse,
   },
   // 기본 모드의 도구 텍스트
   toolText: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: px(16),
     fontFamily: fontFamily.bold,
   },
 
   // 블러 모드에서 보이는 하단 편집 도구 영역
   blurToolSection: {
-    flex: 1,
-    paddingTop: px(32),
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: px(spacing['4xl']),
     alignItems: 'center',
+    justifyContent: 'center',
   },
+
   blurToolRow: {
-    width: PHOTO_WIDTH,
+    width: MAX_PHOTO_WIDTH,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -572,14 +673,14 @@ const styles = StyleSheet.create({
   leftToolGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(32),
+    gap: px(spacing['3xl']),
   },
   // 현재 선택된 도구 버튼
   selectedCircleButton: {
     width: px(40),
     height: px(40),
-    borderRadius: px(20),
-    backgroundColor: '#FFFFFF',
+    borderRadius: px(radius['2xl']),
+    backgroundColor: colors.button.tertiaryFill,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -588,15 +689,15 @@ const styles = StyleSheet.create({
     width: px(28),
     height: px(28),
     resizeMode: 'contain',
-    tintColor: '#111114',
+    tintColor: colors.text.basic,
   },
   // 선택되지 않은 원형 버튼
   outlineCircleButton: {
     width: px(40),
     height: px(40),
-    borderRadius: px(20),
+    borderRadius: px(radius['2xl']),
     borderWidth: px(1),
-    borderColor: '#FFFFFF',
+    borderColor: colors.border.inverse,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -605,18 +706,16 @@ const styles = StyleSheet.create({
     width: px(23),
     height: px(23),
     resizeMode: 'contain',
-    tintColor: '#FFFFFF',
+    tintColor: colors.icon.inverse,
   },
   // 블러 초기화 아이콘 텍스트
   resetIcon: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: px(26),
     lineHeight: px(30),
     fontFamily: fontFamily.regular,
   },
   photoLoadingBox: {
-    width: PHOTO_WIDTH,
-    height: PHOTO_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#E9EDF3',

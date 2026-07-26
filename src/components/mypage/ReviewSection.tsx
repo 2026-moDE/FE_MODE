@@ -12,6 +12,9 @@ import FastImage from 'react-native-fast-image';
 import {Shadow} from 'react-native-shadow-2';
 
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 import {getMyReviews, MyReview, MyProfile} from '../../api/mypage';
 import {CurrentReview} from '../../types/place';
 import ReviewPhoto from '../placeDetail/ReviewPhoto';
@@ -36,6 +39,8 @@ export default function ReviewSection({profile}: Props) {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [imageIndex, setImageIndex] = useState<number | null>(null);
+  // 풀스크린 뷰어에서 스와이프 가능한 범위를 같은 월로 제한하기 위한 키 (예: '2026년 7월')
+  const [viewerMonthKey, setViewerMonthKey] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReviews();
@@ -59,10 +64,11 @@ export default function ReviewSection({profile}: Props) {
     }
   };
 
-  // MyReview → CurrentReview 변환 (ReviewPhoto용)
+  // MyReview → CurrentReview 변환 (ReviewPhoto용), 선택된 월로 제한
   const photoReviews: CurrentReview[] = useMemo(() =>
     reviews
       .filter(r => r.image_url)
+      .filter(r => viewerMonthKey === null || getMonthKey(r.created_at) === viewerMonthKey)
       .map(r => ({
         id: r.id,
         image_url: r.image_url!,
@@ -78,12 +84,16 @@ export default function ReviewSection({profile}: Props) {
         },
         created_at: r.created_at,
       })),
-    [reviews, profile],
+    [reviews, profile, viewerMonthKey],
   );
 
-  // 전체 리뷰 리스트에서의 index → photoReviews에서의 index 찾기
-  const findPhotoIndex = (reviewId: number) => {
-    return photoReviews.findIndex(r => r.id === reviewId);
+  // 리뷰 사진 뷰어를 열면서, 탭한 리뷰가 속한 월로 스와이프 범위를 제한
+  const openViewer = (monthKey: string, reviewId: number) => {
+    setViewerMonthKey(monthKey);
+    const filtered = reviews
+      .filter(r => r.image_url && getMonthKey(r.created_at) === monthKey);
+    const idx = filtered.findIndex(r => r.id === reviewId);
+    setImageIndex(idx >= 0 ? idx : 0);
   };
 
   const groupedReviews = groupReviewsByMonth(reviews);
@@ -91,7 +101,7 @@ export default function ReviewSection({profile}: Props) {
   if (loading) {
     return (
       <View style={styles.centerBox}>
-        <ActivityIndicator size="small" color="#2C343F" />
+        <ActivityIndicator size="small" color={colors.icon.basic} />
       </View>
     );
   }
@@ -128,8 +138,7 @@ export default function ReviewSection({profile}: Props) {
                 activeOpacity={0.85}
                 onPress={() => {
                   if (!review.image_url) return;
-                  const idx = findPhotoIndex(review.id);
-                  if (idx >= 0) setImageIndex(idx);
+                  openViewer(group.month, review.id);
                 }}>
                 <Shadow
                   distance={5}
@@ -170,7 +179,10 @@ export default function ReviewSection({profile}: Props) {
       reviews={photoReviews}
       startIndex={imageIndex ?? 0}
       visible={imageIndex !== null}
-      onClose={() => setImageIndex(null)}
+      onClose={() => {
+        setImageIndex(null);
+        setViewerMonthKey(null);
+      }}
       onDelete={async () => {
         if (imageIndex === null) return;
         try {
@@ -188,14 +200,16 @@ export default function ReviewSection({profile}: Props) {
   );
 }
 
+const getMonthKey = (isoString: string) => {
+  const date = new Date(isoString);
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
+};
+
 const groupReviewsByMonth = (reviews: MyReview[]): ReviewGroup[] => {
   const groupMap: Record<string, MyReview[]> = {};
 
   reviews.forEach(review => {
-    const date = new Date(review.created_at);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const key = `${year}년 ${month}월`;
+    const key = getMonthKey(review.created_at);
 
     if (!groupMap[key]) {
       groupMap[key] = [];
@@ -215,11 +229,11 @@ const getDay = (dateString: string) => {
   return String(date.getDate());
 };
 
-const GRID_PADDING_HORIZONTAL = px(20);
-const THUMB_GAP = px(8);
+const GRID_PADDING_HORIZONTAL = px(spacing.xl);
+const THUMB_GAP = px(spacing.s);
 const THUMB_SIZE =
   (SCREEN_WIDTH - GRID_PADDING_HORIZONTAL * 2 - THUMB_GAP * 4) / 5;
-const CARD_RADIUS = px(12);
+const CARD_RADIUS = px(radius.lg);
 
 const styles = StyleSheet.create({
   scrollContent: {
@@ -239,7 +253,7 @@ const styles = StyleSheet.create({
     fontSize: px(18),
     fontFamily: fontFamily.bold,
     color: '#000000',
-    marginBottom: px(12),
+    marginBottom: px(spacing.md),
   },
 
   reviewGrid: {
@@ -259,7 +273,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#DADADA',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: colors.border.inverse,
   },
 
   reviewImage: {
@@ -290,7 +304,7 @@ const styles = StyleSheet.create({
   dateNumber: {
     fontSize: px(18),
     fontFamily: fontFamily.bold,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     textAlign: 'center',
   },
 
@@ -298,7 +312,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: px(80),
+    paddingBottom: px(spacing['5xl']),
   },
 
   emptyText: {

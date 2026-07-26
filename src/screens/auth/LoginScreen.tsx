@@ -5,30 +5,45 @@ import {
   Image,
   StyleSheet,
   StatusBar,
-  Pressable,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import {loginWithKakaoAccount} from '@react-native-seoul/kakao-login';
 import {socialLoginApi} from '../../api/auth';
 import {saveTokens} from '../../storage/tokenStorage';
 import {useAuth} from '../../context/AuthContext';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import {getFcmToken} from '../../utils/fcm';
 
 import type {AuthStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
+import KakaoLoginButton from '../../components/auth/KakaoLoginButton';
+import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
+import AppleLoginButton from '../../components/auth/AppleLoginButton';
 
-const kakaoLogo = require('../../assets/image/kakao_logo.png');
 const logo = require('../../assets/image/logo.png');
 const iphoneMockup = require('../../assets/image/iphone_mockup.png');
+
+// 디자인(Figma) 기준 프레임 너비. 목업 이미지·로고 위치를 이 값 대비 비율로 환산해
+// 기기 화면 너비가 달라져도 디자인과 동일한 비율로 보이게 한다.
+const DESIGN_WIDTH = 393;
+const LOGO_TOP = 78;
+const LOGO_WIDTH = 75;
+const LOGO_HEIGHT = 40;
+const LOGO_MOCKUP_GAP = 43;
+const MOCKUP_WIDTH = 262;
+const MOCKUP_HEIGHT = 397;
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({navigation}: Props) {
   const [isLoginLoading, setIsLoginLoading] = React.useState(false);
   const {setIsLoggedIn} = useAuth();
+  const {width: windowWidth} = useWindowDimensions();
+  const scale = windowWidth / DESIGN_WIDTH;
+  const insets = useSafeAreaInsets();
 
   const handleKakaoLogin = async () => {
     try {
@@ -79,21 +94,47 @@ export default function LoginScreen({navigation}: Props) {
     }
   };
 
+  const handleGoogleLogin = () => {
+    // TODO: 구글 로그인 SDK 연동
+    Alert.alert('안내', 'Google 로그인은 준비 중입니다.');
+  };
+
+  const handleAppleLogin = () => {
+    // TODO: 애플 로그인 SDK 연동
+    Alert.alert('안내', 'Apple 로그인은 준비 중입니다.');
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor="#2C343F" />
 
-      <View style={styles.topSection}>
-        <Image source={logo} style={styles.logo} resizeMode="contain" />
+      <View style={styles.backgroundLayer} pointerEvents="none">
+        <Image
+          source={logo}
+          style={{
+            width: LOGO_WIDTH * scale,
+            height: LOGO_HEIGHT * scale,
+            marginTop: LOGO_TOP * scale,
+          }}
+          resizeMode="contain"
+        />
 
         <Image
           source={iphoneMockup}
-          style={styles.mockupImage}
+          style={{
+            width: MOCKUP_WIDTH * scale,
+            height: MOCKUP_HEIGHT * scale,
+            marginTop: LOGO_MOCKUP_GAP * scale,
+          }}
           resizeMode="contain"
         />
       </View>
 
-      <View style={styles.bottomSection}>
+      <View
+        style={[
+          styles.bottomSection,
+          {paddingBottom: insets.bottom + 16},
+        ]}>
         <View style={styles.textGroup}>
           <Text style={styles.title}>실시간으로 탐색하는 장소 정보</Text>
 
@@ -102,19 +143,23 @@ export default function LoginScreen({navigation}: Props) {
           </Text>
         </View>
 
-        <Pressable
-          style={({pressed}) => [
-            styles.kakaoButton,
-            pressed && styles.kakaoButtonPressed,
-            isLoginLoading && styles.kakaoButtonPressed,
-          ]}
-          onPress={handleKakaoLogin}
-          disabled={isLoginLoading}>
-          <View style={styles.kakaoContent}>
-            <Image source={kakaoLogo} style={styles.kakaoLogo} />
-            <Text style={styles.kakaoButtonText}>카카오 로그인</Text>
-          </View>
-        </Pressable>
+        <View style={styles.socialButtonGroup}>
+          <KakaoLoginButton
+            onPress={handleKakaoLogin}
+            disabled={isLoginLoading}
+            scale={scale}
+          />
+          <GoogleLoginButton
+            onPress={handleGoogleLogin}
+            style={{marginTop: 5 * scale}}
+            scale={scale}
+          />
+          <AppleLoginButton
+            onPress={handleAppleLogin}
+            style={{marginTop: 5 * scale}}
+            scale={scale}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -124,27 +169,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#2C343F',
-  },
-
-  topSection: {
-    flex: 1,
-    backgroundColor: '#2C343F',
-    alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingTop: 36,
   },
 
-  logo: {
-    width: 75,
-    height: 40,
+  // 로고·목업 이미지는 화면 상단 기준 절대 위치로 고정한다.
+  // bottomSection의 높이(버튼 개수)가 늘어나도 이미지 위치가 밀리지 않도록 하기 위함.
+  backgroundLayer: {
     position: 'absolute',
-    top: 78,
-  },
-
-  mockupImage: {
-    width: 262,
-    height: 397,
-    marginBottom: 0
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
   },
 
   bottomSection: {
@@ -152,14 +188,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingTop: 30,
-    paddingBottom: 50,
     alignItems: 'center',
   },
 
   textGroup: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
 
   title: {
@@ -167,6 +202,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: fontFamily.bold,
     lineHeight: 24,
+    letterSpacing: -0.4,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -179,39 +215,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  kakaoButton: {
+  socialButtonGroup: {
     width: '100%',
-    height: 45,
-    borderRadius: 6,
-    backgroundColor: '#FEE500',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-
-  kakaoButtonPressed: {
-    opacity: 0.75,
-  },
-
-  kakaoContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  kakaoLogo: {
-    width: 18,
-    height: 17,
-    marginRight: 6,
-    resizeMode: 'contain',
-  },
-
-  kakaoButtonText: {
-    color: 'rgba(0, 0, 0, 0.85)',
-    fontSize: 15,
-    fontFamily: fontFamily.bold,
-    lineHeight: 22,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
 });

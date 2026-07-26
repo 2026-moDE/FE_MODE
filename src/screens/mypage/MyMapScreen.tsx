@@ -20,6 +20,9 @@ import {AppStackParamList} from '../../types/navigation';
 import MapView from '../../components/map/MapView';
 import {getMyReviews, getMyProfile, MyReview, MyProfile} from '../../api/mypage';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 import {searchPlaces} from '../../api/search';
 import LiveBubble from '../../components/home/LiveBubble';
 import ClusterBubble from '../../components/home/ClusterBubble';
@@ -64,6 +67,8 @@ export default function MyMapScreen({navigation}: Props) {
   const [visibleReviews, setVisibleReviews] = useState<MyReview[]>([]);
   const [imageIndex, setImageIndex] = useState<number | null>(null);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  // 풀스크린 뷰어에서 스와이프 가능한 범위를 같은 월로 제한하기 위한 키 (예: '2026-7')
+  const [viewerMonthKey, setViewerMonthKey] = useState<string | null>(null);
 
   const {height: SCREEN_HEIGHT} = Dimensions.get('window');
   const COLLAPSED_HEIGHT = 180;
@@ -137,10 +142,16 @@ export default function MyMapScreen({navigation}: Props) {
     mapRef.current?.animateCameraTo({latitude, longitude, zoom: expandZoom});
   }, [supercluster]);
 
-  // visibleReviews → CurrentReview 변환 (ReviewPhoto용)
+  const getMonthKey = (isoString: string) => {
+    const date = new Date(isoString);
+    return `${date.getFullYear()}-${date.getMonth() + 1}`;
+  };
+
+  // visibleReviews → CurrentReview 변환 (ReviewPhoto용), 선택된 월로 제한
   const photoReviews = useMemo<CurrentReview[]>(() =>
     visibleReviews
       .filter(r => r.image_url)
+      .filter(r => viewerMonthKey === null || getMonthKey(r.created_at) === viewerMonthKey)
       .map(r => ({
         id: r.id,
         image_url: r.image_url!,
@@ -156,7 +167,7 @@ export default function MyMapScreen({navigation}: Props) {
         },
         created_at: r.created_at,
       })),
-    [visibleReviews, profile],
+    [visibleReviews, profile, viewerMonthKey],
   );
 
   const groupedReviews = useMemo<PlaceReviewGroup[]>(() => {
@@ -228,6 +239,15 @@ export default function MyMapScreen({navigation}: Props) {
     }
   };
 
+  // 리뷰 사진 뷰어를 열면서, 탭한 리뷰가 속한 월로 스와이프 범위를 제한
+  const openViewer = (list: MyReview[], review: MyReview) => {
+    const monthKey = getMonthKey(review.created_at);
+    const filtered = list.filter(r => r.image_url && getMonthKey(r.created_at) === monthKey);
+    const targetIndex = filtered.findIndex(r => r.id === review.id);
+    setViewerMonthKey(monthKey);
+    setImageIndex(targetIndex >= 0 ? targetIndex : 0);
+  };
+
   const handlePlacePress = (place: NearbyPlace) => {
     const group = locatedGroups.find(item => item.placeId === place.id);
     if (!group) return;
@@ -241,7 +261,7 @@ export default function MyMapScreen({navigation}: Props) {
     });
     // 리뷰 사진이 있으면 바로 뷰어 열기
     if (placeReviews.length > 0) {
-      setImageIndex(0);
+      openViewer(placeReviews, placeReviews[0]);
     }
   };
 
@@ -256,7 +276,7 @@ export default function MyMapScreen({navigation}: Props) {
       <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={10}>
-            <IconArrowLeft size={px(20)} color="#2C343F" />
+            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
           </Pressable>
           <Text style={styles.headerTitle}>마이맵</Text>
           <View style={styles.headerButton} />
@@ -305,6 +325,7 @@ export default function MyMapScreen({navigation}: Props) {
               key={`my-map-full-${place.id}`}
               place={place}
               onPress={handlePlacePress}
+              monochrome
             />
           );
         })}
@@ -312,7 +333,7 @@ export default function MyMapScreen({navigation}: Props) {
 
       {loading && (
         <View style={styles.statusBox}>
-          <ActivityIndicator size="small" color="#2C343F" />
+          <ActivityIndicator size="small" color={colors.icon.basic} />
         </View>
       )}
 
@@ -320,24 +341,26 @@ export default function MyMapScreen({navigation}: Props) {
       {visibleReviews.filter(r => r.image_url).length > 0 && (
         <Animated.View style={[styles.bottomSheet, {height: sheetHeight}]}>
           <Animated.View
-            style={styles.dragHandleTouchArea}
+            style={styles.sheetHeader}
             {...panResponder.panHandlers}>
-            <View style={styles.dragHandle} />
+            <View style={styles.dragHandleTouchArea}>
+              <View style={styles.dragHandle} />
+            </View>
+            <Text style={styles.sheetTitle}>
+              {selectedGroup ? selectedGroup.placeName : '이 주변 장소의 사진'}
+            </Text>
           </Animated.View>
-          <Text style={styles.sheetTitle}>
-            {selectedGroup ? selectedGroup.placeName : '이 주변 장소의 사진'}
-          </Text>
 
           {sheetExpanded ? (
             <ScrollView
               style={{flex: 1}}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.photoGrid}>
-              {visibleReviews.filter(r => r.image_url).map((review, index) => (
+              {visibleReviews.filter(r => r.image_url).map(review => (
                 <TouchableOpacity
                   key={review.id}
                   activeOpacity={0.85}
-                  onPress={() => setImageIndex(index)}>
+                  onPress={() => openViewer(visibleReviews, review)}>
                   <FastImage
                     source={{uri: review.image_url!}}
                     style={styles.photoGridItem}
@@ -348,11 +371,11 @@ export default function MyMapScreen({navigation}: Props) {
             </ScrollView>
           ) : (
             <View style={styles.photoGrid}>
-              {visibleReviews.filter(r => r.image_url).slice(0, 5).map((review, index) => (
+              {visibleReviews.filter(r => r.image_url).slice(0, 5).map(review => (
                 <TouchableOpacity
                   key={review.id}
                   activeOpacity={0.85}
-                  onPress={() => setImageIndex(index)}>
+                  onPress={() => openViewer(visibleReviews, review)}>
                   <FastImage
                     source={{uri: review.image_url!}}
                     style={styles.photoGridItem}
@@ -370,7 +393,10 @@ export default function MyMapScreen({navigation}: Props) {
         reviews={photoReviews}
         startIndex={imageIndex ?? 0}
         visible={imageIndex !== null}
-        onClose={() => setImageIndex(null)}
+        onClose={() => {
+          setImageIndex(null);
+          setViewerMonthKey(null);
+        }}
         onDelete={async () => {
           if (imageIndex === null) return;
           try {
@@ -391,17 +417,17 @@ export default function MyMapScreen({navigation}: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
   headerSafeArea: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(16),
-    paddingVertical: px(12),
+    paddingHorizontal: px(spacing.lg),
+    paddingVertical: px(spacing.md),
   },
   headerButton: {
     width: px(34),
@@ -412,7 +438,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: px(18),
     fontFamily: fontFamily.bold,
-    color: '#111114',
+    color: colors.text.basic,
   },
   statusBox: {
     position: 'absolute',
@@ -426,10 +452,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingTop: 10,
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    paddingTop: spacing.sm,
+    backgroundColor: colors.background.white,
+    borderTopLeftRadius: radius['2xl'],
+    borderTopRightRadius: radius['2xl'],
     elevation: 10,
     shadowColor: '#000000',
     shadowOffset: {width: 0, height: -3},
@@ -437,35 +463,38 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     overflow: 'hidden',
   },
+  sheetHeader: {
+    width: '100%',
+  },
   dragHandleTouchArea: {
     alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 10,
+    paddingTop: spacing.s,
+    paddingBottom: spacing.sm,
   },
   dragHandle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.xs,
     backgroundColor: '#D9D9D9',
   },
   sheetTitle: {
     fontSize: 16,
     fontFamily: fontFamily.bold,
-    color: '#111114',
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    color: colors.text.basic,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.md,
   },
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 8,
-    paddingBottom: 40,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.s,
+    paddingBottom: spacing['4xl'],
   },
   photoGridItem: {
     width: (SCREEN_WIDTH - 40 - 32) / 5,
     height: (SCREEN_WIDTH - 40 - 32) / 5,
-    borderRadius: 12,
-    backgroundColor: '#E0E0E4',
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface.muted,
   },
 });

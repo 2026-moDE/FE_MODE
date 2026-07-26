@@ -22,6 +22,9 @@ import {useLocation} from '../../context/LocationContext';
 import {getDistance, formatDistance} from '../../utils/distance';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewLocationSelect'>;
 
@@ -84,7 +87,7 @@ const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       {/* 헤더 */}
       <View style={styles.header}>
@@ -117,7 +120,7 @@ const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
       {/* 장소 리스트 */}
       {isLoading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator color="#6489F2" />
+          <ActivityIndicator color={colors.text.brand} />
         </View>
       ) : (
         <FlatList
@@ -172,18 +175,18 @@ export default ReviewLocationSelectScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   header: {
     height: px(64),
-    paddingHorizontal: px(16),
-    paddingBottom: px(16),
+    paddingHorizontal: px(spacing.lg),
+    paddingBottom: px(spacing.lg),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E4',
+    borderBottomColor: colors.border.default,
   },
 
   backButton: {
@@ -191,16 +194,16 @@ const styles = StyleSheet.create({
     height: px(32),
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: px(8),
+    marginRight: px(spacing.s),
   },
 
   searchBox: {
     flex: 1,
     height: px(40),
-    borderRadius: px(12),
-    backgroundColor: '#F1F1F4',
-    paddingLeft: px(12),
-    paddingRight: px(16),
+    borderRadius: px(radius.lg),
+    backgroundColor: colors.surface.default,
+    paddingLeft: px(spacing.md),
+    paddingRight: px(spacing.lg),
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -224,11 +227,11 @@ const styles = StyleSheet.create({
 
   locationBar: {
     height: px(44),
-    marginHorizontal: px(16),
-    marginTop: px(12),
-    borderRadius: px(8),
-    backgroundColor: '#2C343F',
-    paddingHorizontal: px(16),
+    marginHorizontal: px(spacing.lg),
+    marginTop: px(spacing.md),
+    borderRadius: px(radius.md),
+    backgroundColor: colors.surface.subtle,
+    paddingHorizontal: px(spacing.lg),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -249,13 +252,13 @@ const styles = StyleSheet.create({
   locationText: {
     fontFamily: fontFamily.bold,
     fontSize: px(13),
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   savedText: {
     fontFamily: fontFamily.medium,
     fontSize: px(13),
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   loadingBox: {
@@ -265,51 +268,51 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingTop: px(8),
-    paddingBottom: px(24),
+    paddingTop: px(spacing.s),
+    paddingBottom: px(spacing['2xl']),
   },
 
   placeItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: px(14),
-    paddingHorizontal: px(16),
+    paddingHorizontal: px(spacing.lg),
     borderBottomWidth: 1,
     borderBottomColor: '#EEF0F3',
   },
 
   placeTextBox: {
     flex: 1,
-    marginRight: px(12),
+    marginRight: px(spacing.md),
   },
 
   placeTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: px(4),
+    gap: px(spacing.xs),
     marginBottom: px(2),
   },
 
   placeCategoryBadge: {
     height: px(22),
-    paddingHorizontal: px(8),
-    borderRadius: px(8),
-    backgroundColor: '#E1E9FF',
+    paddingHorizontal: px(spacing.s),
+    borderRadius: px(radius.md),
+    backgroundColor: colors.button.primaryLighter,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: px(8),
+    marginRight: px(spacing.s),
   },
 
   placeCategory: {
     fontFamily: fontFamily.bold,
     fontSize: px(12),
-    color: '#6489F2',
+    color: colors.text.brand,
     lineHeight: px(14),
   },
 
   placeAddress: {
-    marginTop: px(8),
+    marginTop: px(spacing.s),
     fontFamily: fontFamily.medium,
     fontSize: px(14),
     color: '#8A919E',
@@ -325,27 +328,27 @@ const styles = StyleSheet.create({
   placeName: {
     fontFamily: fontFamily.bold,
     fontSize: px(20),
-    color: '#111114',
+    color: colors.text.basic,
     lineHeight: px(24),
-    marginRight: px(8),
+    marginRight: px(spacing.s),
   },
 
   placeDistance: {
     fontFamily: fontFamily.regular,
     fontSize: px(14),
-    color: '#6489F2',
+    color: colors.text.brand,
     lineHeight: px(17),
   },
 
   placeThumbnail: {
     width: px(80),
     height: px(80),
-    borderRadius: px(12),
+    borderRadius: px(radius.lg),
     resizeMode: 'cover',
-    backgroundColor: '#F1F3F5',
+    backgroundColor: colors.navy[50],
   },
 
   placeThumbnailEmpty: {
-    backgroundColor: '#F1F3F5',
+    backgroundColor: colors.navy[50],
   },
 });

@@ -9,7 +9,10 @@ import {
   Image,
 } from 'react-native';
 
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, fontSize} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
 const cautionIcon = require('../../assets/image/caution.png');
 
@@ -78,7 +81,7 @@ const styles = StyleSheet.create({
   // 반투명 배경입니다.
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.50)',
+    backgroundColor: colors.background.dimDarker,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -86,11 +89,11 @@ const styles = StyleSheet.create({
   // 흰색 컨테이너
   modalBox: {
     width: px(320),
-    backgroundColor: '#FFFFFF',
-    borderRadius: px(20),
-    paddingTop: px(20),
-    paddingBottom: px(20),
-    paddingHorizontal: px(20),
+    backgroundColor: colors.surface.white,
+    borderRadius: px(radius['2xl']),
+    paddingTop: px(spacing.xl),
+    paddingBottom: px(spacing.xl),
+    paddingHorizontal: px(spacing.xl),
     alignItems: 'center',
   },
 
@@ -98,28 +101,28 @@ const styles = StyleSheet.create({
   cautionIcon: {
     width: px(60),
     height: px(60),
-    marginBottom: px(8),
+    marginBottom: px(spacing.s),
   },
 
   title: {
-    fontSize: px(22),
+    fontSize: px(fontSize.h2),
     fontFamily: fontFamily.bold,
-    color: '#111114',
+    color: colors.text.basic,
     lineHeight: px(26),
     letterSpacing: -0.3,
     includeFontPadding: false,
-    marginBottom: px(8),
+    marginBottom: px(spacing.s),
   },
 
   description: {
     width: px(280),
-    fontSize: px(14),
+    fontSize: px(fontSize.b2),
     fontFamily: fontFamily.medium,
-    color: '#4B566D',
+    color: colors.text.subtle,
     textAlign: 'center',
     lineHeight: px(17),
     includeFontPadding: false,
-    marginBottom: px(20),
+    marginBottom: px(spacing.xl),
   },
 
   // 하단 버튼
@@ -127,41 +130,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: px(12),
+    width: px(280),
+    gap: px(spacing.md),
   },
 
   keepButton: {
-    width: px(140),
-    height: px(37),
-    borderRadius: px(12),
+    flex: 1,
+    height: px(42),
+    borderRadius: px(radius.lg),
     borderWidth: 1,
-    borderColor: '#E0E0E4',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border.default,
+    backgroundColor: colors.button.tertiaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   keepButtonText: {
-    fontSize: px(14),
+    fontSize: px(fontSize.b2),
     fontFamily: fontFamily.bold,
-    color: '#111114',
+    color: colors.text.basic,
     lineHeight: px(17),
     includeFontPadding: false,
   },
 
   exitButton: {
     width: px(101),
-    height: px(37),
-    borderRadius: px(12),
-    backgroundColor: '#2C343F',
+    height: px(42),
+    borderRadius: px(radius.lg),
+    backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   exitButtonText: {
-    fontSize: px(14),
+    fontSize: px(fontSize.b2),
     fontFamily: fontFamily.bold,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     lineHeight: px(17),
     includeFontPadding: false,
   },

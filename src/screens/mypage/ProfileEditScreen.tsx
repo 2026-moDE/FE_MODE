@@ -17,6 +17,9 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {updateMyProfile} from '../../api/mypage';
 
@@ -134,7 +137,7 @@ if (previewImage) {
           style={styles.previewBackButton}
           activeOpacity={0.8}
           onPress={handleCancelProfileImagePreview}>
-          <IconArrowLeft size={px(24)} color="#FFFFFF" />
+          <IconArrowLeft size={px(24)} color={colors.icon.inverse} />
         </TouchableOpacity>
 
         <Text style={styles.previewTitle}>프로필 수정</Text>
@@ -168,7 +171,7 @@ if (previewImage) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       <KeyboardAvoidingView
         style={styles.container}
@@ -178,7 +181,7 @@ if (previewImage) {
             activeOpacity={0.7}
             style={styles.headerButton}
             onPress={() => navigation.goBack()}>
-            <IconArrowLeft size={px(20)} color="#2C343F" />
+            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>프로필 수정</Text>
@@ -229,7 +232,7 @@ if (previewImage) {
           disabled={!isNicknameValid || loading}
           onPress={handleSubmit}>
           {loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={colors.icon.inverse} />
           ) : (
             <Text style={styles.submitText}>완료</Text>
           )}
@@ -242,12 +245,12 @@ if (previewImage) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   header: {
@@ -255,7 +258,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(16),
+    paddingHorizontal: px(spacing.lg),
   },
 
   headerButton: {
@@ -268,7 +271,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: fontFamily.bold,
     fontSize: px(18),
-    color: '#111114',
+    color: colors.text.basic,
   },
 
   profileArea: {
@@ -284,16 +287,16 @@ const styles = StyleSheet.create({
   nicknameInput: {
     height: px(44),
     borderWidth: 1,
-    borderColor: '#E0E0E4',
-    borderRadius: px(12),
-    paddingHorizontal: px(20),
+    borderColor: colors.border.default,
+    borderRadius: px(radius.lg),
+    paddingHorizontal: px(spacing.xl),
     paddingVertical: 0,
     textAlignVertical: 'center',
     includeFontPadding: false,
     lineHeight: px(18),
     fontSize: px(18),
     fontFamily: fontFamily.bold,
-    color: '#111114',
+    color: colors.text.basic,
   },
 
   inputError: {
@@ -301,7 +304,7 @@ const styles = StyleSheet.create({
   },
 
   inputInfoRow: {
-    marginTop: px(12),
+    marginTop: px(spacing.md),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
   nicknameGuide: {
     fontSize: px(12),
     fontFamily: fontFamily.medium,
-    color: '#6489F2',
+    color: colors.text.brand,
   },
 
   errorText: {
@@ -319,12 +322,12 @@ const styles = StyleSheet.create({
 
   submitButton: {
     position: 'absolute',
-    left: px(24),
-    right: px(24),
-    bottom: px(32),
+    left: px(spacing['2xl']),
+    right: px(spacing['2xl']),
+    bottom: px(spacing['3xl']),
     height: px(48),
-    borderRadius: px(12),
-    backgroundColor: '#2C343F',
+    borderRadius: px(radius.lg),
+    backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -336,7 +339,7 @@ const styles = StyleSheet.create({
   submitText: {
     fontSize: px(15),
     fontFamily: fontFamily.bold,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   previewContainer: {
@@ -350,7 +353,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(20),
+    paddingHorizontal: px(spacing.xl),
   },
 
   previewBackButton: {
@@ -368,7 +371,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: px(17),
     fontFamily: fontFamily.bold,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   previewConfirmButton: {
@@ -377,7 +380,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: px(8),
+    gap: px(spacing.s),
     zIndex: 2,
   },
 
@@ -390,7 +393,7 @@ const styles = StyleSheet.create({
   previewConfirmText: {
     fontSize: px(16),
     fontFamily: fontFamily.bold,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   previewImageWrapper: {
@@ -398,7 +401,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#050509',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingHorizontal: px(20),
+    paddingHorizontal: px(spacing.xl),
     paddingTop: px(5),
   },
 

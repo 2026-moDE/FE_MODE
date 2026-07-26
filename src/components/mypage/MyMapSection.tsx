@@ -13,6 +13,8 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import MapView from '../map/MapView';
 import {getMyReviews, MyReview} from '../../api/mypage';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
 import {searchPlaces} from '../../api/search';
 import LiveBubble from '../home/LiveBubble';
 import ClusterBubble from '../home/ClusterBubble';
@@ -145,7 +147,13 @@ export default function MyMapSection({mapRef}: Props) {
 
             const matchedPlace = searchResult.places.find(
                 place => place.id === group.placeId,
-            );
+                ) as
+                | {
+                    id: number;
+                    latitude?: number;
+                    longitude?: number;
+                    }
+                | undefined;
 
             if (
                 !matchedPlace ||
@@ -266,6 +274,7 @@ export default function MyMapSection({mapRef}: Props) {
                     key={`my-map-${place.id}`}
                     place={place}
                     onPress={() => navigation.navigate('MyMap')}
+                    monochrome
                 />
             );
         })}
@@ -280,7 +289,7 @@ export default function MyMapSection({mapRef}: Props) {
 
       {loading && (
         <View style={styles.statusBox}>
-          <ActivityIndicator size="small" color="#2C343F" />
+          <ActivityIndicator size="small" color={colors.icon.basic} />
         </View>
       )}
 
@@ -296,14 +305,14 @@ export default function MyMapSection({mapRef}: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   statusBox: {
     position: 'absolute',
-    top: 20,
-    left: 20,
-    right: 20,
+    top: spacing.xl,
+    left: spacing.xl,
+    right: spacing.xl,
     alignItems: 'center',
   },
 
