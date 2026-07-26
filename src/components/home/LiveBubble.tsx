@@ -18,6 +18,8 @@ const CONGESTION_COLORS: Partial<Record<CongestionLevel, string>> = {
 type Props = {
     place: NearbyPlace;
     onPress: (place: NearbyPlace) => void;
+    // true면 혼잡도 색상 없이 항상 흰색으로 표시 (마이페이지 마이맵용)
+    monochrome?: boolean;
 };
 
 const BUBBLE_SIZE = 60;
@@ -25,9 +27,12 @@ const TAIL_HEIGHT = 16;
 const TAIL_WIDTH = 12;
 const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
-const LiveBubble = React.memo(function LiveBubble({place, onPress}: Props) {
+const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome}: Props) {
     // 혼잡도 있으면 색상, 없으면 null
-    const congestionColor = place.congestion_level ? CONGESTION_COLORS[place.congestion_level] : null;
+    const congestionColor =
+        !monochrome && place.congestion_level
+            ? CONGESTION_COLORS[place.congestion_level]
+            : null;
 
     return (
         <NaverMapMarkerOverlay

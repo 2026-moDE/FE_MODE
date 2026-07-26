@@ -15,6 +15,9 @@ import {NaverMapView, NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/r
 
 import type {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 const cautionIcon = require('../../assets/image/caution.png');
 
 type Props = NativeStackScreenProps<
@@ -107,7 +110,7 @@ const handleLocationFailConfirm = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       <View style={styles.container}>
         <Pressable
@@ -215,20 +218,20 @@ export default ReviewLocationConfirmScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: px(16),
+    backgroundColor: colors.background.white,
+    paddingHorizontal: px(spacing.lg),
   },
 
   // 우상단 × 닫기 버튼
   closeButton: {
     position: 'absolute',
-    top: px(20),
-    right: px(16),
+    top: px(spacing.xl),
+    right: px(spacing.lg),
     width: px(32),
     height: px(32),
     alignItems: 'center',
@@ -254,13 +257,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: px(22),
     lineHeight: px(26),
-    color: '#111114',
+    color: colors.text.basic,
     includeFontPadding: false,
   },
 
   // 안내 부제목
   subTitle: {
-    marginTop: px(8),
+    marginTop: px(spacing.s),
     fontFamily: fontFamily.bold,
     fontSize: px(14),
     lineHeight: px(17),
@@ -273,19 +276,19 @@ const styles = StyleSheet.create({
     width: px(360),
     height: px(329),
     alignSelf: 'center',
-    marginTop: px(40),
+    marginTop: px(spacing['4xl']),
     borderWidth: 1,
-    borderColor: '#E0E0E4',
-    borderRadius: px(12),
-    padding: px(4),
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border.default,
+    borderRadius: px(radius.lg),
+    padding: px(spacing.xs),
+    backgroundColor: colors.surface.white,
   },
 
   // 지도 표시 영역
   mapBox: {
     width: '100%',
     height: px(244),
-    borderRadius: px(8),
+    borderRadius: px(radius.md),
   },
 
   naverMap: {
@@ -294,7 +297,7 @@ const styles = StyleSheet.create({
 
   mapFallback: {
     flex: 1,
-    backgroundColor: '#F1F3F5',
+    backgroundColor: colors.navy[50],
   },
 
   // 지도 준비 전 임시 안내 문구
@@ -308,22 +311,22 @@ const styles = StyleSheet.create({
   // 카테고리 배지 + 장소명/주소 가로 배치
   placeInfoBox: {
     flex: 1,
-    paddingTop: px(12),
-    paddingHorizontal: px(8),
+    paddingTop: px(spacing.md),
+    paddingHorizontal: px(spacing.s),
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface.white,
   },
 
   // 카테고리 배지
   categoryBadge: {
     height: px(22),
-    paddingHorizontal: px(8),
-    borderRadius: px(8),
-    backgroundColor: '#E1E9FF',
+    paddingHorizontal: px(spacing.s),
+    borderRadius: px(radius.md),
+    backgroundColor: colors.button.primaryLighter,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: px(8),
+    marginRight: px(spacing.s),
     marginTop: px(2),
   },
 
@@ -332,7 +335,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: px(12),
     lineHeight: px(14),
-    color: '#6489F2',
+    color: colors.text.brand,
     includeFontPadding: false,
   },
 
@@ -352,9 +355,9 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: px(20),
     lineHeight: px(24),
-    color: '#111114',
+    color: colors.text.basic,
     includeFontPadding: false,
-    marginRight: px(8),
+    marginRight: px(spacing.s),
   },
 
   // 거리 표시 (연파란 계열)
@@ -362,13 +365,13 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     fontSize: px(14),
     lineHeight: px(18),
-    color: '#83A6FF',
+    color: colors.brand.primary,
     includeFontPadding: false,
   },
 
   // 도로명 주소 — 작은 회색 텍스트
   placeAddress: {
-    marginTop: px(8),
+    marginTop: px(spacing.s),
     fontFamily: fontFamily.medium,
     fontSize: px(13),
     lineHeight: px(17),
@@ -379,8 +382,8 @@ const styles = StyleSheet.create({
   // 하단 버튼 영역
   bottomButtonBox: {
     position: 'absolute',
-    left: px(16),
-    right: px(16),
+    left: px(spacing.lg),
+    right: px(spacing.lg),
     bottom: px(33),
     height: px(48),
     flexDirection: 'row',
@@ -392,10 +395,10 @@ const styles = StyleSheet.create({
   noButton: {
     width: px(126),
     height: px(48),
-    borderRadius: px(12),
+    borderRadius: px(radius.lg),
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.button.tertiaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -404,7 +407,7 @@ const styles = StyleSheet.create({
   yesButton: {
     width: px(225),
     height: px(48),
-    borderRadius: px(12),
+    borderRadius: px(radius.lg),
     backgroundColor: '#DCE6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -427,16 +430,16 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: px(18),
     lineHeight: px(21),
-    color: '#6489F2',
+    color: colors.text.brand,
     includeFontPadding: false,
-    marginRight: px(8),
+    marginRight: px(spacing.s),
     },
 
     yesButtonText: {
     fontFamily: fontFamily.bold,
     fontSize: px(18),
     lineHeight: px(21),
-    color: '#6489F2',
+    color: colors.text.brand,
     includeFontPadding: false,
     },
 
@@ -449,41 +452,41 @@ const styles = StyleSheet.create({
   locationFailModal: {
     width: '100%',
     height: px(358),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface.white,
 
-    borderTopLeftRadius: px(12),
-    borderTopRightRadius: px(12),
+    borderTopLeftRadius: px(radius.lg),
+    borderTopRightRadius: px(radius.lg),
 
     paddingTop: px(45),
-    paddingRight: px(16),
+    paddingRight: px(spacing.lg),
     paddingBottom: px(44),
     paddingLeft: px(17),
 
     alignItems: 'center',
   },
-  
+
   cautionIcon: {
     width: px(74),
     height: px(74),
     resizeMode: 'contain',
-    marginBottom: px(16),
+    marginBottom: px(spacing.lg),
   },
 
   modalTitle: {
     fontFamily: fontFamily.bold,
     fontSize: px(24),
     lineHeight: px(29),
-    color: '#111114',
+    color: colors.text.basic,
     textAlign: 'center',
     includeFontPadding: false,
-    marginBottom: px(12),
+    marginBottom: px(spacing.md),
   },
 
   modalDescription: {
     fontFamily: fontFamily.medium,
     fontSize: px(18),
     lineHeight: px(22),
-    color: '#4B566D',
+    color: colors.text.subtle,
     textAlign: 'center',
     includeFontPadding: false,
     marginBottom: px(44),
@@ -492,8 +495,8 @@ const styles = StyleSheet.create({
   modalButton: {
     width: px(360),
     height: px(52),
-    borderRadius: px(12),
-    backgroundColor: '#2C343F',
+    borderRadius: px(radius.lg),
+    backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -502,7 +505,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: px(18),
     lineHeight: px(21),
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     includeFontPadding: false,
   },
 });

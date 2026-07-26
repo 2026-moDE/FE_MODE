@@ -50,6 +50,8 @@ export type AppStackParamList = {
   };
 
   MyMap: undefined;
+
+  Setting: undefined;
 };
 
 // 리뷰 작성 전용 스택

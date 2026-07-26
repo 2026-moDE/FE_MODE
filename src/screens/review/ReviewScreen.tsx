@@ -18,8 +18,12 @@ import {
 } from 'react-native-vision-camera';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 import {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
 type ReviewNav = NativeStackNavigationProp<ReviewStackParamList>;
 type CameraPosition = 'back' | 'front';
@@ -30,7 +34,6 @@ const logoIcon = require('../../assets/image/logo.png');
 const photoIcon = require('../../assets/image/photo.png');
 
 const DESIGN_WIDTH = 393;
-
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
@@ -41,7 +44,7 @@ const STATUS_BAR_HEIGHT =
 
 const figmaY = (value: number) => px(value);
 
-const CAMERA_MARGIN_X = px(32);
+const CAMERA_MARGIN_X = px(spacing['3xl']);
 const CAMERA_WIDTH = SCREEN_WIDTH - CAMERA_MARGIN_X * 2;
 const CAMERA_HEIGHT = px(585);
 
@@ -64,7 +67,17 @@ export default function ReviewScreen() {
   const [zoom, setZoom] = useState(1);
   const [flash, setFlash] = useState<'off' | 'on'>('off');
 
-  const device = useCameraDevice(cameraPosition);
+  const device = useCameraDevice(cameraPosition, {
+    physicalDevices:
+      cameraPosition === 'back'
+        ? [
+            'ultra-wide-angle-camera',
+            'wide-angle-camera',
+            'telephoto-camera',
+          ]
+        : ['wide-angle-camera'],
+  });
+
   const {hasPermission, requestPermission} = useCameraPermission();
 
   useEffect(() => {
@@ -82,19 +95,37 @@ export default function ReviewScreen() {
       return 1;
     }
 
-    const minZoom = device.minZoom ?? 1;
-    const maxZoom = device.maxZoom ?? 1;
-    const neutralZoom = device.neutralZoom ?? 1;
+    const minZoom = device.minZoom;
+    const maxZoom = device.maxZoom;
+    const neutralZoom = device.neutralZoom;
 
-    if (zoom === 0.5) {
-      return minZoom;
+    switch (zoom) {
+      case 0.5:
+        return minZoom;
+
+      case 1:
+        return neutralZoom;
+
+      case 2:
+        return Math.min(neutralZoom * 2, maxZoom);
+
+      default:
+        return neutralZoom;
+    }
+  };
+
+  const handleToggleFlash = () => {
+    if (cameraPosition === 'front') {
+      Alert.alert('알림', '전면 카메라에서는 플래시를 사용할 수 없어요.');
+      return;
     }
 
-    if (zoom === 1) {
-      return Math.min(Math.max(neutralZoom, minZoom), maxZoom);
+    if (!device?.hasFlash) {
+      Alert.alert('알림', '이 카메라는 플래시를 지원하지 않아요.');
+      return;
     }
 
-    return Math.min(Math.max(neutralZoom * 2, minZoom), maxZoom);
+    setFlash(prev => (prev === 'off' ? 'on' : 'off'));
   };
 
   const handleCapture = async () => {
@@ -107,14 +138,54 @@ export default function ReviewScreen() {
         flash: cameraPosition === 'back' ? flash : 'off',
       });
 
-      const photoUri =
-        Platform.OS === 'android' ? `file://${photo.path}` : photo.path;
+      const rawPhotoUri =
+        Platform.OS === 'android'
+          ? `file://${photo.path}`
+          : photo.path;
+
+      console.log('[촬영 원본]', {
+        width: photo.width,
+        height: photo.height,
+        orientation: photo.orientation,
+        path: photo.path,
+      });
+
+      let photoUri = rawPhotoUri;
+
+      try {
+        // 수동으로 90도/270도 돌리지 않고
+        // EXIF 방향을 실제 이미지 픽셀에 반영한 새 파일 생성
+        const normalized = await ImageResizer.createResizedImage(
+          rawPhotoUri,
+          photo.width,
+          photo.height,
+          'JPEG',
+          100,
+          0,
+          undefined,
+          false,
+          {
+            mode: 'contain',
+            onlyScaleDown: true,
+          },
+        );
+
+        photoUri = normalized.uri;
+
+        console.log('[사진 정규화 완료]', {
+          width: normalized.width,
+          height: normalized.height,
+          uri: normalized.uri,
+        });
+      } catch (resizeError) {
+        console.log('[사진 정규화 실패]', resizeError);
+      }
 
       navigation.navigate('ReviewPhotoConfirm', {
         photoUri,
       });
-    } catch (e) {
-      console.log('사진 촬영 실패:', e);
+    } catch (error) {
+      console.log('[사진 촬영 실패]', error);
       Alert.alert('오류', '사진 촬영에 실패했어요.');
     }
   };
@@ -122,6 +193,7 @@ export default function ReviewScreen() {
   const handleSwitchCamera = () => {
     setCameraPosition(prev => (prev === 'back' ? 'front' : 'back'));
     setFlash('off');
+    setZoom(1);
   };
 
   const handleClose = () => {
@@ -141,7 +213,7 @@ export default function ReviewScreen() {
     return (
       <View style={styles.center}>
         <StatusBar barStyle="light-content" backgroundColor="#050509" />
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color={colors.icon.inverse} />
         <Text style={styles.loadingText}>카메라 준비 중...</Text>
       </View>
     );
@@ -173,6 +245,7 @@ export default function ReviewScreen() {
             isActive={true}
             photo={true}
             zoom={getCameraZoom()}
+            outputOrientation="device"
           />
 
           <View style={styles.zoomContainer}>
@@ -204,10 +277,19 @@ export default function ReviewScreen() {
 
       <View style={styles.bottomSection}>
         <TouchableOpacity
-          style={styles.sideIconButton}
+          style={[
+            styles.sideIconButton,
+            flash === 'on' && styles.flashButtonActive,
+          ]}
           activeOpacity={0.8}
-          onPress={() => setFlash(prev => (prev === 'off' ? 'on' : 'off'))}>
-          <Image source={flashIcon} style={styles.sideIcon} />
+          onPress={handleToggleFlash}>
+          <Image
+            source={flashIcon}
+            style={[
+              styles.sideIcon,
+              flash === 'off' && styles.flashIconOff,
+            ]}
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -240,13 +322,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   permissionText: {
-    color: '#fff',
+    color: colors.text.inverse,
     fontSize: px(16),
     fontFamily: fontFamily.regular,
   },
   loadingText: {
-    marginTop: px(12),
-    color: '#fff',
+    marginTop: px(spacing.md),
+    color: colors.text.inverse,
     fontSize: px(14),
     fontFamily: fontFamily.regular,
   },
@@ -277,7 +359,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeText: {
-    color: '#fff',
+    color: colors.text.inverse,
     fontSize: px(32),
     fontFamily: fontFamily.regular,
     lineHeight: px(32),
@@ -297,7 +379,7 @@ const styles = StyleSheet.create({
 
   zoomContainer: {
     position: 'absolute',
-    bottom: px(20),
+    bottom: px(spacing.xl),
     alignSelf: 'center',
     width: px(150),
     height: px(40),
@@ -316,7 +398,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
   zoomText: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: px(13),
     fontFamily: fontFamily.regular,
   },
@@ -355,5 +437,13 @@ const styles = StyleSheet.create({
     width: px(72),
     height: px(72),
     resizeMode: 'contain',
+  },
+  flashButtonActive: {
+    backgroundColor: 'rgba(255, 212, 0, 0.2)',
+    borderRadius: px(radius.xl),
+  },
+
+  flashIconOff: {
+    opacity: 0.5,
   },
 });

@@ -14,6 +14,8 @@ import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
 import ProfileSection from '../../components/mypage/ProfileSection';
 import ReviewSection from '../../components/mypage/ReviewSection';
 import MyMapSection from '../../components/mypage/MyMapSection';
@@ -77,21 +79,28 @@ export default function MypageScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
             activeOpacity={0.7}
             style={styles.headerButton}
-            onPress={() => navigation.goBack()}>
-            <IconArrowLeft size={px(20)} color="#2C343F" />
+            onPress={() =>
+              navigation.navigate('Tab', {
+                screen: 'Home',
+              })
+            }>
+            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>마이페이지</Text>
 
-          <TouchableOpacity activeOpacity={0.7} style={styles.headerButton}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.headerButton}
+            onPress={() => navigation.navigate('Setting')}>
             <Image
               source={settingIcon}
               style={styles.settingImage}
@@ -155,13 +164,11 @@ export default function MypageScreen() {
           />
         </View>
 
-        <View style={{flex: 1}}>
-          {activeTab === 'review' ? (
-            <ReviewSection profile={profile} />
-          ) : (
-            <MyMapSection mapRef={mapRef} />
-          )}
-        </View>
+        {activeTab === 'review' ? (
+          <ReviewSection profile={profile} />
+        ) : (
+          <MyMapSection mapRef={mapRef} />
+        )}
 
       </View>
     </SafeAreaView>
@@ -171,12 +178,12 @@ export default function MypageScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   header: {
@@ -184,7 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(16),
+    paddingHorizontal: px(spacing.lg),
   },
 
   headerButton: {
@@ -197,13 +204,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: fontFamily.bold,
     fontSize: px(18),
-    color: '#111114',
+    color: colors.text.basic,
   },
 
   settingImage: {
     width: px(22),
     height: px(22),
-    tintColor: '#2C343F',
+    tintColor: colors.icon.basic,
   },
 
   logoutButton: {
@@ -214,10 +221,10 @@ const styles = StyleSheet.create({
     marginBottom: px(14),
     borderRadius: px(17),
     borderWidth: 1,
-    borderColor: '#E0E0E4',
+    borderColor: colors.border.default,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.button.tertiaryFill,
   },
 
   logoutButtonDisabled: {
@@ -227,7 +234,7 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     fontSize: px(13),
     fontFamily: fontFamily.medium,
-    color: '#5C5D68',
+    color: colors.text.tertiary,
   },
 
   tabRow: {
@@ -246,23 +253,23 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: px(14),
     fontFamily: fontFamily.medium,
-    color: '#5C5D68',
+    color: colors.text.tertiary,
   },
 
   activeTabText: {
     fontFamily: fontFamily.bold,
-    color: '#111114',
+    color: colors.text.basic,
   },
 
   tabLine: {
     height: 1,
-    backgroundColor: '#E0E0E4',
+    backgroundColor: colors.divider.default,
   },
 
   activeLine: {
     width: SCREEN_WIDTH / 2,
     height: px(2),
-    backgroundColor: '#111114',
+    backgroundColor: colors.background.dark,
   },
 
   activeLineRight: {

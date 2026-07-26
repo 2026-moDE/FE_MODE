@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
+import {colors} from '../../constants/colors';
+import {radius} from '../../constants/radius';
 
 const pencilIcon = require('../../assets/image/pencil.png');
 
@@ -45,7 +47,7 @@ export default function ProfileImageEditor({
         onPress={onPressEdit}
         disabled={uploading}>
         {uploading ? (
-          <ActivityIndicator size="small" color="#A3A3AA" />
+          <ActivityIndicator size="small" color={colors.icon.tertiary} />
         ) : (
           <Image
             source={pencilIcon}
@@ -69,10 +71,10 @@ const styles = StyleSheet.create({
   profileImageBox: {
     width: px(88),
     height: px(88),
-    borderRadius: px(12),
+    borderRadius: px(radius.lg),
     backgroundColor: '#F3F3F3',
     borderWidth: 1,
-    borderColor: '#E0E0E4',
+    borderColor: colors.border.default,
     overflow: 'hidden',
   },
 
@@ -88,7 +90,7 @@ const styles = StyleSheet.create({
     width: px(36),
     height: px(36),
     borderRadius: px(18),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.button.tertiaryFill,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -97,6 +99,6 @@ const styles = StyleSheet.create({
   imageEditIcon: {
     width: px(16),
     height: px(16),
-    tintColor: '#A3A3AA',
+    tintColor: colors.icon.tertiary,
   },
 });

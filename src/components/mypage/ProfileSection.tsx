@@ -11,6 +11,9 @@ import {
 
 import {useNavigation} from '@react-navigation/native';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 import type {MyProfile} from '../../api/mypage';
 
 const pencilIcon = require('../../assets/image/pencil.png');
@@ -63,7 +66,7 @@ export default function ProfileSection({
       {isLoading && !profile ? (
         <ActivityIndicator
           size="small"
-          color="#2C343F"
+          color={colors.icon.basic}
           style={styles.loading}
         />
       ) : (
@@ -98,10 +101,10 @@ const styles = StyleSheet.create({
   profileImageBox: {
     width: px(88),
     height: px(88),
-    borderRadius: px(12),
+    borderRadius: px(radius.lg),
     backgroundColor: '#F3F3F3',
     borderWidth: 1,
-    borderColor: '#E0E0E4',
+    borderColor: colors.border.default,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -113,11 +116,11 @@ const styles = StyleSheet.create({
   },
 
   loading: {
-    marginTop: px(12),
+    marginTop: px(spacing.md),
   },
 
   nicknameRow: {
-    marginTop: px(12),
+    marginTop: px(spacing.md),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -131,7 +134,7 @@ const styles = StyleSheet.create({
   },
 
   editButton: {
-    marginLeft: px(10),
+    marginLeft: px(spacing.sm),
     width: px(16),
     height: px(16),
     alignItems: 'center',

@@ -21,6 +21,9 @@ import {CommonActions} from '@react-navigation/native';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 import {useLocation} from '../../context/LocationContext';
 import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
@@ -147,7 +150,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -308,12 +311,12 @@ export default ReviewWriteScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   keyboardView: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   header: {
@@ -324,7 +327,7 @@ const styles = StyleSheet.create({
 
   backButton: {
     position: 'absolute',
-    left: px(16),
+    left: px(spacing.lg),
     width: px(32),
     height: px(32),
     justifyContent: 'center',
@@ -340,24 +343,24 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
-    paddingHorizontal: px(16),
+    paddingHorizontal: px(spacing.lg),
   },
 
   contentInner: {
-    paddingTop: px(16),
+    paddingTop: px(spacing.lg),
     paddingBottom: px(90),
   },
 
   placeSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: px(32),
+    marginBottom: px(spacing['3xl']),
   },
 
   photoWrapper: {
     width: px(105),
     height: px(105),
-    borderRadius: px(12),
+    borderRadius: px(radius.lg),
     overflow: 'hidden',
     position: 'relative',
   },
@@ -365,21 +368,21 @@ const styles = StyleSheet.create({
   photo: {
     width: px(105),
     height: px(105),
-    borderRadius: px(12),
+    borderRadius: px(radius.lg),
   },
 
   retakeButton: {
     position: 'absolute',
-    left: px(12),
-    top: px(40),
+    left: px(spacing.md),
+    top: px(spacing['4xl']),
     width: px(81),
     height: px(24),
-    borderRadius: px(8),
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: px(radius.md),
+    backgroundColor: colors.background.dimDarker,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: px(4),
+    gap: px(spacing.xs),
   },
 
   retakeIcon: {
@@ -391,21 +394,21 @@ const styles = StyleSheet.create({
   retakeText: {
     fontSize: px(12),
     fontFamily: fontFamily.medium,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   placeInfo: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: spacing.lg,
     paddingTop: 6,
   },
 
   placeTitle: {
     fontFamily: fontFamily.bold,
     fontSize: px(20),
-    color: '#111114',
+    color: colors.text.basic,
     lineHeight: px(24),
-    marginRight: px(4),
+    marginRight: px(spacing.xs),
     flexShrink: 1,
   },
 
@@ -426,7 +429,7 @@ const styles = StyleSheet.create({
   timerIcon: {
     width: px(14),
     height: px(14),
-    marginRight: px(8),
+    marginRight: px(spacing.s),
     resizeMode: 'contain',
     transform: [{translateY: px(1)}],
   },
@@ -439,7 +442,7 @@ const styles = StyleSheet.create({
   },
 
   section: {
-    marginBottom: 32,
+    marginBottom: spacing['3xl'],
   },
 
   sectionTitle: {
@@ -452,22 +455,22 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
+    gap: spacing.s,
+    marginTop: spacing.s,
   },
 
   chip: {
     height: 33,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F1F3F5',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.s,
+    borderRadius: radius.md,
+    backgroundColor: colors.navy[50],
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   chipSelected: {
-    backgroundColor: '#83A6FF',
+    backgroundColor: colors.surface.brand,
   },
 
   chipText: {
@@ -478,7 +481,7 @@ const styles = StyleSheet.create({
   },
 
   chipTextSelected: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontFamily: fontFamily.bold,
   },
 
@@ -491,10 +494,10 @@ const styles = StyleSheet.create({
     height: 121,
     borderWidth: 1,
     borderColor: '#DADDE2',
-    borderRadius: 12,
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface.white,
   },
 
   textInput: {
@@ -517,11 +520,11 @@ const styles = StyleSheet.create({
 
   submitButton: {
     position: 'absolute',
-    left: px(16),
-    right: px(16),
+    left: px(spacing.lg),
+    right: px(spacing.lg),
     bottom: px(33),
     height: px(48),
-    borderRadius: px(8),
+    borderRadius: px(radius.md),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -531,7 +534,7 @@ const styles = StyleSheet.create({
   },
 
   submitButtonActive: {
-    backgroundColor: '#2C343F',
+    backgroundColor: colors.button.secondaryFill,
   },
 
   submitText: {
@@ -541,12 +544,12 @@ const styles = StyleSheet.create({
   },
 
   submitTextDisabled: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     opacity: 0.7,
   },
 
   submitTextActive: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   placeTitleRow: {
