@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, useState, useCallback, useMemo} from "react";
-import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, useWindowDimensions} from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
@@ -20,8 +20,12 @@ import { colors } from '../../constants/colors';
 import IconMapBell from "../../assets/icons/IconMapBell";
 import IconCurrentLocation from "../../assets/icons/IconCurrentLocation";
 import HomeMiniCard from "../../components/home/HomeMiniCard";
+import QuickReviewButton from "../../components/home/QuickReviewButton";
+import ReviewBottomSheet from "../../components/home/ReviewBottomSheet";
 import { getDistance, formatDistance } from "../../utils/distance";
 import Supercluster from "supercluster";
+import BottomSheet from "@gorhom/bottom-sheet";
+import Animated, {useSharedValue, useAnimatedStyle} from "react-native-reanimated";
 
 
 // 탭 안에 있지만 스택 화면(Search)으로도 이동해야 해서 두 타입을 합침
@@ -34,6 +38,23 @@ export default function HomeScreen(){
     const navigation = useNavigation<NavigationProp>();
     const mapRef = useRef<NaverMapViewRef>(null);
     const cameraDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const sheetRef = useRef<BottomSheet>(null);
+    const {height: windowHeight} = useWindowDimensions();
+    // 바텀시트 상단 Y좌표
+    const sheetPosition = useSharedValue(0);
+    // 30% 스냅일 때 시트 상단 Y의 초기 추정 값
+    const pos30 = useSharedValue(windowHeight * 0.7);
+    const floatingAnchorStyle = useAnimatedStyle(() => ({
+        // 시트가 30%보다 위로 올라가면 30% 위치에 고정, 내려가면 따라감
+        // .value가 바뀌면 이 스타일도 자동 갱신.
+        transform: [{translateY: Math.max(sheetPosition.value, pos30.value)}],
+    }));
+
+    // 30% 단계 도달했을 때의 시트 상단 Y를 고정 기준값으로
+    const handleSheetChange = useCallback((index: number, position: number) => {
+        if (index === 1) pos30.value = position;
+    }, [pos30]);
     const insets = useSafeAreaInsets(); // 상태바 높이
 
     // 커스텀 훅에서 권한 요청 함수 가져오기
@@ -44,6 +65,9 @@ export default function HomeScreen(){
 
     // 주변 장소 목록
     const [places, setPlaces] = useState<NearbyPlace[]>([]);
+
+    // 주변 장소 최초 조회 완료 여부 (로딩중 / 리뷰없음 구분용)
+    const [placesLoaded, setPlacesLoaded] = useState(false);
 
     // 선택된 장소 목록
     const[selectedPlace, setSelectedPlace] = useState<NearbyPlace| null>(null);
@@ -181,6 +205,14 @@ export default function HomeScreen(){
         });
     }, [navigation, placeDetail]);
 
+    // 홈 탭 다시 누르면 닫힌 바텀시트를 30% 단계로 다시 올림
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('tabPress', () => {
+            sheetRef.current?.snapToIndex(1);
+        });
+        return unsubscribe;
+    }, [navigation]);
+
     // 주변 장소 조회 함수
     const loadNearbyPlaces = useCallback(() => {
         if (!location) return;
@@ -201,6 +233,9 @@ export default function HomeScreen(){
             })
             .catch(error => {
                 console.warn('주변 장소 API 실패:', error?.message);
+            })
+            .finally(() => {
+                setPlacesLoaded(true);   // 성공/실패 무관 최초 조회 끝났음 표시
             });
     }, [location]);
 
@@ -222,6 +257,11 @@ export default function HomeScreen(){
     // 검색창 클릭 시 → SearchScreen으로 이동
     const handleSearchFocus = useCallback(() => {
         navigation.navigate('Search');
+    }, [navigation]);
+
+    // 지금 바로 리뷰 쓰기 버튼 → 리뷰 카메라
+    const handleQuickReview = useCallback(() => {
+        navigation.navigate('ReviewStack', {screen: 'ReviewCamera'});
     }, [navigation]);
 
     // 카드 본체 / 사진 클릭 시 → 장소 상세 (사진은 그 사진의 타입에 따라 탭 결정)
@@ -322,23 +362,6 @@ export default function HomeScreen(){
                 {clusterMarkers}
             </MapView>
 
-            {/* 커스텀 현위치 버튼 */}
-            <IconCurrentLocation
-                style={styles.locationButton}
-                onPress={() => {
-                    mapRef.current?.animateCameraTo({
-                        latitude: location.latitude,
-                        longitude : location. longitude,
-                        easing : 'Fly',
-                        duration: 800,
-                    })
-                    setTimeout(() => {
-                        // 안드로이드에서만 자동 애니메이션
-                        mapRef.current?.setLocationTrackingMode('Follow');
-                    },850);
-                }}
-            />
-
             {/* 지도 검색창 + 알림 버튼 */}
             <View style={[styles.searchBarWrapper, { top: insets.top + 10 }]}>
                 <SearchBar
@@ -369,6 +392,32 @@ export default function HomeScreen(){
                 />
             ) : null)}
 
+            {/* 현위치 버튼 + 리뷰 쓰기 버튼: 바텀시트 상단에 붙어 시트 따라 이동 (미니카드 땐 숨김) */}
+            {!placeDetail && (
+                <Animated.View
+                    style={[styles.floatingAnchor, floatingAnchorStyle]}
+                    pointerEvents="box-none">
+                    <IconCurrentLocation
+                        style={styles.locationButton}
+                        onPress={() => {
+                            mapRef.current?.animateCameraTo({
+                                latitude: location.latitude,
+                                longitude: location.longitude,
+                                easing: 'Fly',
+                                duration: 800,
+                            });
+                            setTimeout(() => {
+                                // 안드로이드에서만 자동 애니메이션
+                                mapRef.current?.setLocationTrackingMode('Follow');
+                            }, 850);
+                        }}
+                    />
+                    <View style={styles.quickReviewRow} pointerEvents="box-none">
+                        <QuickReviewButton onPress={handleQuickReview} />
+                    </View>
+                </Animated.View>
+            )}
+
             {placeDetail && (
                 <View style={styles.cardWrapper}>
                     <HomeMiniCard
@@ -381,12 +430,39 @@ export default function HomeScreen(){
                 </View>
             )}
 
+            {/* 주변 리뷰 바텀시트 (미니카드 떠있을 땐 숨김) */}
+            {!placeDetail && (
+                <ReviewBottomSheet
+                    ref={sheetRef}
+                    places={places}
+                    loading={!placesLoaded}
+                    onPressPlace={handlePlacePress}
+                    animatedPosition={sheetPosition} // 매 프레임마다
+                    onChange={handleSheetChange} // 스냅 단계 도달했을 때만
+                />
+            )}
+
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
+    // 시트 상단 라인 (translateY로 시트를 따라 이동). height 0 → 자식들이 라인 위로 뜸
+    floatingAnchor: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        height: 0,
+    },
+    quickReviewRow: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 16,          // 시트 상단 바로 위 (가운데 정렬)
+        alignItems: 'center',
+    },
     preloader: { width: 1, height: 1, position: 'absolute', opacity: 0 },
     loadingContainer: {
         justifyContent: 'center',
@@ -411,7 +487,7 @@ const styles = StyleSheet.create({
     locationButton: {
         position: 'absolute',
         right: 16,
-        bottom: 120,                // 탭바 위에 위치
+        bottom: 72,                 // 시트 상단 위, 리뷰 버튼보다 조금 더 위
     },
     cardWrapper: {
         position: 'absolute',
