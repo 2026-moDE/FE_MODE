@@ -102,7 +102,7 @@ export default function ReviewPhotoConfirmScreen() {
   const lastPointRef = useRef<{x: number; y: number} | null>(null);
 
   const canvasRef = useCanvasRef();
-  const {photoUri} = route.params;
+  const {photoUri, placeId, placeName} = route.params;
   const photoSkiaImage = useImage(photoUri);
     
   const showToastForThreeSeconds = () => {
@@ -158,7 +158,7 @@ export default function ReviewPhotoConfirmScreen() {
 const handleConfirm = async () => {
   try {
     if (blurPoints.length === 0) {
-      navigation.navigate('ReviewWrite', {photoUri});
+      navigation.navigate('ReviewWrite', {photoUri, placeId, placeName});
       return;
     }
 
@@ -175,10 +175,12 @@ const handleConfirm = async () => {
 
     navigation.navigate('ReviewWrite', {
       photoUri: `file://${filePath}`,
+      placeId,
+      placeName,
     });
   } catch (error) {
     console.log('Skia blur 이미지 저장 실패:', error);
-    navigation.navigate('ReviewWrite', {photoUri});
+    navigation.navigate('ReviewWrite', {photoUri, placeId, placeName});
   }
 };
 
