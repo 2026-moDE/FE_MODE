@@ -105,7 +105,7 @@ export default function ReviewPhotoConfirmScreen() {
   const lastPointRef = useRef<{x: number; y: number} | null>(null);
 
   const canvasRef = useCanvasRef();
-  const {photoUri} = route.params;
+  const {photoUri, placeId, placeName} = route.params;
   const photoSkiaImage = useImage(photoUri);
 
   // 세로 사진은 리뷰(카메라) 화면과 동일한 고정 박스에 cover로 채우고,
@@ -217,7 +217,7 @@ export default function ReviewPhotoConfirmScreen() {
 const handleConfirm = async () => {
   try {
     if (blurPoints.length === 0) {
-      navigation.navigate('ReviewWrite', {photoUri});
+      navigation.navigate('ReviewWrite', {photoUri, placeId, placeName});
       return;
     }
 
@@ -234,10 +234,12 @@ const handleConfirm = async () => {
 
     navigation.navigate('ReviewWrite', {
       photoUri: `file://${filePath}`,
+      placeId,
+      placeName,
     });
   } catch (error) {
     console.log('Skia blur 이미지 저장 실패:', error);
-    navigation.navigate('ReviewWrite', {photoUri});
+    navigation.navigate('ReviewWrite', {photoUri, placeId, placeName});
   }
 };
 

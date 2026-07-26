@@ -47,15 +47,15 @@ export default function SearchScreen() {
     const { suggestions, search: searchAutocomplete } = useAutocomplete();
 
     // 임시 추천 검색어 (나중에 API 연결)
-    const recommendedItems = [
-        { id: 1, keyword: '성수동', type: 'normal' as const },
-        { id: 2, keyword: '망원동', type: 'normal' as const },
-        { id: 3, keyword: '가나디 팝업', type: 'hot' as const },
-        { id: 4, keyword: '말빵', type: 'hot' as const },
-        { id: 5, keyword: '군자', type: 'normal' as const },
-        { id: 6, keyword: '서촌', type: 'normal' as const },
-        { id: 7, keyword: '콩국수', type: 'normal' as const },
-    ];
+    // const recommendedItems = [
+    //     { id: 1, keyword: '성수동', type: 'normal' as const },
+    //     { id: 2, keyword: '망원동', type: 'normal' as const },
+    //     { id: 3, keyword: '가나디 팝업', type: 'hot' as const },
+    //     { id: 4, keyword: '말빵', type: 'hot' as const },
+    //     { id: 5, keyword: '군자', type: 'normal' as const },
+    //     { id: 6, keyword: '서촌', type: 'normal' as const },
+    //     { id: 7, keyword: '콩국수', type: 'normal' as const },
+    // ];
 
     // 뒤로가기
     const handleBack = () => navigation.goBack();
@@ -171,10 +171,10 @@ export default function SearchScreen() {
                                 onSelect={handleSelectKeyword}
                                 onDelete={deleteHistory}
                             />
-                            <RecommendedSearchList
+                            {/* <RecommendedSearchList
                                 items={recommendedItems}
                                 onSelect={handleSelectKeyword}
-                            />
+                            /> */}
                         </>
                     )}
 

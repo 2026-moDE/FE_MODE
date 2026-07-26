@@ -56,8 +56,9 @@ export type AppStackParamList = {
 
 // 리뷰 작성 전용 스택
 export type ReviewStackParamList = {
-  ReviewCamera: undefined;
-  ReviewPhotoConfirm: { photoUri: string };
+  // 장소 상세에서 진입 시 placeId/placeName을 미리 실어옴 (장소 자동 선택용)
+  ReviewCamera: { placeId?: number; placeName?: string } | undefined;
+  ReviewPhotoConfirm: { photoUri: string; placeId?: number; placeName?: string };
   ReviewLocationSelect: { photoUri: string };
   ReviewLocationConfirm: {
     photoUri: string;

@@ -16,9 +16,10 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import ImageResizer from '@bam.tech/react-native-image-resizer';
+import type {RouteProp} from '@react-navigation/native';
 import {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
@@ -59,6 +60,9 @@ const ZOOM_LEVELS = [
 
 export default function ReviewScreen() {
   const navigation = useNavigation<ReviewNav>();
+  const route = useRoute<RouteProp<ReviewStackParamList, 'ReviewCamera'>>();
+  // 장소 상세에서 진입 시 미리 선택된 장소 (없으면 undefined)
+  const {placeId, placeName} = route.params ?? {};
   const cameraRef = useRef<Camera>(null);
 
   const [cameraPosition, setCameraPosition] =
@@ -183,6 +187,8 @@ export default function ReviewScreen() {
 
       navigation.navigate('ReviewPhotoConfirm', {
         photoUri,
+        placeId,
+        placeName,
       });
     } catch (error) {
       console.log('[사진 촬영 실패]', error);
