@@ -87,6 +87,24 @@ export default function ProfileSection({
           </TouchableOpacity>
         </View>
       )}
+
+      <View style={styles.followRow}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.followItem}
+          onPress={() => navigation.navigate('FollowList', {type: 'follower'})}>
+          <Text style={styles.followLabel}>팔로워</Text>
+          <Text style={styles.followCount}>{profile?.follower_count ?? 0}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.followItem}
+          onPress={() => navigation.navigate('FollowList', {type: 'following'})}>
+          <Text style={styles.followLabel}>팔로잉</Text>
+          <Text style={styles.followCount}>{profile?.following_count ?? 0}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -145,5 +163,30 @@ const styles = StyleSheet.create({
     width: px(16),
     height: px(16),
     tintColor: '#9A9A9A',
+  },
+
+  followRow: {
+    width: '100%',
+    marginTop: px(spacing.lg),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: px(123),
+  },
+
+  followItem: {
+    alignItems: 'center',
+  },
+
+  followLabel: {
+    fontFamily: fontFamily.medium,
+    fontSize: px(14),
+    color: colors.text.tertiary,
+  },
+
+  followCount: {
+    marginTop: px(spacing.xs),
+    fontFamily: fontFamily.bold,
+    fontSize: px(24),
+    color: colors.text.basic,
   },
 });

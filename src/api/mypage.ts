@@ -8,6 +8,8 @@ export type MyProfile = {
   review_count: number;
   place_count: number;
   subscription_count: number;
+  follower_count?: number;
+  following_count?: number;
 };
 
 type ApiResponse<T> = {

@@ -1,7 +1,7 @@
 export type AuthStackParamList = {
   Splash: undefined;
   Login: undefined;
-  Terms: undefined;
+  Terms: {viewOnly?: boolean} | undefined;
   ProfileSetup: {
     terms_agreed: boolean;
     location_terms_agreed: boolean;
@@ -52,6 +52,12 @@ export type AppStackParamList = {
   MyMap: undefined;
 
   Setting: undefined;
+
+  TermsOfService: undefined;
+
+  TermsAgreement: {viewOnly?: boolean} | undefined;
+
+  FollowList: {type: 'follower' | 'following'};
 };
 
 // 리뷰 작성 전용 스택

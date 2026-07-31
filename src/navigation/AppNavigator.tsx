@@ -13,6 +13,9 @@ import NotificationScreen from '../screens/notification/NotificationScreen';
 import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
 import MyMapScreen from '../screens/mypage/MyMapScreen';
 import SettingScreen from '../screens/mypage/SettingScreen';
+import TermsOfServiceScreen from '../screens/mypage/TermsOfServiceScreen';
+import TermsScreen from '../screens/auth/TermsScreen';
+import FollowListScreen from '../screens/mypage/FollowListScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -45,6 +48,9 @@ export default function AppNavigator() {
       <Stack.Screen name='ReviewReport' component={ReviewReportScreen}/>
       <Stack.Screen name='MyMap' component={MyMapScreen} options={{animation: 'fade'}} />
       <Stack.Screen name='Setting' component={SettingScreen} />
+      <Stack.Screen name='TermsOfService' component={TermsOfServiceScreen} />
+      <Stack.Screen name='TermsAgreement' component={TermsScreen} />
+      <Stack.Screen name='FollowList' component={FollowListScreen} />
     </Stack.Navigator>
   );
 }

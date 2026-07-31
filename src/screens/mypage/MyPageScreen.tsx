@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
-  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
@@ -20,8 +19,6 @@ import ProfileSection from '../../components/mypage/ProfileSection';
 import ReviewSection from '../../components/mypage/ReviewSection';
 import MyMapSection from '../../components/mypage/MyMapSection';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
-import {logoutApi} from '../../api/auth';
-import {useAuth} from '../../context/AuthContext';
 import {getMyProfile, MyProfile} from '../../api/mypage';
 
 const settingIcon = require('../../assets/image/setting.png');
@@ -37,8 +34,6 @@ export default function MypageScreen() {
   const navigation = useNavigation<any>();
   const [activeTab, setActiveTab] = useState<TabType>('review');
   const mapRef = useRef<NaverMapViewRef>(null);
-  const {setIsLoggedIn} = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
@@ -60,23 +55,6 @@ export default function MypageScreen() {
       loadProfile();
     }, [loadProfile]),
   );
-
-  const handleLogout = async () => {
-    if (isLoggingOut) {
-      return;
-    }
-
-    try {
-      setIsLoggingOut(true);
-      await logoutApi();
-      setIsLoggedIn(false);
-    } catch (error) {
-      console.log('[로그아웃 실패]', error);
-      Alert.alert('로그아웃 실패', '잠시 후 다시 시도해주세요.');
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -113,19 +91,6 @@ export default function MypageScreen() {
           profile={profile}
           isLoading={isProfileLoading}
         />
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[
-            styles.logoutButton,
-            isLoggingOut && styles.logoutButtonDisabled,
-          ]}
-          onPress={handleLogout}
-          disabled={isLoggingOut}>
-          <Text style={styles.logoutButtonText}>
-            {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
-          </Text>
-        </TouchableOpacity>
 
         <View style={styles.tabRow}>
           <TouchableOpacity
@@ -211,30 +176,6 @@ const styles = StyleSheet.create({
     width: px(22),
     height: px(22),
     tintColor: colors.icon.basic,
-  },
-
-  logoutButton: {
-    alignSelf: 'center',
-    minWidth: px(96),
-    height: px(34),
-    paddingHorizontal: px(18),
-    marginBottom: px(14),
-    borderRadius: px(17),
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.button.tertiaryFill,
-  },
-
-  logoutButtonDisabled: {
-    opacity: 0.5,
-  },
-
-  logoutButtonText: {
-    fontSize: px(13),
-    fontFamily: fontFamily.medium,
-    color: colors.text.tertiary,
   },
 
   tabRow: {
