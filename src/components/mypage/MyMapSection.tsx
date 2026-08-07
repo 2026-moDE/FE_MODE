@@ -62,7 +62,7 @@ export default function MyMapSection({mapRef}: Props) {
         congestion_level:
         group.representativeReview.congestion_level as CongestionLevel,
         thumbnail_url:
-        group.representativeReview.image_url ?? '',
+        group.representativeReview.thumbnail_small_url ?? group.representativeReview.image_url ?? '',
     }));
     }, [locatedGroups]);
 
@@ -257,13 +257,15 @@ export default function MyMapSection({mapRef}: Props) {
         {clusters.map(cluster => {
             const [lng, lat] = cluster.geometry.coordinates;
             if (cluster.properties.cluster) {
+                const leafPlace = supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place;
+
                 return (
                     <ClusterBubble
                         key={`my-map-cluster-${cluster.properties.cluster_id}`}
                         latitude={lat}
                         longitude={lng}
                         count={cluster.properties.point_count}
-                        thumbnailUrl={supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place.thumbnail_url}
+                        thumbnailUrl={leafPlace?.thumbnail_small_url ?? leafPlace?.thumbnail_url}
                         onPress={() => navigation.navigate('MyMap')}
                     />
                 );

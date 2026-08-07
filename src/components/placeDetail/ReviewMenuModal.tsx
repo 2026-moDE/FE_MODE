@@ -21,7 +21,7 @@ type Props = {
     onReport: () => void;
 };
 
-export default function ReviewActionModal({visible, isOwner, position, onClose, onDelete, onReport}: Props) {
+export default function ReviewMenuModal({visible, isOwner, position, onClose, onDelete, onReport}: Props) {
     const [step, setStep] = useState<'menu' | 'confirm'>('menu');
 
     useEffect(() => {

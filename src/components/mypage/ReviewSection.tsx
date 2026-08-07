@@ -72,6 +72,8 @@ export default function ReviewSection({profile}: Props) {
       .map(r => ({
         id: r.id,
         image_url: r.image_url!,
+        thumbnail_url: r.thumbnail_url ?? null,
+        thumbnail_small_url: r.thumbnail_small_url ?? null,
         congestion_level: r.congestion_level as CurrentReview['congestion_level'],
         comment: r.comment ?? '',
         helpful_count: r.helpful_count,
@@ -81,6 +83,7 @@ export default function ReviewSection({profile}: Props) {
           id: profile?.id ?? 0,
           nickname: profile?.nickname ?? '',
           profile_image_url: profile?.profile_image_url ?? '',
+          profile_url: profile?.profile_url ?? null,
         },
         created_at: r.created_at,
       })),
@@ -149,7 +152,7 @@ export default function ReviewSection({profile}: Props) {
                   <View style={styles.reviewImageBox}>
                     {review.image_url ? (
                       <FastImage
-                        source={{uri: review.image_url}}
+                        source={{uri: review.thumbnail_small_url ?? review.thumbnail_url ?? review.image_url}}
                         style={styles.reviewImage}
                         resizeMode={FastImage.resizeMode.cover}
                       />

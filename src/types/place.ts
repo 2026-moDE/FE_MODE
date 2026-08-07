@@ -26,6 +26,7 @@ export type Place = {
     category: PlaceCategory;
     congestion_level: CongestionLevel;
     thumbnail_url: string;
+    thumbnail_small_url?: string | null;
     latitude?: number;
     longitude?: number;
 };
@@ -54,6 +55,7 @@ export type NearbyPlace = {
     longitude: number;
     congestion_level: CongestionLevel;
     thumbnail_url: string;
+    thumbnail_small_url?: string | null;
     category?: PlaceCategory;
     address?: string;
 };
@@ -72,6 +74,7 @@ export type LocationVerifyResponse = {
 export type ReviewUser = {
     nickname: string;
     profile_image_url: string;
+    profile_url?: string | null;
 };
 
 // ─────────────────── 현재 리뷰 목록 api (GET /api/places/:id/reviews/current) ─────────────────── 
@@ -79,6 +82,8 @@ export type ReviewUser = {
 export type CurrentReview = {
     id: number;
     image_url: string;
+    thumbnail_url : string | null;
+    thumbnail_small_url : string | null;
     congestion_level: CongestionLevel;
     comment: string;
     helpful_count: number;
@@ -98,6 +103,8 @@ export type CurrentReviewsResponse = {
 export type ArchivedReview = {
     id: number;
     image_url: string;
+    thumbnail_url : string | null;
+    thumbnail_small_url : string | null;
     congestion_level: CongestionLevel;
     comment: string;
     helpful_count: number;

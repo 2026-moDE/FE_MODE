@@ -117,12 +117,12 @@ export default function HomeScreen(){
                 fetchArchivedReviews(place.id, {limit: 5}).catch(() => ({reviews: []} as any)),
             ]);
             const currentTagged = (currentRes.reviews ?? []).map((r: any) => ({
-                url: r.image_url,
+                url: r.thumbnail_small_url ?? r.thumbnail_url ?? r.image_url,
                 created_at: r.created_at,
                 type: 'current' as const,
             }));
             const archivedTagged = (archivedRes.reviews ?? []).map((r: any) => ({
-                url: r.image_url,
+                url: r.thumbnail_small_url ?? r.thumbnail_url ?? r.image_url,
                 created_at: r.created_at,
                 type: 'archived' as const,
             }));

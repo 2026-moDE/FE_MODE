@@ -52,7 +52,7 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome}: 
                     {place.thumbnail_url && place.thumbnail_url.length > 0 ? (
                         <FastImage
                             source={{
-                                uri: place.thumbnail_url,
+                                uri: place.thumbnail_small_url ?? place.thumbnail_url,
                                 priority: FastImage.priority.high,
                                 cache: FastImage.cacheControl.immutable,
                             }}
