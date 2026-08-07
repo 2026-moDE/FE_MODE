@@ -22,7 +22,7 @@ import {
     subscribe,
     unsubscribe,
 } from '../../api/place';
-import { reportReview, deleteReview } from '../../api/review';
+import { deleteReview, changeReview } from '../../api/review';
 
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
@@ -195,11 +195,21 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                         console.error('리뷰 삭제 실패:', error);
                     }
                 }}
+                
                 onReport={() => {
                     if (imageIndex === null) return;
                     const reviewId = reviews[imageIndex].id;
                     navigation.navigate('ReviewReport', {reviewId});
-                    setTimeout(() => setImageIndex(null), 350);
+                    setImageIndex(null);
+                }}
+
+                onChangeComment={async(reviewId, comment )=>{
+                    try{
+                        await changeReview(reviewId,{comment});
+                        setReviews(prev=>prev.map(r=> r.id===reviewId ? {...r,comment} : r))
+                    } catch(e){
+                        console.error('리뷰 수정 실패:', e);
+                    }
                 }}
             />
 

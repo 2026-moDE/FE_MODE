@@ -5,6 +5,7 @@ export type MyProfile = {
   nickname: string;
   email: string | null;
   profile_image_url: string | null;
+  profile_url?: string | null;
   review_count: number;
   place_count: number;
   subscription_count: number;
@@ -24,6 +25,8 @@ export type MyReview = {
     address: string;
   };
   image_url: string | null;
+  thumbnail_url?: string | null;
+  thumbnail_small_url?: string | null;
   congestion_level: string;
   comment: string | null;
   helpful_count: number;

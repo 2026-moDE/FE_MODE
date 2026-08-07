@@ -47,14 +47,14 @@ export const useProfileImageUpload = () => {
       setUploading(true);
 
       const presignedData = await getPresignedUrl({
-        file_name: image.fileName,
-        content_type: image.type,
+        file_name: `profile_original/${image.fileName}`,
+        content_type: 'image/jpeg',
       });
 
       await uploadImageToS3({
         presignedUrl: presignedData.presigned_url,
         imageUri: image.uri,
-        contentType: image.type,
+        contentType: 'image/jpeg',
       });
 
       return presignedData.image_url;

@@ -115,3 +115,11 @@ export async function deleteReview(id:number){
   const response = await apiClient.delete(`/api/reviews/${id}`)
   return response.data;
 }
+
+// 리뷰 텍스트 수정 api
+export async function changeReview(
+  id:number,
+  body:{comment:string}){
+  const response = await apiClient.patch(`/api/reviews/${id}`,body)
+  return response.data;
+}

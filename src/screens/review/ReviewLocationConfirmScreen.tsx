@@ -158,7 +158,7 @@ const handleLocationFailConfirm = () => {
 
             <View style={styles.placeTextBox}>
               <View style={styles.placeNameRow}>
-                <Text style={styles.placeName}>{placeName}</Text>
+                <Text style={styles.placeName} numberOfLines={1} ellipsizeMode="tail">{placeName}</Text>
                 <Text style={styles.placeDistance}>{placeDistance}</Text>
               </View>
 
@@ -259,6 +259,7 @@ const styles = StyleSheet.create({
     lineHeight: px(26),
     color: colors.text.basic,
     includeFontPadding: false,
+    textAlign: 'center',
   },
 
   // 안내 부제목
@@ -269,6 +270,7 @@ const styles = StyleSheet.create({
     lineHeight: px(17),
     color: '#4B5563',
     includeFontPadding: false,
+    textAlign: 'center',
   },
 
   // 장소 카드 전체 컨테이너
@@ -352,6 +354,7 @@ const styles = StyleSheet.create({
 
   // 장소명 — 굵고 큰 텍스트
   placeName: {
+    flexShrink: 1,
     fontFamily: fontFamily.bold,
     fontSize: px(20),
     lineHeight: px(24),
@@ -360,8 +363,9 @@ const styles = StyleSheet.create({
     marginRight: px(spacing.s),
   },
 
-  // 거리 표시 (연파란 계열)
+  // 거리 표시 (연파란 계열) — 항상 잘리지 않게 고정
   placeDistance: {
+    flexShrink: 0,
     fontFamily: fontFamily.medium,
     fontSize: px(14),
     lineHeight: px(18),

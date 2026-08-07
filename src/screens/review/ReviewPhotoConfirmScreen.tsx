@@ -122,11 +122,6 @@ export default function ReviewPhotoConfirmScreen() {
     const originalWidth = photoSkiaImage.width();
     const originalHeight = photoSkiaImage.height();
 
-    console.log('[Confirm 이미지 크기]', {
-      originalWidth,
-      originalHeight,
-    });
-
     if (originalWidth <= 0 || originalHeight <= 0) {
       return {
         width: MAX_PHOTO_WIDTH,
@@ -163,7 +158,8 @@ export default function ReviewPhotoConfirmScreen() {
     height: displayPhotoHeight,
     isLandscape,
   } = photoDisplaySize;
-    
+
+
   const showToastForThreeSeconds = () => {
     setShowBlurToast(true);
 
