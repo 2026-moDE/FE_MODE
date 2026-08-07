@@ -120,6 +120,7 @@ export default function MyMapScreen({navigation}: Props) {
       longitude: group.longitude,
       congestion_level: group.representativeReview.congestion_level as CongestionLevel,
       thumbnail_url: group.representativeReview.image_url ?? '',
+      thumbnail_small_url: group.representativeReview.thumbnail_small_url ?? null,
     }));
   }, [locatedGroups]);
 
@@ -155,6 +156,8 @@ export default function MyMapScreen({navigation}: Props) {
       .map(r => ({
         id: r.id,
         image_url: r.image_url!,
+        thumbnail_url: r.thumbnail_url ?? null,
+        thumbnail_small_url: r.thumbnail_small_url ?? null,
         congestion_level: r.congestion_level as CurrentReview['congestion_level'],
         comment: r.comment ?? '',
         helpful_count: r.helpful_count,
@@ -164,6 +167,7 @@ export default function MyMapScreen({navigation}: Props) {
           id: profile?.id ?? 0,
           nickname: profile?.nickname ?? '',
           profile_image_url: profile?.profile_image_url ?? '',
+          profile_url: profile?.profile_url ?? null,
         },
         created_at: r.created_at,
       })),
@@ -308,13 +312,15 @@ export default function MyMapScreen({navigation}: Props) {
         {clusters.map(cluster => {
           const [lng, lat] = cluster.geometry.coordinates;
           if (cluster.properties.cluster) {
+            const leafPlace = supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place;
+
             return (
               <ClusterBubble
                 key={`my-map-cluster-${cluster.properties.cluster_id}`}
                 latitude={lat}
                 longitude={lng}
                 count={cluster.properties.point_count}
-                thumbnailUrl={supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place.thumbnail_url}
+                thumbnailUrl={leafPlace?.thumbnail_small_url ?? leafPlace?.thumbnail_url}
                 onPress={() => handleClusterPress(cluster.properties.cluster_id, lat, lng)}
               />
             );
@@ -362,7 +368,7 @@ export default function MyMapScreen({navigation}: Props) {
                   activeOpacity={0.85}
                   onPress={() => openViewer(visibleReviews, review)}>
                   <FastImage
-                    source={{uri: review.image_url!}}
+                    source={{uri: review.thumbnail_small_url ?? review.thumbnail_url ?? review.image_url!}}
                     style={styles.photoGridItem}
                     resizeMode={FastImage.resizeMode.cover}
                   />
@@ -377,7 +383,7 @@ export default function MyMapScreen({navigation}: Props) {
                   activeOpacity={0.85}
                   onPress={() => openViewer(visibleReviews, review)}>
                   <FastImage
-                    source={{uri: review.image_url!}}
+                    source={{uri: review.thumbnail_small_url ?? review.thumbnail_url ?? review.image_url!}}
                     style={styles.photoGridItem}
                     resizeMode={FastImage.resizeMode.cover}
                   />

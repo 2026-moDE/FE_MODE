@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import { Place } from '../../types/place';
 import { colors } from '../../constants/colors';
 import { spacing } from '../../constants/spacing';
@@ -40,9 +41,10 @@ export default function PlaceCardList({ places, onSelect }: Props) {
                     </View>
 
                     {/* 오른쪽: 썸네일 이미지 */}
-                    <Image
-                        source={{ uri: place.thumbnail_url }}
+                    <FastImage
+                        source={{ uri: place.thumbnail_small_url ?? place.thumbnail_url, priority: FastImage.priority.normal }}
                         style={styles.thumbnail}
+                        resizeMode={FastImage.resizeMode.cover}
                     />
 
                 </TouchableOpacity>

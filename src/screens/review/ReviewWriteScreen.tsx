@@ -120,7 +120,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
       // 2. presigned-url 발급
       console.log('[리뷰] presigned-url 요청');
-      const {presigned_url, image_url} = await getPresignedUrl(`review_${Date.now()}.jpg`);
+      const {presigned_url, image_url} = await getPresignedUrl(`original/review_${Date.now()}.jpg`);
       console.log('[리뷰] presigned-url 발급 완료');
 
       // 3. S3 업로드
@@ -478,10 +478,11 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     color: '#4B5563',
     lineHeight: 17,
+    textAlign: 'center',
   },
 
   chipTextSelected: {
-    color: colors.text.inverse,
+    color: colors.text.brandDarker,
     fontFamily: fontFamily.bold,
   },
 

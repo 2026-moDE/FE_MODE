@@ -30,13 +30,13 @@ export function formatRelativeTime(isoString: string): string {
 }
 
 export default function ReviewCard({review, onPress}: Props) {
-    const {image_url, comment, user, created_at} = review;
+    const {thumbnail_url, image_url, comment, user, created_at} = review;
     const timeAgo = formatRelativeTime(created_at);
 
     return (
         <Pressable onPress={onPress} style={styles.container}>
             <FastImage
-                source={{uri: image_url, priority: FastImage.priority.high}}
+                source={{uri: thumbnail_url ?? image_url , priority: FastImage.priority.high}}
                 style={styles.image}
                 resizeMode={FastImage.resizeMode.cover}
             />
@@ -45,7 +45,7 @@ export default function ReviewCard({review, onPress}: Props) {
                 {/* 사용자 (아바타 + 닉네임) */}
                 <View style={styles.userGroup}>
                     <FastImage
-                        source={{uri: user.profile_image_url}}
+                        source={{uri: user.profile_url ?? user.profile_image_url}}
                         style={styles.avatar}
                         resizeMode={FastImage.resizeMode.cover}
                     />

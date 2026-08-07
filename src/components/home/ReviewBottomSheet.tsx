@@ -62,7 +62,7 @@ const ReviewBottomSheet = forwardRef<BottomSheet, Props>(function ReviewBottomSh
                     renderItem={({item}) => (
                         <Pressable onPress={() => onPressPlace?.(item)}>
                             <FastImage
-                                source={{uri: item.thumbnail_url!}}
+                                source={{uri: item.thumbnail_small_url ?? item.thumbnail_url!}}
                                 style={styles.thumbnail}
                                 resizeMode={FastImage.resizeMode.cover}
                             />

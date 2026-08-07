@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 
 import {useNavigation} from '@react-navigation/native';
 import {fontFamily} from '../../constants/typography';
@@ -52,13 +53,13 @@ export default function ProfileSection({
     <View style={styles.profileArea}>
       <View style={styles.profileImageBox}>
         {profile?.profile_image_url ? (
-          <Image
+          <FastImage
             source={{
-              uri: profile.profile_image_url,
-              cache: 'reload',
+              uri: profile.profile_url ?? profile.profile_image_url,
+              priority: FastImage.priority.high,
             }}
             style={styles.profileImage}
-            resizeMode="cover"
+            resizeMode={FastImage.resizeMode.cover}
           />
         ) : null}
       </View>
