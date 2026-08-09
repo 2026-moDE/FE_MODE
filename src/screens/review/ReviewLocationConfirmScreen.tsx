@@ -18,7 +18,8 @@ import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
-const cautionIcon = require('../../assets/image/caution.png');
+import IconLocationPin from '../../assets/icons/IconLocationPin';
+const cautionIcon = require('../../assets/image/caution_yellow.png');
 
 type Props = NativeStackScreenProps<
   ReviewStackParamList,
@@ -35,7 +36,6 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
     photoUri,
     placeId,
     placeName,
-    placeCategory,
     placeDistance,
     placeAddress,
     latitude,
@@ -150,16 +150,11 @@ const handleLocationFailConfirm = () => {
             </View>
 
           <View style={styles.placeInfoBox}>
-            {!!placeCategory && (
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryText}>{placeCategory}</Text>
-              </View>
-            )}
+            <IconLocationPin size={24} color="#4B566D" />
 
             <View style={styles.placeTextBox}>
               <View style={styles.placeNameRow}>
                 <Text style={styles.placeName} numberOfLines={1} ellipsizeMode="tail">{placeName}</Text>
-                <Text style={styles.placeDistance}>{placeDistance}</Text>
               </View>
 
               {!!placeAddress && (
@@ -310,35 +305,15 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  // 카테고리 배지 + 장소명/주소 가로 배치
+  // 위치 아이콘 + 장소명/주소 가로 배치
   placeInfoBox: {
     flex: 1,
     paddingTop: px(spacing.md),
     paddingHorizontal: px(spacing.s),
     flexDirection: 'row',
     alignItems: 'flex-start',
+    gap: px(spacing.s),
     backgroundColor: colors.surface.white,
-  },
-
-  // 카테고리 배지
-  categoryBadge: {
-    height: px(22),
-    paddingHorizontal: px(spacing.s),
-    borderRadius: px(radius.md),
-    backgroundColor: colors.button.primaryLighter,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: px(spacing.s),
-    marginTop: px(2),
-  },
-
-  // 카테고리 텍스트 (파란 계열)
-  categoryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: px(12),
-    lineHeight: px(14),
-    color: colors.text.brand,
-    includeFontPadding: false,
   },
 
   // 장소명·거리·주소를 세로로 쌓는 flex 컨테이너
@@ -361,16 +336,6 @@ const styles = StyleSheet.create({
     color: colors.text.basic,
     includeFontPadding: false,
     marginRight: px(spacing.s),
-  },
-
-  // 거리 표시 (연파란 계열) — 항상 잘리지 않게 고정
-  placeDistance: {
-    flexShrink: 0,
-    fontFamily: fontFamily.medium,
-    fontSize: px(14),
-    lineHeight: px(18),
-    color: colors.brand.primary,
-    includeFontPadding: false,
   },
 
   // 도로명 주소 — 작은 회색 텍스트
@@ -412,7 +377,7 @@ const styles = StyleSheet.create({
     width: px(225),
     height: px(48),
     borderRadius: px(radius.lg),
-    backgroundColor: '#DCE6FF',
+    backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -432,9 +397,9 @@ const styles = StyleSheet.create({
 
     checkText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
+    fontSize: px(24),
     lineHeight: px(21),
-    color: colors.text.brand,
+    color: colors.text.inverse,
     includeFontPadding: false,
     marginRight: px(spacing.s),
     },
@@ -443,7 +408,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: px(18),
     lineHeight: px(21),
-    color: colors.text.brand,
+    color: colors.text.inverse,
     includeFontPadding: false,
     },
 

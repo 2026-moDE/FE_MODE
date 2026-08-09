@@ -27,6 +27,7 @@ import {radius} from '../../constants/radius';
 import {useLocation} from '../../context/LocationContext';
 import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
+import ReviewPreviewModal, {type ReviewVisibility} from '../../components/review/ReviewPreviewModal';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
@@ -68,6 +69,8 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
   const [reviewText, setReviewText] = useState(savedReviewText ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exitModalVisible, setExitModalVisible] = useState(false);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [, setReviewVisibility] = useState<ReviewVisibility>('all');
 
   const now = new Date();
   const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -140,6 +143,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       await createReview(reviewBody);
       console.log('[리뷰] 등록 완료');
 
+      setPreviewModalVisible(false);
       navigation.navigate('ReviewComplete');
     } catch (error: any) {
       Alert.alert('등록 실패', error?.response?.data?.message || error?.message || '알 수 없는 오류가 발생했어요.');
@@ -270,16 +274,25 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             styles.submitButton,
             isSubmitActive ? styles.submitButtonActive : styles.submitButtonDisabled,
           ]}
-          onPress={handleSubmit}
+          onPress={() => setPreviewModalVisible(true)}
           disabled={!isSubmitActive}>
           <Text
             style={[
               styles.submitText,
               isSubmitActive ? styles.submitTextActive : styles.submitTextDisabled,
             ]}>
-            {isSubmitting ? '등록 중...' : '✓  등록하기'}
+            ✓  등록하기
           </Text>
         </Pressable>
+          <ReviewPreviewModal
+            visible={previewModalVisible}
+            photoUri={photoUri}
+            reviewText={reviewText}
+            onChangeVisibility={setReviewVisibility}
+            isSubmitting={isSubmitting}
+            onClose={() => setPreviewModalVisible(false)}
+            onSubmit={handleSubmit}
+          />
           <ReviewExitModal
             visible={exitModalVisible}
             onClose={() => setExitModalVisible(false)}

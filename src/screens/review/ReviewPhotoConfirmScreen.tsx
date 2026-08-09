@@ -48,7 +48,7 @@ type BlurPoint = {
   y: number;
 };
 
-const checkBlueIcon = require('../../assets/image/check_blue.png');
+const checkYellowIcon = require('../../assets/image/check_yellow.png');
 const mdiBlurIcon = require('../../assets/image/mdi_blur.png');
 const eraserIcon = require('../../assets/image/eraser.png');
 const blurRefreshIcon = require('../../assets/image/blur_refresh.png');
@@ -70,7 +70,7 @@ const MAX_PHOTO_HEIGHT = px(570);
 const TOP_SECTION_HEIGHT = figmaY(129);
 const LOGO_TOP = figmaY(77);
 const TOOL_AREA_HEIGHT = px(120);
-const BRUSH_RADIUS = px(24);
+const BRUSH_RADIUS = px(18);
 const ERASE_RADIUS = px(28);
 //const BLUR_SIGMA = 12;
 const MOSAIC_BLOCK_SIZE = 14;
@@ -108,48 +108,17 @@ export default function ReviewPhotoConfirmScreen() {
   const {photoUri, placeId, placeName} = route.params;
   const photoSkiaImage = useImage(photoUri);
 
-  // 세로 사진은 리뷰(카메라) 화면과 동일한 고정 박스에 cover로 채우고,
-  // 가로 사진은 잘리는 부분 없이 화면 전체 너비로 보이도록 한다.
+  // 가로로 촬영한 사진은 90도 회전시켜 세로 박스를 꽉 채우고,
+  // 세로 사진은 그대로 같은 박스를 cover로 채운다.
   const photoDisplaySize = useMemo(() => {
-    if (!photoSkiaImage) {
-      return {
-        width: MAX_PHOTO_WIDTH,
-        height: MAX_PHOTO_HEIGHT,
-        isLandscape: false,
-      };
-    }
+    const originalWidth = photoSkiaImage?.width() ?? 0;
+    const originalHeight = photoSkiaImage?.height() ?? 0;
+    const isLandscape = originalWidth > 0 && originalHeight > 0 && originalWidth > originalHeight;
 
-    const originalWidth = photoSkiaImage.width();
-    const originalHeight = photoSkiaImage.height();
-
-    if (originalWidth <= 0 || originalHeight <= 0) {
-      return {
-        width: MAX_PHOTO_WIDTH,
-        height: MAX_PHOTO_HEIGHT,
-        isLandscape: false,
-      };
-    }
-
-    const aspectRatio = originalWidth / originalHeight;
-    const isLandscape = originalWidth > originalHeight;
-
-    // 가로 사진도 세로와 동일한 좌우 여백 유지
-    if (isLandscape) {
-      const width = MAX_PHOTO_WIDTH;
-      const height = width / aspectRatio;
-
-      return {
-        width,
-        height,
-        isLandscape: true,
-      };
-    }
-
-    // 세로 사진은 리뷰(카메라) 화면과 동일한 고정 박스 크기 유지
     return {
       width: MAX_PHOTO_WIDTH,
       height: MAX_PHOTO_HEIGHT,
-      isLandscape: false,
+      isLandscape,
     };
   }, [photoSkiaImage]);
 
@@ -158,6 +127,38 @@ export default function ReviewPhotoConfirmScreen() {
     height: displayPhotoHeight,
     isLandscape,
   } = photoDisplaySize;
+
+  // 가로 사진을 담을 때 회전 전 기준이 되는 사각형(가로/세로가 박스와 반대)과
+  // 회전 중심점. 이 사각형을 90도 돌리면 정확히 박스 크기와 일치한다.
+  const rotatedImageRect = {
+    x: (displayPhotoWidth - displayPhotoHeight) / 2,
+    y: (displayPhotoHeight - displayPhotoWidth) / 2,
+    width: displayPhotoHeight,
+    height: displayPhotoWidth,
+  };
+  const rotateOrigin = {x: displayPhotoWidth / 2, y: displayPhotoHeight / 2};
+
+  const renderPhotoLayer = (withMosaic: boolean) => {
+    const imageRect = isLandscape
+      ? rotatedImageRect
+      : {x: 0, y: 0, width: displayPhotoWidth, height: displayPhotoHeight};
+
+    const image = (
+      <SkiaImage image={photoSkiaImage!} {...imageRect} fit="cover">
+        {withMosaic && <RuntimeShader source={mosaicRuntimeEffect} />}
+      </SkiaImage>
+    );
+
+    if (!isLandscape) {
+      return image;
+    }
+
+    return (
+      <Group transform={[{rotate: Math.PI / 2}]} origin={rotateOrigin}>
+        {image}
+      </Group>
+    );
+  };
 
 
   const showToastForThreeSeconds = () => {
@@ -212,7 +213,8 @@ export default function ReviewPhotoConfirmScreen() {
 
 const handleConfirm = async () => {
   try {
-    if (blurPoints.length === 0) {
+    // 블러도 없고 회전도 필요 없으면 원본 파일을 그대로 사용
+    if (blurPoints.length === 0 && !isLandscape) {
       navigation.navigate('ReviewWrite', {photoUri, placeId, placeName});
       return;
     }
@@ -350,17 +352,13 @@ const handleConfirm = async () => {
           style={styles.confirmButton}
           activeOpacity={0.8}
           onPress={handleConfirm}>
-          <Image source={checkBlueIcon} style={styles.checkIcon} />
+          <Image source={checkYellowIcon} style={styles.checkIcon} />
           <Text style={styles.confirmText}>확인</Text>
         </TouchableOpacity>
       </View>
 
       {/* 사진 영역 */}
-      <View
-        style={[
-          styles.photoSection,
-          {justifyContent: isLandscape ? 'center' : 'flex-start'},
-        ]}>
+      <View style={styles.photoSection}>
         <View
           style={[
             styles.photoWrapper,
@@ -380,31 +378,16 @@ const handleConfirm = async () => {
             {...(isBlurMode ? panResponder.panHandlers : {})}>
             {photoSkiaImage ? (
               <Canvas ref={canvasRef} style={styles.photo}>
-                <SkiaImage
-                  image={photoSkiaImage}
-                  x={0}
-                  y={0}
-                  width={displayPhotoWidth}
-                  height={displayPhotoHeight}
-                  fit={isLandscape ? 'contain' : 'cover'}
-                />
+                {renderPhotoLayer(false)}
 
                 {blurPoints.map(point => {
                   const clipPath = Skia.Path.Make();
                   clipPath.addCircle(point.x, point.y, BRUSH_RADIUS);
 
                   return (
-                  <Group key={point.id} clip={clipPath}>
-                    <SkiaImage
-                      image={photoSkiaImage}
-                      x={0}
-                      y={0}
-                      width={displayPhotoWidth}
-                      height={displayPhotoHeight}
-                      fit={isLandscape ? 'contain' : 'cover'}>
-                      <RuntimeShader source={mosaicRuntimeEffect} />
-                    </SkiaImage>
-                  </Group>
+                    <Group key={point.id} clip={clipPath}>
+                      {renderPhotoLayer(true)}
+                    </Group>
                   );
                 })}
               </Canvas>
@@ -421,17 +404,15 @@ const handleConfirm = async () => {
               </View>
             )}
           </View>
-          
-            {/*
+        
           {showBlurToast && !isBlurMode && (
             <View style={styles.aiBubble}>
               <Text style={styles.aiBubbleText}>
-                AI 기능으로 자동 블러 처리되어 있어요
+                블러 기능으로 가리고 싶은 부분을 가릴 수 있어요
               </Text>
               <View style={styles.aiBubbleTail} />
             </View>
           )}
-            */}
         </View>
       </View>
 
@@ -610,7 +591,8 @@ const styles = StyleSheet.create({
   aiBubbleTail: {
     position: 'absolute',
     bottom: px(-6),
-    right: px(96),
+    left: '50%',
+    marginLeft: -px(8),
     width: 0,
     height: 0,
     borderLeftWidth: px(8),

@@ -25,7 +25,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
 const px = (value: number) => value * scale;
 
-const completeMapIcon = require('../../assets/image/map.png');
+const completeMapIcon = require('../../assets/image/map_yellow.png');
 
 const ReviewCompleteScreen = ({navigation}: Props) => {
   const insets = useSafeAreaInsets();
