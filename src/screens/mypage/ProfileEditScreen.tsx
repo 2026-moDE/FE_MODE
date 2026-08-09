@@ -26,7 +26,7 @@ import {updateMyProfile} from '../../api/mypage';
 import ProfileImageEditor from '../../components/mypage/ProfileImageEditor';
 import {useProfileImageUpload, PickedProfileImage} from '../../hooks/useProfileImageUpload';
 
-const checkBlueIcon = require('../../assets/image/check_blue.png');
+const checkYellowIcon = require('../../assets/image/check_yellow.png');
 
 const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -151,7 +151,7 @@ if (previewImage) {
             <Text style={styles.previewConfirmText}>업로드 중...</Text>
           ) : (
             <>
-              <Image source={checkBlueIcon} style={styles.previewCheckIcon} />
+              <Image source={checkYellowIcon} style={styles.previewCheckIcon} />
               <Text style={styles.previewConfirmText}>확인</Text>
             </>
           )}

@@ -1,7 +1,9 @@
 import React, {useState} from 'react';
 import {
+  Dimensions,
   Image,
   Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -12,7 +14,9 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import type {AuthStackParamList} from '../../types/navigation';
 import {colors} from '../../constants/colors';
-import {fontFamily, fontSize} from '../../constants/typography';
+import {fontFamily} from '../../constants/typography';
+import IconChevronDown from '../../assets/icons/IconChevronDown';
+import TermsBodyText from '../../components/terms/TermsBodyText';
 
 // api 연결시 삭제
 // const [terms, setTerms] = useState<TermItem[]>([]); 얘로 수정
@@ -25,11 +29,17 @@ const appliedFontFamily = fontFamily ?? {
 
 const logo = require('../../assets/image/logo_navy.png');
 
+const DESIGN_WIDTH = 393;
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const scale = SCREEN_WIDTH / DESIGN_WIDTH;
+const px = (value: number) => value * scale;
+
 type Props = NativeStackScreenProps<AuthStackParamList, 'Terms'>;
 
 export default function TermsScreen({navigation}: Props) {
   const [checkedTerms, setCheckedTerms] = useState<number[]>([]);
-  
+  const [openTermId, setOpenTermId] = useState<number | null>(null);
+
   // termsMock 쓰던 부분은 api 연결 후 terms로 수정
   const requiredChecked = termsMock
     .filter(term => term.required)
@@ -52,6 +62,11 @@ export default function TermsScreen({navigation}: Props) {
         : [...prev, id],
     );
   };
+
+  const handleTermToggle = (id: number) => {
+    setOpenTermId(prev => (prev === id ? null : id));
+  };
+
   const handleNext = () => {
     if (!requiredChecked) {
       return;
@@ -70,7 +85,10 @@ export default function TermsScreen({navigation}: Props) {
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
 
       <View style={styles.container}>
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
           <Image source={logo} style={styles.logo} resizeMode="contain" />
 
           <Text style={styles.title}>
@@ -94,15 +112,17 @@ export default function TermsScreen({navigation}: Props) {
               {termsMock.map(term => (
                 <TermRow
                   key={term.id}
-                  text={`[${term.required ? '필수' : '선택'}] ${term.title}`}
+                  text={`(${term.required ? '필수' : '선택'}) ${term.title}`}
+                  body={term.body}
                   checked={checkedTerms.includes(term.id)}
-                  onPress={() => handleTermCheck(term.id)}
+                  isOpen={openTermId === term.id}
+                  onCheckPress={() => handleTermCheck(term.id)}
+                  onTogglePress={() => handleTermToggle(term.id)}
                 />
               ))}
             </View>
-            </View>
           </View>
-        </View>
+        </ScrollView>
 
         <Pressable
           style={[
@@ -111,31 +131,60 @@ export default function TermsScreen({navigation}: Props) {
           ]}
           onPress={handleNext}
           disabled={!requiredChecked}>
-          <Text style={styles.bottomButtonText}>동의하기</Text>
+          <Text
+            style={[
+              styles.bottomButtonText,
+              !requiredChecked && styles.bottomButtonTextDisabled,
+            ]}>
+            동의하기
+          </Text>
         </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
 
 type TermRowProps = {
   text: string;
+  body: string;
   checked: boolean;
-  onPress: () => void;
+  isOpen: boolean;
+  onCheckPress: () => void;
+  onTogglePress: () => void;
 };
 
-function TermRow({text, checked, onPress}: TermRowProps) {
+function TermRow({
+  text,
+  body,
+  checked,
+  isOpen,
+  onCheckPress,
+  onTogglePress,
+}: TermRowProps) {
   return (
-    <Pressable style={styles.termRow} onPress={onPress}>
-      <View style={styles.termLeft}>
-        <Text style={[styles.termCheck, checked && styles.termCheckActive]}>
-          ✓
-        </Text>
+    <View>
+      <View style={styles.termRow}>
+        <Pressable style={styles.termLeft} onPress={onCheckPress}>
+          <Text style={[styles.termCheck, checked && styles.termCheckActive]}>
+            ✓
+          </Text>
 
-        <Text style={styles.termText}>{text}</Text>
+          <Text style={styles.termText}>{text}</Text>
+        </Pressable>
+
+        <Pressable onPress={onTogglePress}>
+          <View style={isOpen && styles.chevronOpen}>
+            <IconChevronDown size={px(20)} color={colors.gray[300]} />
+          </View>
+        </Pressable>
       </View>
 
-      <Text style={styles.arrow}>›</Text>
-    </Pressable>
+      {isOpen && (
+        <View style={styles.termBody}>
+          <TermsBodyText text={body} />
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -143,34 +192,40 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.white,
-    justifyContent: 'space-between',
   },
 
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: px(16),
+    paddingBottom: px(16),
     backgroundColor: colors.white,
   },
 
-  content: {
-    alignItems: 'center',
-    paddingTop: 160,
+  // 버튼이 바로 뒤에 80 간격으로 붙고, 내용이 길어지면 남는 공간만큼만
+  // 줄어들며 스크롤되어 버튼 바로 위까지 빈틈없이 내용이 보이게 됨
+  scrollArea: {
+    flex:1,
   },
 
+  scrollContent: {
+    paddingHorizontal: px(16),
+    paddingTop: px(100),
+    paddingBottom: 0,
+    alignItems: 'center',
+  },
 
   logo: {
-    width: 94,
-    height: 50,
-    marginBottom: 16,
+    width: px(94),
+    height: px(50),
+    marginBottom: px(40),
   },
 
   title: {
     color: colors.gray[900],
-    fontSize: 24,
+    fontSize: px(24),
     fontWeight: '700',
-    lineHeight: 28,
-    letterSpacing: -0.48,
+    lineHeight: px(28),
+    letterSpacing: px(-0.48),
     textAlign: 'center',
     fontFamily: appliedFontFamily.bold,
     includeFontPadding: false,
@@ -178,26 +233,26 @@ const styles = StyleSheet.create({
 
   agreementArea: {
     width: '100%',
-    marginTop: 102,
+    marginTop: px(102),
     alignItems: 'center',
   },
 
   allAgreeBox: {
-    width: 360,
-    height: 52,
+    width: '100%',
+    height: px(52),
     borderWidth: 1,
     borderColor: colors.gray[200],
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: px(12),
+    paddingHorizontal: px(16),
     flexDirection: 'row',
     alignItems: 'center',
   },
 
   checkIcon: {
-    width: 18,
-    height: 18,
+    width: px(18),
+    height: px(18),
     color: colors.gray[300],
-    fontSize: 14,
+    fontSize: px(14),
     fontWeight: '700',
     textAlign: 'center',
     fontFamily: appliedFontFamily.bold,
@@ -208,20 +263,21 @@ const styles = StyleSheet.create({
   },
 
   allAgreeText: {
-    marginLeft: 10,
-    color: colors.gray[500],
-    fontSize: 14,
+    marginLeft: px(10),
+    color: colors.gray[400],
+    fontSize: px(14),
     fontWeight: '600',
     fontFamily: appliedFontFamily.bold,
   },
   termList: {
-    width: 360,
-    marginTop: 40,
+    width: '100%',
+    marginTop: px(40),
+    gap: px(6),
   },
 
   termRow: {
-    height: 52,
-    paddingHorizontal: 16,
+    paddingVertical: px(6),
+    paddingHorizontal: px(16),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -233,40 +289,43 @@ const styles = StyleSheet.create({
   },
 
   termCheck: {
-    width: 18,
-    height: 18,
+    width: px(18),
+    height: px(18),
     color: colors.gray[300],
-    fontSize: 14,
+    fontSize: px(14),
     fontWeight: '700',
     textAlign: 'center',
     fontFamily: appliedFontFamily.bold,
   },
-
 
   termCheckActive: {
     color: colors.navy[900],
   },
 
   termText: {
-    marginLeft: 10,
-    color: colors.gray[600],
-    fontSize: 13,
-    fontWeight: '500',
+    marginLeft: px(10),
+    color: colors.gray[500],
+    fontSize: px(14),
+    fontWeight: '400',
+    lineHeight: px(18),
+    letterSpacing: px(-0.28),
     fontFamily: appliedFontFamily.regular,
   },
-  arrow: {
-    color: colors.gray[300],
-    fontSize: 20,
-    fontWeight: '300',
+  chevronOpen: {
+    transform: [{rotate: '180deg'}],
+  },
+
+  termBody: {
+    marginTop: px(8),
+    paddingHorizontal: px(16),
+    paddingBottom: px(10),
   },
 
   bottomButton: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
-    height: 52,
-    borderRadius: 12,
+    marginTop: 0,
+    flexShrink: 0,
+    height: px(52),
+    borderRadius: px(12),
     backgroundColor: colors.navy[900],
     alignItems: 'center',
     justifyContent: 'center',
@@ -278,8 +337,12 @@ const styles = StyleSheet.create({
 
   bottomButtonText: {
     color: colors.white,
-    fontSize: 16,
+    fontSize: px(16),
     fontWeight: '700',
     fontFamily: appliedFontFamily.bold,
+  },
+
+  bottomButtonTextDisabled: {
+    color: colors.gray[500],
   },
 });

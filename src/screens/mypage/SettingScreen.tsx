@@ -157,7 +157,10 @@ export default function SettingScreen() {
 
         <View style={styles.sectionGap} />
 
-        <TouchableOpacity activeOpacity={0.7} style={styles.linkRow}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.linkRow}
+          onPress={() => navigation.navigate('TermsOfService')}>
           <Text style={styles.rowText}>서비스 이용 약관</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>

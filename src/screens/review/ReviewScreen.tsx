@@ -24,12 +24,12 @@ import {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
-import {radius} from '../../constants/radius';
+import IconFlashOn from '../../assets/icons/IconFlashOn';
+import IconFlashOff from '../../assets/icons/IconFlashOff';
 
 type ReviewNav = NativeStackNavigationProp<ReviewStackParamList>;
 type CameraPosition = 'back' | 'front';
 
-const flashIcon = require('../../assets/image/flash.png');
 const refreshIcon = require('../../assets/image/refresh.png');
 const logoIcon = require('../../assets/image/logo.png');
 const photoIcon = require('../../assets/image/photo.png');
@@ -283,19 +283,14 @@ export default function ReviewScreen() {
 
       <View style={styles.bottomSection}>
         <TouchableOpacity
-          style={[
-            styles.sideIconButton,
-            flash === 'on' && styles.flashButtonActive,
-          ]}
+          style={styles.sideIconButton}
           activeOpacity={0.8}
           onPress={handleToggleFlash}>
-          <Image
-            source={flashIcon}
-            style={[
-              styles.sideIcon,
-              flash === 'off' && styles.flashIconOff,
-            ]}
-          />
+          {flash === 'on' ? (
+            <IconFlashOn size={px(32)} />
+          ) : (
+            <IconFlashOff size={px(32)} />
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -443,13 +438,5 @@ const styles = StyleSheet.create({
     width: px(72),
     height: px(72),
     resizeMode: 'contain',
-  },
-  flashButtonActive: {
-    backgroundColor: 'rgba(255, 212, 0, 0.2)',
-    borderRadius: px(radius.xl),
-  },
-
-  flashIconOff: {
-    opacity: 0.5,
   },
 });
