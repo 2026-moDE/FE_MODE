@@ -43,13 +43,16 @@ export function useSearchHistory() {
     const deleteHistory = useCallback(async (keyword: string) => {
         try {
             await deleteSearchHistory(keyword);
+            // 삭제된 항목을 즉시 화면에서 지움 (바로 반응하는 느낌)
             setHistory(prev => prev.filter(item => item.keyword !== keyword));
+            // 서버 목록을 다시 불러와서, 5개 제한으로 안 보이던 다음 항목이 바로 채워지게 함
+            fetchHistory();
         } catch (e) {
             setError('검색어 삭제에 실패했습니다.');
         }
-    }, []);
+    }, [fetchHistory]);
 
-    // 전체 삭제 ( gui상 아직 없음)
+    // 전체 삭제
     const deleteAllHistory = useCallback(async () => {
         try {
             await deleteAllSearchHistory(); // 서버에서 전체 삭제

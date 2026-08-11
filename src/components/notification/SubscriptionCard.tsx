@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
         color: colors.text.basic,
     },
     address: {
-        ...typography.b4,
+        ...typography.c2,
         color: colors.text.tertiary,
     },
 });

@@ -107,16 +107,21 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        ...typography.b3,          // fontFamily, fontSize: 12, lineHeight: 16
+        ...typography.b6,     
         color: colors.text.basic,  // #111114
         padding: 0,
     },
     iconButton: {
         padding: 4,
         marginLeft: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     clearText: {
         fontSize: 14,
-        color: colors.text.tertiary,  // #5C5D68
+        lineHeight: 14,
+        color: colors.icon.tertiary,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
 });

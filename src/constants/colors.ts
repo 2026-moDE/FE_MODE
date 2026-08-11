@@ -5,10 +5,16 @@
 const palette = {
     // Primary - Yellow
     yellow: {
+        50:  '#FFFEEB',
         100: '#FFFDBF',
+        200: '#FFFD92',
         300: '#FFFD6D',  // Primary
+        400: '#F2EF54',
         500: '#D7D33D',
+        600: '#B2AE08',
+        700: '#8F8D20',
         800: '#66640D',
+        900: '#3D3C06',
     },
 
     // Secondary - Dark Navy
@@ -22,7 +28,7 @@ const palette = {
         600: '#4B566D',
         700: '#3B4456',
         800: '#2C343F',
-        900: '#1A2133',
+        900: '#1B2129',
     },
 
     // Gray - Neutral gray
@@ -92,7 +98,7 @@ export const colors = {
         brand:        palette.yellow[300],// #FFFD6D
         inverse:      palette.gray[900],  // #111114
         subtle:       palette.navy[700],  // #3B4456
-        subtleDarker: palette.navy[900],  // #1A2133
+        subtleDarker: palette.navy[900],  // #1B2129
     },
 
     // Text
@@ -100,7 +106,7 @@ export const colors = {
         basic:       palette.gray[900],   // #111114
         subtle:      palette.navy[600],   // #4B566D
         tertiary:    palette.gray[500],   // #5C5D68
-        disabled:    palette.gray[200],   // #C4C4C8
+        disabled:    palette.gray[300],   // #A3A3AA
         brandDarker: palette.yellow[800], // #66640D
         brand:       palette.yellow[300], // #FFFD6D
         inverse:     palette.gray[0],     // #FFFFFF

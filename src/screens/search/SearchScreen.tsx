@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, Keyboard, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
@@ -15,8 +15,10 @@ import { useSearchHistory } from '../../hooks/useSearchHistory';
 import { useAutocomplete } from '../../hooks/useAutocomplete';
 import SearchItemList from '../../components/search/SearchItemList';
 import LocationButton from '../../components/search/LocationButton';
+const currentLocationIcon = require('../../assets/image/place_pin.png');
 import { useLocation } from '../../context/LocationContext';
 import { getDistance, formatDistance } from '../../utils/distance';
+import { typography } from '../../constants/typography';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 // 디폴트(최근,추천 검색어) / 검색어 타이핑 / 검색 완료 / 현위치로 검색
@@ -32,30 +34,44 @@ export default function SearchScreen() {
     // 검색창 텍스트 state
     const [searchText, setSearchText] = useState('');
     const [mode, setMode] = useState<Mode>('default');
+    // "현위치로 장소 찾기"를 누른 상태인지 (누른 뒤 이어서 검색해도 거리순 유지하려고)
+    const [isLocationMode, setIsLocationMode] = useState(false);
     // 글자 한 자 칠 때마다 api 불러오면 부담
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // 키보드 높이
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+        const showSub = Keyboard.addListener(showEvent, e => setKeyboardHeight(e.endCoordinates.height));
+        const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
 
     // 장소 검색 훅
-    const { search, places } = useSearchPlaces();
+    const { search, places, isLoading } = useSearchPlaces();
     // 현재 위치
     const { location } = useLocation();
 
     // 최근 검색어 훅 → 화면 들어오면 자동으로 조회
-    const { history, fetchHistory, saveHistory, deleteHistory } = useSearchHistory();
+    const { history, fetchHistory, saveHistory, deleteHistory, deleteAllHistory } = useSearchHistory();
+
+    // 다른 화면(장소 상세 등) 갔다가 뒤로가기로 돌아올 때마다 최근 검색어 다시 불러옴
+    // (SearchScreen이 그대로 남아있어서 history가 예전 값에 머물러있는 문제 방지)
+    useFocusEffect(
+        useCallback(() => {
+            fetchHistory();
+        }, [fetchHistory]),
+    );
 
     // 검색어 자동 완성
     const { suggestions, search: searchAutocomplete } = useAutocomplete();
-
-    // 임시 추천 검색어 (나중에 API 연결)
-    // const recommendedItems = [
-    //     { id: 1, keyword: '성수동', type: 'normal' as const },
-    //     { id: 2, keyword: '망원동', type: 'normal' as const },
-    //     { id: 3, keyword: '가나디 팝업', type: 'hot' as const },
-    //     { id: 4, keyword: '말빵', type: 'hot' as const },
-    //     { id: 5, keyword: '군자', type: 'normal' as const },
-    //     { id: 6, keyword: '서촌', type: 'normal' as const },
-    //     { id: 7, keyword: '콩국수', type: 'normal' as const },
-    // ];
 
     // 뒤로가기
     const handleBack = () => navigation.goBack();
@@ -66,6 +82,7 @@ export default function SearchScreen() {
 
         if (!text) {
             setMode('default');
+            setIsLocationMode(false);
             if (debounceRef.current) clearTimeout(debounceRef.current);
             return;
         }
@@ -75,29 +92,40 @@ export default function SearchScreen() {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
             searchAutocomplete(text);
-            search(text, location ? { latitude: location.latitude, longitude: location.longitude } : undefined);
+            // "현위치로 장소 찾기" 이후에 이어서 타이핑하는 거면 좌표를 같이 보내서 거리순 유지, 아니면 일반 검색
+            if (isLocationMode && location) {
+                search(text, { latitude: location.latitude, longitude: location.longitude });
+            } else {
+                search(text);
+            }
         }, 300);
     };
 
     // 검색 실행
     const handleSubmit = useCallback(() => {
-        setMode('searched');
-        search(searchText, location ? { latitude: location.latitude, longitude: location.longitude } : undefined);
+        setMode(isLocationMode ? 'location' : 'searched');
+        if (isLocationMode && location) {
+            search(searchText, { latitude: location.latitude, longitude: location.longitude });
+        } else {
+            search(searchText);
+        }
         fetchHistory();
-    }, [searchText, search, fetchHistory, location]);
+    }, [searchText, search, fetchHistory, location, isLocationMode]);
 
-    // 최근/추천 검색어 클릭 → 검색 실행
+    // 최근/추천 검색어 클릭 → 검색 실행 (일반 검색이므로 위치 모드 해제)
     const handleSelectKeyword = useCallback((keyword: string) => {
         setSearchText(keyword);
         setMode('searched');
-        search(keyword, location ? { latitude: location.latitude, longitude: location.longitude } : undefined);
+        setIsLocationMode(false);
+        search(keyword);
         fetchHistory();
-    }, [search, fetchHistory, location]);
+    }, [search, fetchHistory]);
 
     // 검색창 X → 텍스트 초기화 (gui상 아직 없음)
     const handleClear = () => {
         setSearchText('');
         setMode('default');
+        setIsLocationMode(false);
     };
 
     // 특정 장소를 클릭하면 장소 상세페이지로 이동 (리뷰 모드면 ReviewWrite로)
@@ -130,10 +158,8 @@ export default function SearchScreen() {
     const handleLocationSearch = () => {
         if (!location) return;
         setMode('location');
-        search(searchText, {
-            latitude: location.latitude,
-            longitude: location.longitude,
-        });
+        setIsLocationMode(true);
+        search(searchText, { latitude: location.latitude, longitude: location.longitude });
     };
 
     return (
@@ -148,8 +174,13 @@ export default function SearchScreen() {
                 onClear={handleClear}
             />
 
-            {/* 검색 결과 없을 때 해골 표시 */}
-            {mode === 'searched' && places.length === 0 ? (
+            {/* 검색 API 응답 기다리는 중 - 결과 없음 아이콘 대신 로딩 표시 (타이핑 중엔 자동완성 목록을 가리면 안 되니 제외) */}
+            {isLoading && mode !== 'typing' ? (
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator size="large" color="#999" />
+                </View>
+            ) : (mode === 'searched' || mode === 'location') && places.length === 0 ? (
+                /* 검색이 끝났는데 진짜 결과가 없을 때만 해골 표시 */
                 <View style={styles.emptyContainer}>
                     <Image
                         source={require('../../assets/icons/IconSkull.png')}
@@ -163,25 +194,21 @@ export default function SearchScreen() {
                     keyboardShouldPersistTaps="handled"
                 >
                     {/* 최근 검색어 → 서버에서 받아온 데이터 */}
-                    {/* 추천 검색어 (얘도 확정 아니고) */}
                     {mode === 'default' && (
                         <>
                             <RecentSearchList
                                 history={history}
                                 onSelect={handleSelectKeyword}
                                 onDelete={deleteHistory}
+                                onDeleteAll={deleteAllHistory}
                             />
-                            {/* <RecommendedSearchList
-                                items={recommendedItems}
-                                onSelect={handleSelectKeyword}
-                            /> */}
                         </>
                     )}
 
-                    {/* 자동완성 목록 → 글자 입력 중일 때만 표시 */}
+                    {/* 자동완성 목록 → 글자 입력 중일 때만, 최대 3개까지만 표시 */}
                     {mode === 'typing' && suggestions.length > 0 && (
                         <SearchItemList
-                            suggestions={suggestions}
+                            suggestions={suggestions.slice(0, 3)}
                             onSelect={handleSelectKeyword}
                         />
                     )}
@@ -191,19 +218,23 @@ export default function SearchScreen() {
                         <>
                             {mode === 'location' && (
                                 <View style={styles.locationChip}>
-                                    <Text style={styles.locationChipLabel}>⊙ 현재 위치</Text>
+                                    <View style={styles.locationChipLabelRow}>
+                                        <Image source={currentLocationIcon} style={styles.locationChipIcon} resizeMode="contain" />
+                                        {/* 하드 코딩 제거하기 */}
+                                        <Text style={styles.locationChipLabel}>현재 위치</Text>
+                                    </View>
                                     <Text style={styles.locationChipName}>자양동</Text>
                                 </View>
                             )}
-                            <PlaceCardList places={places} onSelect={handleSelectPlace} />
+                            <PlaceCardList places={places} onSelect={handleSelectPlace} location={location} />
                         </>
                     )}
                 </ScrollView>
             )}
 
-            {/* 현재 위치로 장소 찾기*/}
-            {(mode === 'default' || mode === 'typing') && (
-                <View style={styles.locationButtonWrapper}>
+            {/* 현재 위치로 장소 찾기 (검색어가 있을 때만 - 빈 검색어는 백엔드 카카오 검색이 결과를 못 줌) */}
+            {(mode === 'typing' || mode === 'searched') && (
+                <View style={[styles.locationButtonWrapper, keyboardHeight > 0 && {bottom: keyboardHeight + 12}]}>
                     <LocationButton onPress={handleLocationSearch} />
                 </View>
             )}
@@ -231,14 +262,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 12,
     },
+    locationChipLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    locationChipIcon: {
+        width: 14,
+        height: 14,
+    },
     locationChipLabel: {
         color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
+        ...typography.c1,
     },
     locationChipName: {
         color: '#fff',
-        fontSize: 14,
+        ...typography.c2,
     },
     locationButtonWrapper: {
         position: 'absolute',

@@ -37,8 +37,11 @@ export default function CustomTabBar({ state, navigation, descriptors }: BottomT
     return null;
   }
 
+  // iOS 홈 인디케이터 영역(insets.bottom)이 있으면 그걸로 하단 여백을 대체
+  const bottomPadding = insets.bottom > 0 ? insets.bottom : 12;
+
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: bottomPadding }]}>
       {TAB_ORDER.map((name) => {
 
         // 가운데 리뷰 버튼
@@ -102,7 +105,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingTop: 12,
   },
   iconBox: {
     width: 52,

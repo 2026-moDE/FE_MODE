@@ -1,5 +1,4 @@
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
 import {Svg, Path} from 'react-native-svg';
 
 type Props = {
@@ -7,56 +6,20 @@ type Props = {
     color?: string;
 };
 
-export default function IconPlaceLocation({size = 24, color = '#4B566D'}: Props) {
+export default function IconPlaceLocation({size = 20, color = '#A3A3AA'}: Props) {
     return (
-        <View style={[styles.container, {width: size, height: size}]}>
-            <Svg
-                style={styles.pin}
-                width="18"
-                height="21"
-                viewBox="0 0 18 21"
-                fill="none">
-                <Path
-                    d="M3.31943 3.26343C4.80975 1.80292 6.81623 0.989562 8.90286 1.0001C10.9895 1.01064 12.9877 1.84423 14.4631 3.31971C15.9386 4.7952 16.7722 6.79337 16.7828 8.88C16.7933 10.9666 15.9799 12.9731 14.5194 14.4634L10.3334 18.6494C9.95837 19.0244 9.44976 19.235 8.91943 19.235C8.3891 19.235 7.88048 19.0244 7.50543 18.6494L3.31943 14.4634C1.83432 12.9782 1 10.9638 1 8.86343C1 6.76306 1.83432 4.7487 3.31943 3.26343Z"
-                    stroke={color}
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                />
-            </Svg>
-            <Svg
-                style={styles.dot}
-                width="8"
-                height="8"
-                viewBox="0 0 8 8"
-                fill="none">
-                <Path
-                    d="M4 7C5.65685 7 7 5.65685 7 4C7 2.34315 5.65685 1 4 1C2.34315 1 1 2.34315 1 4C1 5.65685 2.34315 7 4 7Z"
-                    stroke={color}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                />
-            </Svg>
-        </View>
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+            <Path
+                d="M5.33325 3.96676C6.57518 2.74967 8.24725 2.07187 9.98611 2.08065C11.725 2.08943 13.3901 2.78409 14.6197 4.01366C15.8493 5.24324 16.5439 6.90837 16.5527 8.64723C16.5615 10.3861 15.8837 12.0582 14.6666 13.3001L11.1782 16.7884C10.8657 17.1009 10.4419 17.2764 9.99991 17.2764C9.55797 17.2764 9.13413 17.1009 8.82158 16.7884L5.33325 13.3001C4.09565 12.0624 3.40039 10.3837 3.40039 8.63343C3.40039 6.88311 4.09565 5.20448 5.33325 3.96676Z"
+                stroke={color}
+                strokeLinejoin="round"
+            />
+            <Path
+                d="M10 11.1333C11.3807 11.1333 12.5 10.014 12.5 8.6333C12.5 7.25259 11.3807 6.1333 10 6.1333C8.61929 6.1333 7.5 7.25259 7.5 8.6333C7.5 10.014 8.61929 11.1333 10 11.1333Z"
+                stroke={color}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </Svg>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        position: 'relative',
-    },
-    pin: {
-        position: 'absolute',
-        top: 2,
-        right: 4,
-        bottom: 3,
-        left: 4,
-    },
-    dot: {
-        position: 'absolute',
-        top: 7,
-        right: 9,
-        bottom: 11,
-        left: 9,
-    },
-});

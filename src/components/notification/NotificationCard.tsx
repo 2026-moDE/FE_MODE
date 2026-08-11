@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
         gap: spacing.s,
     },
     title: {
-        ...typography.b1,
+        ...typography.b5,
         color: colors.text.basic,
         flexShrink: 1,
     },
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
         color: colors.text.disabled,
     },
     time: {
-        ...typography.caption2,
+        ...typography.c2,
         color: colors.text.tertiary,
         flexShrink: 0,
     },
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
         color: colors.text.disabled,
     },
     body: {
-        ...typography.b4,
+        ...typography.c2,
         color: colors.text.subtle,
         lineHeight: 20,
     },

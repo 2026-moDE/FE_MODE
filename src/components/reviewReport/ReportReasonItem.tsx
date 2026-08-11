@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.icon.basic,
     },
     label: {
-        ...typography.caption2,
+        ...typography.c2,
         color: colors.text.basic,
     },
 });

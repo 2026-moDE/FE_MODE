@@ -6,14 +6,15 @@ import {AppStackParamList} from '../../types/navigation';
 import {PlaceDetail, CurrentReview, ArchivedReview} from '../../types/place';
 import {useLocation} from '../../context/LocationContext';
 import {formatDistance} from '../../utils/distance';
-import PlaceDetailHeader from '../../components/placeDetail/PlaceDetailHeader';
+import Header from '../../components/notification/Header';
 import PlaceDetailInfo from '../../components/placeDetail/PlaceDetailInfo';
-import ReviewTabs, {ReviewTabKey} from '../../components/placeDetail/ReviewTabs';
+import {ReviewTabKey} from '../../components/placeDetail/ReviewTabs';
 import ReviewCard from '../../components/placeDetail/ReviewCard';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
+import {typography} from '../../constants/typography';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
-import IconFloatingButton from '../../assets/icons/IconFloatingButton';
 import {
     fetchPlaceDetail,
     fetchLocationVerify,
@@ -23,6 +24,7 @@ import {
     unsubscribe,
 } from '../../api/place';
 import { deleteReview, changeReview } from '../../api/review';
+import QuickReviewButton from '../../components/home/QuickReviewButton';
 
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
@@ -45,8 +47,21 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     // 활성 탭 (실시간 / 과거) - 미니카드에서 클릭한 사진 타입에 따라 초기값 결정
     const [activeTab, setActiveTab] = useState<ReviewTabKey>(initialTab ?? 'current');
 
-    // 리뷰 목록 (탭에 따라 다른 데이터)
-    const [reviews, setReviews] = useState<(CurrentReview | ArchivedReview)[]>([]);
+    // 리뷰 목록 (탭별로 따로 관리 → 탭 전환 시 다른 탭 데이터가 잠깐 보이는 것 방지)
+    const [currentReviews, setCurrentReviews] = useState<CurrentReview[]>([]);
+    const [archivedReviews, setArchivedReviews] = useState<ArchivedReview[]>([]);
+    const reviews = activeTab === 'current' ? currentReviews : archivedReviews;
+    // 리뷰 삭제나 수정시 호출시킴
+    const setReviews = useCallback(
+        (updater: (prev: (CurrentReview | ArchivedReview)[]) => (CurrentReview | ArchivedReview)[]) => {
+            if (activeTab === 'current') {
+                setCurrentReviews(prev => updater(prev) as CurrentReview[]);
+            } else {
+                setArchivedReviews(prev => updater(prev) as ArchivedReview[]);
+            }
+        },
+        [activeTab],
+    );
 
     // 리뷰 사진 index
     const [imageIndex, setImageIndex] = useState< number | null>(null);
@@ -67,31 +82,38 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             .catch(error => console.error('위치 인증 실패:', error));
     }, [placeId, location]);
 
-    // 탭 바뀔 때마다 해당 리뷰 가져오기
+    // 실시간 / 과거 리뷰 가져옴
     useEffect(() => {
-        const apiCall =
-            activeTab === 'current'
-                ? fetchCurrentReviews(placeId, {limit: 20})
-                : fetchArchivedReviews(placeId, {limit: 20});
-
-        apiCall
-            .then(data => setReviews(data.reviews))
+        fetchCurrentReviews(placeId, {limit: 20})
+            .then(data => setCurrentReviews(data.reviews))
             .catch(error => console.error('리뷰 조회 실패:', error));
-    }, [placeId, activeTab]);
+        fetchArchivedReviews(placeId, {limit: 20})
+            .then(data => setArchivedReviews(data.reviews))
+            .catch(error => console.error('리뷰 조회 실패:', error));
+    }, [placeId]);
 
     // 거리 텍스트 (계산된 경우만)
     const distanceText =
         distance !== null ? `내 위치에서 ${formatDistance(distance)}` : undefined;
 
-    // 리뷰 짝수로 맞추기 (홀수면 null로 빈 자리 추가 → 마지막 카드 커지는 거 방지)
-    const displayReviews = useMemo<((CurrentReview | ArchivedReview) | null)[]>(() => {
-        return reviews.length % 2 === 1 ? [...reviews, null] : reviews;
-    }, [reviews]);
+    // 실시간 탭 + 과거 리뷰가 있을 때만 그리드 첫 칸에 "과거 리뷰 확인하기" 타일 노출
+    const hasArchiveTile = activeTab === 'current' && archivedReviews.length > 0;
 
-    // 뒤로가기
+    // 그리드에 뿌릴 데이터 (타일 추가 + 홀수면 null로 빈 자리 추가 → 마지막 카드 커지는 거 방지)
+    const displayReviews = useMemo<(((CurrentReview | ArchivedReview) | null) | 'archive-entry')[]>(() => {
+        const list: (((CurrentReview | ArchivedReview) | null) | 'archive-entry')[] =
+            hasArchiveTile ? ['archive-entry', ...reviews] : [...reviews];
+        return list.length % 2 === 1 ? [...list, null] : list;
+    }, [reviews, hasArchiveTile]);
+
+    // 뒤로가기 (과거 리뷰 화면이면 실시간 화면으로만 복귀, 그게 아니면 이전 화면으로)
     const handleBack = useCallback(() => {
+        if (activeTab === 'archived') {
+            setActiveTab('current');
+            return;
+        }
         navigation.goBack();
-    }, [navigation]);
+    }, [navigation, activeTab]);
 
     // 리뷰 바로 쓰기 (조리개 버튼) - 현재 장소를 미리 실어 보냄
     const handleQuickReview = useCallback(() => {
@@ -129,7 +151,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     if (!placeDetail) {
         return (
             <View style={[styles.container, {paddingTop: insets.top}]}>
-                <PlaceDetailHeader title={placeName} onBack={handleBack} />
+                <Header title={placeName} onBack={handleBack} />
                 <View style={styles.emptyWrapper}>
                     <Text style={styles.emptyText}>장소 정보를 불러올 수 없습니다</Text>
                 </View>
@@ -139,41 +161,59 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
 
     return (
         <View style={[styles.container, {paddingTop: insets.top}]}>
-            {/* 헤더 */}
-            <PlaceDetailHeader title="리뷰 확인" onBack={handleBack} />
-
-            {/* 장소 정보 */}
+            {/* 장소 정보 (뒤로가기 + 장소명 + 알림 아이콘 + 주소 + 혼잡도) */}
             <PlaceDetailInfo
                 place={placeDetail}
                 distance={distanceText}
+                onBack={handleBack}
                 onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
             />
 
-            {/* 실시간 / 과거 탭 */}
-            <ReviewTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            {/* 과거 리뷰 화면일 때만 섹션 타이틀 노출 */}
+            {activeTab === 'archived' && (
+                <Text style={styles.archivedSectionTitle}>과거 리뷰</Text>
+            )}
 
             {/* 리뷰 그리드 */}
             <FlatList
                 data={displayReviews}
-                keyExtractor={(item, index) => item ? String(item.id) : `placeholder-${index}`}
+                keyExtractor={(item, index) =>
+                    item === 'archive-entry' ? 'archive-entry' : item ? String(item.id) : `placeholder-${index}`
+                }
                 numColumns={2}
                 columnWrapperStyle={styles.gridRow}
                 contentContainerStyle={styles.gridContent}
                 renderItem={({item, index}) => {
+                    // "과거 리뷰 확인하기" 타일
+                    if (item === 'archive-entry') {
+                        return (
+                            <Pressable style={styles.archiveCard} onPress={() => setActiveTab('archived')}>
+                                <View style={styles.archiveStack}>
+                                    <View style={[styles.stackCard, styles.stackCardBack2]} />
+                                    <View style={[styles.stackCard, styles.stackCardBack1]} />
+                                    <View style={[styles.stackCard, styles.stackCardFront]} />
+                                </View>
+                                <Text style={styles.archiveLabel}>과거 리뷰 확인하기</Text>
+                            </Pressable>
+                        );
+                    }
                     // 빈 자리 (홀수 마지막 칸) - 공간만 차지하고 안 보임
                     if (item === null) {
                         return <View style={{flex: 1}} />;
                     }
+                    // 타일이 0번 칸을 차지하는 만큼 실제 리뷰 배열(reviews)에서의 인덱스는 하나 밀림
+                    const reviewIndex = hasArchiveTile ? index - 1 : index;
                     return (
                         <ReviewCard
                             review={item}
-                            onPress={() => setImageIndex(index)}
+                            onPress={() => setImageIndex(reviewIndex)}
+                            isArchived={activeTab === 'archived'}
                         />
                     );
                 }}
                 ListEmptyComponent={
                     <View style={styles.emptyWrapper}>
-                        <Text style={styles.emptyText}>리뷰가 없습니다</Text>
+                        <Text style={styles.emptyText}>첫 리뷰를 남겨주세요!</Text>
                     </View>
                 }
             />
@@ -183,6 +223,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 reviews={reviews}
                 startIndex={imageIndex ?? 0}
                 visible={imageIndex !== null}
+                placeName={placeDetail.name}
 
                 onClose={() => setImageIndex(null)}
                 onDelete={async () => {
@@ -213,15 +254,13 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 }}
             />
 
-            {/* 리뷰 바로 쓰기 플로팅 버튼 (사진 클릭시 숨김) */}
+            {/* 리뷰 바로 쓰기 버튼 (사진 클릭시 숨김) */}
             {imageIndex === null && (
-                <Pressable
-                    style={({pressed}) => [styles.fab, pressed && styles.fabPressed]}
-                    onPress={handleQuickReview}
-                    hitSlop={8}>
-                    <IconFloatingButton size={28} color="#FFFFFF" />
-                </Pressable>
+                <View style={styles.quickReviewRow} pointerEvents="box-none">
+                    <QuickReviewButton onPress={handleQuickReview} />
+                </View>
             )}
+
         </View>
     );
 }
@@ -229,7 +268,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colors.surface.white,
+        backgroundColor: colors.background.dark,
     },
     darkOverlay: {
         // 리뷰 사진 클릭했을 때 뒷 화면 전체를 덮는 검정 레이어
@@ -251,32 +290,59 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     gridContent: {
-        padding: spacing.lg,                      // 16
-        gap: spacing.md,                          // 12 (행)
+        padding: spacing.lg,               
+        gap: spacing.md,                      
     },
     gridRow: {
-        gap: spacing.md,                          // 12 (열)
+        gap: spacing.md,                          
     },
-    fab: {
-        position: 'absolute',
-        right: 20,
-        bottom: 30,
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: '#2C343F',               // 다크 네이비
+    archivedSectionTitle: {
+        ...typography.b3,                         
+        color: colors.text.inverse,
+        paddingHorizontal: spacing.lg,            
+    },
+    archiveCard: {
+        flex: 1,
+        aspectRatio: 177 / 233,                    // ReviewCard와 동일 비율
         alignItems: 'center',
         justifyContent: 'center',
-        // 그림자 (iOS)
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-        // 그림자 (Android)
-        elevation: 6,
+        gap: spacing.md,                       
     },
-    fabPressed: {
-        opacity: 0.85,
-        transform: [{scale: 0.95}],
+    archiveStack: {
+        width: 90,
+        height: 100,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stackCard: {
+        position: 'absolute',
+        width: 70,
+        height: 92,
+        borderRadius: radius.md,                   // 8
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.35)',
+        backgroundColor: 'rgba(255,255,255,0.14)',
+    },
+    stackCardBack2: {
+        transform: [{rotate: '-10deg'}, {translateX: -20}, {translateY: -30}],
+    },
+    stackCardBack1: {
+        transform: [{rotate: '10deg'}, {translateX: 20}, {translateY: -20}],
+    },
+    stackCardFront: {
+        backgroundColor: colors.surface.muted,
+        borderColor: colors.surface.muted,
+    },
+    archiveLabel: {
+        ...typography.c2,                        
+        color: colors.text.disabled,
+        textAlign: 'center',
+    },
+    quickReviewRow: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 30,
+        alignItems: 'center',
     },
 });
