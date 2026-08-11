@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.border.default,
     },
     text: {
-        ...typography.b4,
+        ...typography.b6,
         color: colors.text.basic,
     },
 });

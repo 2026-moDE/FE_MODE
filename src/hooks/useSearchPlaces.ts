@@ -7,8 +7,8 @@
  *
  * 사용 예시:
  *   const {search, places} = useSearchPlaces();
- *   search('성수동');                              // 키워드 검색
- *   search('', {latitude: 37.5, longitude: 127})  // 현위치 기반 검색 (키워드 없이도 가능)
+ *   search('성수동');                              // 키워드 검색 (백엔드가 정렬한 순서 그대로)
+ *   search('', {latitude: 37.5, longitude: 127})  // 현위치 기반 검색 (백엔드가 카카오에 sort=distance로 요청해서 거리순으로 옴)
  *
  * 쓰는 곳: SearchScreen (타이핑 자동검색, 검색 실행, 현위치로 찾기)
  */

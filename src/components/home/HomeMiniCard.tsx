@@ -6,7 +6,7 @@ import IconBellOn from '../../assets/icons/IconBellOn';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import IconClock from '../../assets/icons/IconClock';
 import {colors} from '../../constants/colors';
-import {spacing} from '../../constants/spacing';
+import {spacing, gap} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {typography} from '../../constants/typography';
 
@@ -61,7 +61,7 @@ export default function HomeMiniCard({
                 <View style={styles.infoGroup}>
                     {/* 주소 행 */}
                     <View style={styles.infoRow}>
-                        <IconPlaceLocation size={24} color={colors.icon.subtle} />
+                        <IconPlaceLocation size={22} color={colors.icon.tertiary} />
                         <Text style={styles.addressText} numberOfLines={1} ellipsizeMode="tail">{address}</Text>
                         <Text style={styles.distanceText} numberOfLines={1}>{distance}</Text>
                     </View>
@@ -116,74 +116,78 @@ const styles = StyleSheet.create({
     titleGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.lg,                    // 16
+        gap: spacing.lg,                    
         flex: 1,
     },
     categoryTag: {
-        backgroundColor: colors.button.primaryLighter,  // #E1E9FF
-        paddingHorizontal: spacing.s,       // 8
-        paddingVertical: spacing.xs,        // 4
-        borderRadius: radius.md,            // 8
+        backgroundColor: colors.button.primaryLighter,
+        paddingHorizontal: spacing.s,
+        paddingVertical: spacing.xs,
+        borderRadius: radius.md,
+        borderWidth:1.5,
+        borderColor: colors.border.brand,
+        overflow: 'hidden',        // 테두리 모서리도 borderRadius만큼 둥글게
     },
     categoryText: {
-        ...typography.b3,                   // fontSize: 12, bold
-        color: colors.text.brand,           // #6489F2
+        ...typography.c1,              
+        color: colors.text.brandDarker,           
         letterSpacing: -0.06,
     },
     placeName: {
-        ...typography.h1,                   // fontSize: 24, bold
-        color: colors.text.basic,           // #111114
+        ...typography.h1,                 
+        color: colors.text.basic,         
         letterSpacing: -0.36,
         flexShrink: 1,
     },
     bellWrapper: {
-        width: spacing['2xl'],              // 24
-        height: spacing['2xl'],             // 24
+        width: spacing['2xl'],              
+        height: spacing['2xl'],           
         alignItems: 'center',
         justifyContent: 'center',
     },
     infoGroup: {
-        gap: spacing.xs,                    // 4
+        gap: spacing.xs,                  
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.md,                    // 12
+        gap: gap.xs,                        // 4 (핀아이콘 ↔ 주소)
     },
     addressText: {
-        ...typography.b2,                   // fontSize: 14
-        color: colors.text.subtle,          // #4B566D
+        ...typography.b6,                 
+        color: colors.text.subtle,        
         fontWeight: '400',
         letterSpacing: -0.07,
         flexShrink: 1,                      // 주소 길면 줄어들어서 거리 보장
     },
     distanceText: {
-        ...typography.b2,                   // fontSize: 14
-        color: colors.text.brand,           // #6489F2
+        ...typography.b5,
+        color: colors.text.brandDarker,
         letterSpacing: -0.07,
         flexShrink: 0,                      // 거리는 절대 안 줄어듦
+        marginLeft: gap.md - gap.xs,        // row gap(4)에 8 더해서 총 gap-md(12) 맞춤 (주소 ↔ 거리)
     },
     businessText: {
-        ...typography.b2,                   // fontSize: 14
-        color: colors.text.subtle,          // #4B566D
+        ...typography.b2,                   
+        color: colors.text.subtle,        
         fontWeight: '400',
         letterSpacing: -0.07,
     },
     imageRow: {
         flexDirection: 'row',
-        gap: spacing.s,                     // 8
+        gap: spacing.s,                     
     },
     imageSlot: {
         width: 130,
         height: 130,
     },
     imageRadius: {
-        borderRadius: radius.xl,            // 16
+        borderRadius: radius.xl,           
     },
     imagePlaceholder: {
         width: 130,
         height: 130,
-        backgroundColor: colors.surface.muted,  // #E0E0E4
-        borderRadius: radius.xl,            // 16
+        backgroundColor: colors.surface.muted, 
+        borderRadius: radius.xl,           
     },
 });

@@ -100,12 +100,10 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPicker
 
 const styles = StyleSheet.create({
     reactionButtons: {
-        position: 'absolute',
-        right: 16,
-        bottom: 20,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-end',
         gap: 5,
-        zIndex: 2,
     },
     reactionBtn: {
         width: 40,

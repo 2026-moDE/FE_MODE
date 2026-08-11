@@ -51,11 +51,11 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.text.basic,
     },
     tabText: {
-        ...typography.b2,
+        ...typography.b6,
         color: colors.text.disabled,
     },
     tabTextActive: {
-        ...typography.b1,
+        ...typography.b5,
         color: colors.text.basic,
     },
 });

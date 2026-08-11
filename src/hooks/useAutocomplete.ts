@@ -18,7 +18,7 @@ export function useAutocomplete() {
 
         try {
             const data = await fetchAutocomplete(keyword);
-            setSuggestions(data.data.suggestions);  // { data: { suggestions: [...] } }
+            setSuggestions(data.suggestions);
         } catch (e) {
             setError('자동완성 조회에 실패했습니다.');
             setSuggestions([]); // 이전 목록들 지움

@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
         paddingTop: spacing.lg,
     },
     label: {
-        ...typography.caption2,
+        ...typography.c2,
         color: colors.text.tertiary,
         paddingHorizontal: spacing.xl,
         paddingBottom: spacing.s,

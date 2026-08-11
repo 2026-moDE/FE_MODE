@@ -1,11 +1,14 @@
 import React, {useState, useEffect} from 'react';
 import {Modal, View, Text, Pressable, StyleSheet, Dimensions, Image} from 'react-native';
-import IconTrash from '../../assets/icons/IconTrash';
-import IconReport from '../../assets/icons/IconReport';
 import {colors} from '../../constants/colors';
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
+import {padding, gap} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
-const cautionIcon = require('../../assets/image/caution.png');
+const cautionIcon = require('../../assets/image/caution_yellow.png');
+const sirenIcon = require('../../assets/image/siren.png');
+const editIcon = require('../../assets/image/edit.png');
+const trashIcon = require('../../assets/image/trash.png');
 
 const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -15,13 +18,13 @@ const px = (value: number) => value * scale;
 type Props = {
     visible: boolean;
     isOwner: boolean;
-    position: {top: number; right: number};
     onClose: () => void;
     onDelete: () => void;
     onReport: () => void;
+    onEdit?: () => void;   // 코멘트 입력창에 포커스 + 커서 끝으로 이동
 };
 
-export default function ReviewMenuModal({visible, isOwner, position, onClose, onDelete, onReport}: Props) {
+export default function ReviewMenuModal({visible, isOwner, onClose, onDelete, onReport, onEdit}: Props) {
     const [step, setStep] = useState<'menu' | 'confirm'>('menu');
 
     useEffect(() => {
@@ -38,26 +41,36 @@ export default function ReviewMenuModal({visible, isOwner, position, onClose, on
         return (
             <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
                 <Pressable style={styles.overlay} onPress={onClose}>
-                    <View style={[styles.menuContainer, {top: position.top, right: position.right}]} onStartShouldSetResponder={() => true}>
-                        <View style={styles.triangle} />
-                        <View style={styles.menu}>
+                    <View style={styles.menuBar} onStartShouldSetResponder={() => true}>
+                        {isOwner ? (
+                            <>
+                                <Pressable
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        onClose();
+                                        // 모달이 완전히 닫힌 뒤에 포커스해야 키보드가 확실히 올라옴
+                                        setTimeout(() => onEdit?.(), 350);
+                                    }}>
+                                    <Image source={editIcon} style={styles.menuIcon} resizeMode="contain" />
+                                    <Text style={styles.menuText}>수정하기</Text>
+                                </Pressable>
+                                <View style={styles.divider} />
+                                <Pressable
+                                    style={styles.menuItem}
+                                    onPress={() => setStep('confirm')}>
+                                    <Image source={trashIcon} style={styles.menuIcon} resizeMode="contain" />
+                                    <Text style={styles.menuText}>삭제하기</Text>
+                                </Pressable>
+                            </>
+                        ) : (
                             <Pressable
                                 style={styles.menuItem}
                                 hitSlop={12}
                                 onPress={() => setStep('confirm')}>
-                                {isOwner ? (
-                                    <>
-                                        <IconTrash size={16} color={colors.text.basic} />
-                                        <Text style={styles.menuText}>삭제하기</Text>
-                                    </>
-                                ) : (
-                                    <>
-                                        <IconReport size={14} color={colors.text.basic} />
-                                        <Text style={styles.menuText}>신고하기</Text>
-                                    </>
-                                )}
+                                <Image source={sirenIcon} style={styles.menuIcon} resizeMode="contain" />
+                                <Text style={styles.menuText}>신고하기</Text>
                             </Pressable>
-                        </View>
+                        )}
                     </View>
                 </Pressable>
             </Modal>
@@ -96,42 +109,34 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
     },
-    menuContainer: {
-        position: 'absolute',
-        alignItems: 'flex-end',
-    },
-    triangle: {
-        width: 0,
-        height: 0,
-        borderLeftWidth: 6,
-        borderRightWidth: 6,
-        borderBottomWidth: 8,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderBottomColor: colors.surface.white,
-        marginRight: 10,
-    },
-    menu: {
-        backgroundColor: colors.surface.white,
-        borderRadius: 10,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-        elevation: 4,
+    menuBar: {
+        backgroundColor: colors.surface.subtleDarker,
+        borderTopLeftRadius: radius.xl,
+        borderTopRightRadius: radius.xl,
+        paddingVertical: padding.md,   // 12 (아이템 자체 padding이랑 합쳐서 lg 정도로 보이게)
     },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        justifyContent: 'center',
+        gap: gap.md,                   // 12
+        paddingVertical: padding.s,    // 8
+    },
+    divider: {
+        borderTopWidth: 1,
+        borderStyle: 'dashed',
+        borderColor: 'rgba(255,255,255,0.15)',
+        marginHorizontal: padding.lg,  // 16
+    },
+    menuIcon: {
+        width: 20,
+        height: 20,
     },
     menuText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: colors.text.basic,
+        ...typography.b4,
+        color: colors.text.inverse,
     },
 
     // ── 확인 모달 ──
@@ -144,7 +149,7 @@ const styles = StyleSheet.create({
     modalBox: {
         width: px(320),
         backgroundColor: '#FFFFFF',
-        borderRadius: px(20),
+        borderRadius: radius.xl,     // 16
         paddingVertical: px(20),
         paddingHorizontal: px(20),
         alignItems: 'center',
@@ -179,9 +184,11 @@ const styles = StyleSheet.create({
         gap: px(12),
     },
     cancelButton: {
-        width: px(120),
-        height: px(37),
-        borderRadius: px(12),
+        flex: 1,                            // W 100%
+        height: px(42),
+        paddingVertical: padding.sm,        // 10
+        paddingHorizontal: padding['3xl'],  // 32
+        borderRadius: radius.lg,            // 12
         borderWidth: 1,
         borderColor: '#E0E0E4',
         backgroundColor: '#FFFFFF',
@@ -196,9 +203,11 @@ const styles = StyleSheet.create({
         includeFontPadding: false,
     },
     confirmButton: {
-        width: px(120),
-        height: px(37),
-        borderRadius: px(12),
+        width: px(101),                     // W Fixed 101dp
+        height: px(42),
+        paddingVertical: padding.sm,        // 10
+        paddingHorizontal: padding['3xl'],  // 32
+        borderRadius: radius.lg,            // 12
         backgroundColor: '#2C343F',
         alignItems: 'center',
         justifyContent: 'center',
