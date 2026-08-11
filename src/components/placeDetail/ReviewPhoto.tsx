@@ -1,20 +1,24 @@
 import React, {useState, useEffect, useRef} from 'react';
-import {View, Text, Pressable, Modal, StyleSheet, Animated, PanResponder, ScrollView, Dimensions} from 'react-native';
+import {View, Text, Image, Pressable, StyleSheet, Animated, PanResponder, ScrollView, Dimensions, Keyboard} from 'react-native';
 import FastImage from 'react-native-fast-image';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
-import {fontSize} from '../../constants/typography';
+import { spacing } from '../../constants/spacing';
+import {fontFamily, fontSize} from '../../constants/typography';
 import ReviewMenuModal from './ReviewMenuModal';
 import {BottomSheetModal, BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import ReviewChatModal from './ReviewChatModal';
 import {useReviewPhotoReactions, ReviewPhotoReactionButtons, ReviewPhotoEmojiPicker} from './ReviewPhotoReactions';
-import ReviewPhotoComment from './ReviewPhotoComment';
+import ReviewPhotoComment, {formatAbsoluteDate, ReviewPhotoCommentHandle} from './ReviewPhotoComment';
+import {formatRelativeTime} from './ReviewCard';
+import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 
 type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
     startIndex: number;
     visible: boolean; // 리뷰 사진 모달 클릭 여부
+    placeName?: string;
     onClose: () => void;
     onDelete: () => void;
     onReport: () => void;
@@ -22,21 +26,23 @@ type Props = {
     useAbsoluteDate?: boolean;
 };
 
+const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
+const closeIcon = require('../../assets/image/x.png');
+
 const THUMBNAIL_WIDTH = 40;
 const THUMBNAIL_GAP = 10;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate}: Props) {
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const isOwner = reviews[currentIndex]?.is_mine ?? false;
     // ⋮ 클릭 모달 여부
     const [menuOpen, setMenuOpen] = useState(false);
-    const [menuPosition, setMenuPosition] = useState({top: 0, right: 0});
-    const ellipsisRef = useRef<any>(null);
     const thumbnailScrollRef = useRef<ScrollView>(null);
+    const commentRef = useRef<ReviewPhotoCommentHandle>(null);
     // 현재 사진의 가로세로 비율 (width/height) - 가로 사진 대응용
     const [imageRatio, setImageRatio] = useState<number | null>(null);
     //댓글
@@ -84,9 +90,11 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
 
     // 이전/다음 사진 (양 끝에서는 비활성)
     const handlePrev = () => {
+        Keyboard.dismiss();   // 코멘트 입력 중이었으면 blur → 저장
         if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
     };
     const handleNext = () => {
+        Keyboard.dismiss();   // 코멘트 입력 중이었으면 blur → 저장
         if (currentIndex < reviews.length - 1) setCurrentIndex(currentIndex + 1);
     };
 
@@ -118,21 +126,51 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
         }),
     ).current;
 
-    if (!review) return null;
+    if (!visible || !review) return null;
 
     return (
         <>
-        {/* 사진 뷰어 모달 (독립) */}
-        <Modal
-            visible={visible}
-            transparent
-            animationType="fade"
-            onRequestClose={onClose}>
-            {/* 어두운 배경 (상하단 검은 여백) */}
-            <View style={styles.backdrop}>
+        {/* 사진 뷰어 (Modal 없이 화면 위에 바로 오버레이) */}
+        <>
+            {/* 검은 배경 - 코멘트 입력 중 여기(텍스트 아닌 곳) 누르면 키보드 내려가며 저장됨 */}
+            <Pressable style={styles.backdrop} onPress={() => Keyboard.dismiss()}>
                 <Animated.View
                     style={{transform: [{translateY}]}}
                     {...panResponder.panHandlers}>
+
+                    {/* ── 상단: 사용자(아바타+닉네임+시간) + ⋮ + X (이미지 바깥, 검은 배경 위) ── */}
+                    <View style={styles.topRow}>
+                        <View style={styles.leftGroup}>
+                            <View style={styles.userGroup}>
+                                <FastImage
+                                    source={{uri: review.user.profile_url ?? review.user.profile_image_url}}
+                                    style={styles.avatar}
+                                    resizeMode={FastImage.resizeMode.cover}
+                                />
+                                <Text style={styles.nickname} numberOfLines={1}>
+                                    {review.user.nickname}
+                                </Text>
+                            </View>
+                            <Text style={styles.timeText} numberOfLines={1}>
+                                {useAbsoluteDate ? formatAbsoluteDate(review.created_at) : formatRelativeTime(review.created_at)}
+                            </Text>
+                        </View>
+
+                        <View style={styles.actionGroup}>
+                            {/* ⋮ 버튼 */}
+                            <Pressable
+                                style={styles.iconButton}
+                                hitSlop={14}
+                                onPress={() => setMenuOpen(true)}>
+                                <Image source={verticalEllipsisIcon} style={styles.verticalEllipsisIcon} resizeMode="contain" />
+                            </Pressable>
+
+                            {/* X 버튼 */}
+                            <Pressable onPress={onClose} style={styles.iconButton} hitSlop={14}>
+                                <Image source={closeIcon} style={styles.closeIcon} resizeMode="contain" />
+                            </Pressable>
+                        </View>
+                    </View>
 
                     {/* 가로 사진이면 실제 비율(가로), 아니면 세로 2:3 유지 */}
                     <View style={[styles.imageWrapper, imageRatio && imageRatio > 1 ? {aspectRatio: imageRatio} : null]}>
@@ -159,54 +197,27 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
                             onPress={handleNext}
                         />
 
-                        {/* ── 닫기 버튼: 원 + 반원이 이미지 상단 중앙에 걸침 ── */}
-                        <View style={styles.closeOuter}>
-                            <Pressable onPress={onClose} style={styles.xCircle} hitSlop={16}>
-                                <Text style={styles.closeIcon}>✕</Text>
-                            </Pressable>
-                            {/* <View style={styles.semicircle} /> */}
-                        </View>
-
-                        {/* ── 상단: 사용자 (이미지 위에 오버레이) ── */}
-                        <View style={styles.topRow}>
-                            <View style={styles.userGroup}>
-                                <FastImage
-                                    source={{uri: review.user.profile_url ?? review.user.profile_image_url}}
-                                    style={styles.avatar}
-                                    resizeMode={FastImage.resizeMode.cover}
-                                />
-                                <Text style={styles.nickname} numberOfLines={1}>
-                                    {review.user.nickname}
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* ── 우측 상단 ⋮ 버튼 ──  */}
-                        <Pressable
-                            ref={ellipsisRef}
-                            style={styles.verticalEllipsis}
-                            hitSlop={14}
-                            onPress={() => {
-                                ellipsisRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
-                                    setMenuPosition({
-                                        top: y + height + 4,
-                                        right: SCREEN_WIDTH - x - width / 2 - 16,
-                                    });
-                                    setMenuOpen(true);
-                                });
-                            }}>
-                            <Text style={styles.verticalEllipsisIcon}>⋮</Text>
-                        </Pressable>
-
-                        {/* ── 중하단: 시간 + 코멘트 (이미지 위 가운데~하단) ── */}
+                        {/* ── 중하단: 코멘트 (이미지 위 가운데~하단) ── */}
                         <ReviewPhotoComment
+                            ref={commentRef}
                             review={review}
                             isOwner={isOwner}
-                            useAbsoluteDate={useAbsoluteDate}
                             onChangeComment={onChangeComment}
                         />
 
-                        {/* ── 우하단: 채팅 / 이모지 반응 버튼 ── */}
+                    </View>
+
+                    {/* ── 이미지 바로 아래: 장소명 + 채팅/이모지 반응 버튼 (가로 배치) ── */}
+                    <View style={styles.bottomRow}>
+                        {placeName ? (
+                            <View style={styles.placeGroup}>
+                                <IconPlaceLocation size={22} color={colors.icon.inverse} />
+                                <Text style={styles.placeName} numberOfLines={1}>
+                                    {placeName}
+                                </Text>
+                            </View>
+                        ) : <View />}
+
                         <ReviewPhotoReactionButtons
                             onOpenChat={() => modalRef.current?.present()}
                             selectedEmoji={selectedEmoji}
@@ -245,17 +256,17 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
 
                 {/* ── 이모지 반응 : 화면 전체 오버레이 + 이모지 목록 ── */}
                 <ReviewPhotoEmojiPicker visible={showPicker} onClose={closePicker} onSelect={selectEmoji} />
-            </View>
-        </Modal>
+            </Pressable>
+        </>
 
-        {/* ⋮ 메뉴 / 삭제·신고 확인 (독립 — 사진 뷰어 Modal과 중첩되지 않게 형제로 분리) */}
+        {/* ⋮ 메뉴 / 삭제·신고 확인 (독립 — 사진 뷰어와 중첩되지 않게 형제로 분리) */}
         <ReviewMenuModal
             visible={menuOpen}
             isOwner={isOwner}
-            position={menuPosition}
             onClose={() => setMenuOpen(false)}
             onDelete={onDelete}
             onReport={onReport}
+            onEdit={() => commentRef.current?.focusEnd()}
         />
 
         {/* 댓글 채팅 시트 (독립) */}
@@ -268,14 +279,20 @@ export default function ReviewPhoto({reviews, startIndex, visible, onClose, onDe
 
 const styles = StyleSheet.create({
     backdrop: {
-        flex: 1,
-        backgroundColor: 'rgba(20,20,20,0.98)',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.background.dark,   // bg-dark
         justifyContent: 'center',
+        zIndex: 100,
+        elevation: 100,   // 안드로이드 - 다른 형제 View 위로 올라오게
     },
 
 // ─────────────────── 리뷰 사진 관련  ─────────────────── 
     imageWrapper: {
-        width: '100%',
+        marginHorizontal: spacing.xl,   // 20 - 이미지 양옆 여백
         aspectRatio: 2 / 3,
         borderRadius: radius.xl,
         backgroundColor: colors.surface.muted,
@@ -300,44 +317,44 @@ const styles = StyleSheet.create({
         right: 0,
     },
 
-// ─────────────────── X버튼 관련  ─────────────────── 
-    closeOuter: {
-        position: 'absolute',
-        top: -27,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        zIndex: 10,
-    },
-    xCircle: {
-        width: 54,
-        height: 54,
-        borderRadius: 27,
-        backgroundColor: 'rgba(20,20,20,0.98)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-        closeIcon: {
-        color: colors.text.inverse,
-        fontSize: 30,
-        fontWeight: '400',
-    },
-
-// ─────────────────── 리뷰 프로필 관련  ─────────────────── 
+// ─────────────────── 상단: 프로필 + ⋮ + X (한 줄) ───────────────────
     topRow: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
-        right: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        zIndex: 1,
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.xl,   // 20 - 이미지 marginHorizontal과 맞춤
+        marginBottom: spacing.lg,        // 이미지와의 간격
+    },
+
+// ─────────────────── 이미지 바로 아래: 장소명 + 채팅/이모지 버튼 (한 줄) ───────────────────
+    bottomRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: spacing.xl,   // 20 - 이미지 marginHorizontal과 맞춤
+        marginBottom: spacing.md,
+    },
+    placeGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,                 // 4 (gap-xs)
+        flexShrink: 1,
+    },
+    placeName: {
+        color: colors.text.inverse,
+        fontSize: fontSize.b3,
+        fontFamily: fontFamily.bold,
+        flexShrink: 1,
+    },
+    leftGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexShrink: 1,
     },
     userGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: spacing.sm,
         flexShrink: 1,
     },
     avatar: {
@@ -350,28 +367,41 @@ const styles = StyleSheet.create({
     nickname: {
         color: colors.text.inverse,
         fontSize: fontSize.b1,
-        fontWeight: '700',
+        fontFamily: fontFamily.bold,
         flexShrink: 1,
         textShadowColor: 'rgba(0,0,0,0.5)',
         textShadowOffset: {width: 0, height: 1},
         textShadowRadius: 3,
     },
+    timeText: {
+        color: colors.text.inverse,
+        fontSize: fontSize.c2,
+        fontFamily: fontFamily.medium,
+        marginLeft: spacing.md,               // Gap/gap-md (닉네임 ↔ 시간)
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: {width: 0, height: 1},
+        textShadowRadius: 3,
+    },
 
-    // ─────────────────── 점3개 관련  ───────────────────
-    verticalEllipsis:{
-        position: 'absolute',
-        top: 16,
-        right: 25,
-        zIndex: 2,
+    // ─────────────────── ⋮ / X 버튼 ───────────────────
+    actionGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.lg,                      // Gap/gap-lg (⋮ ↔ X)
+    },
+    iconButton: {
         height: 30,
-        width : 20,
+        width: 30,
         alignItems: 'center',
         justifyContent: 'center',
     },
-
     verticalEllipsisIcon: {
-        color: colors.text.inverse,
-        fontSize: 20,
+        width: 24,
+        height: 24,
+    },
+    closeIcon: {
+        width: 24,
+        height: 24,
     },
 
 // ─────────────────── 하단 리뷰 관련  ───────────────────

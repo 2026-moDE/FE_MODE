@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.lg,
     },
     text: {
-        ...typography.b2,
+        ...typography.b5,
         color: colors.text.inverse,
     },
 });

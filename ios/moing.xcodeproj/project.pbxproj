@@ -16,6 +16,7 @@
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		B1BCF863419A832D77CF5311 /* libPods-moing.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BF2415D15A70C7A5135D931 /* libPods-moing.a */; };
 		B68D767F8BF949FF8188F22B /* Pretendard-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 925D7C97C28C4CC69CB112A4 /* Pretendard-Regular.otf */; };
+		7D6163C64941D8020B8E2DB4 /* Pretendard-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AB23282459FAF6D589102FE2 /* Pretendard-SemiBold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,7 @@
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = moing/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8CECC3B807B24798B4E93555 /* Pretendard-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Bold.otf"; path = "../src/assets/fonts/Pretendard-Bold.otf"; sourceTree = "<group>"; };
 		925D7C97C28C4CC69CB112A4 /* Pretendard-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Regular.otf"; path = "../src/assets/fonts/Pretendard-Regular.otf"; sourceTree = "<group>"; };
+		AB23282459FAF6D589102FE2 /* Pretendard-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-SemiBold.ttf"; path = "../src/assets/fonts/Pretendard-SemiBold.ttf"; sourceTree = "<group>"; };
 		965A86F1CBF995D3F278CD25 /* Pods-moing.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-moing.debug.xcconfig"; path = "Target Support Files/Pods-moing/Pods-moing.debug.xcconfig"; sourceTree = "<group>"; };
 		DF87524E3CEE6784A73C42E8 /* Pods-moing.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-moing.release.xcconfig"; path = "Target Support Files/Pods-moing/Pods-moing.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -116,6 +118,7 @@
 				8CECC3B807B24798B4E93555 /* Pretendard-Bold.otf */,
 				5FB1A353F08B4B1182616D83 /* Pretendard-Medium.otf */,
 				925D7C97C28C4CC69CB112A4 /* Pretendard-Regular.otf */,
+				AB23282459FAF6D589102FE2 /* Pretendard-SemiBold.ttf */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -186,6 +189,7 @@
 				3DC85D5A61A349B7B5840A30 /* Pretendard-Bold.otf in Resources */,
 				5FD54AF798494ED393E38929 /* Pretendard-Medium.otf in Resources */,
 				B68D767F8BF949FF8188F22B /* Pretendard-Regular.otf in Resources */,
+				7D6163C64941D8020B8E2DB4 /* Pretendard-SemiBold.ttf in Resources */,
 				2E2B6F045077CE2B34425853 /* PrivacyInfo.xcprivacy in Resources */,
 				28190A493007C4BF0011052B /* GoogleService-Info.plist in Resources */,
 			);

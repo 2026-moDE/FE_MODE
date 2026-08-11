@@ -43,7 +43,7 @@ export type PlaceDetail = {
     category: PlaceCategory;
     business_hours: string;
     is_subscribed: boolean;
-    congestion_level: CongestionLevel;
+    congestion_level: CongestionLevel | null;
     review_count: number;
 };
 

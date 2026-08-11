@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
         opacity: 0.85,
     },
     label: {
-        ...typography.b3,
+        ...typography.b5,
         color: colors.text.inverse,
     },
 });

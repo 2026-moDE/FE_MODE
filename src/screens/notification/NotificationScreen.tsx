@@ -4,7 +4,7 @@ import {View, ScrollView, StyleSheet} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AppStackParamList} from '../../types/navigation';
-import PlaceDetailHeader from '../../components/placeDetail/PlaceDetailHeader';
+import Header from '../../components/notification/Header';
 import NotificationSection from '../../components/notification/NotificationSection';
 import SubscriptionCard from '../../components/notification/SubscriptionCard';
 import {Notification, Subscription} from '../../types/notifications';
@@ -12,7 +12,7 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import TabBar, {Tab} from '../../components/notification/TabBar';
 import SubscriptionBanner from '../../components/notification/SubscriptionBanner';
-import {fetchNotifications, fetchSubscriptions} from '../../api/notification';
+import {fetchNotifications, fetchSubscriptions, readNotification} from '../../api/notification';
 import {subscribe, unsubscribe} from '../../api/place';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Notification'>;
@@ -51,6 +51,7 @@ export default function NotificationScreen({navigation}: Props) {
 
     const handleNotificationPress = useCallback((id: number) => {
         setNotifications(prev => prev.map(n => n.id === id ? {...n, is_read: true} : n));
+        readNotification(id).catch(err => console.warn('알림 읽음 처리 실패:', err?.message));
         const target = notifications.find(n => n.id === id);
         if (target) {
             navigation.navigate('PlaceDetail', {placeId: target.place.id, placeName: target.place.name});
@@ -76,7 +77,7 @@ export default function NotificationScreen({navigation}: Props) {
         <View style={styles.container}>
             {/* 헤더 */}
             <View style={[styles.header, {paddingTop: insets.top}]}>
-                <PlaceDetailHeader title="알림" onBack={() => navigation.goBack()} />
+                <Header title="알림" onBack={() => navigation.goBack()} />
 
                 {/* 탭 */}
                 <TabBar activeTab={activeTab} onTabChange={setActiveTab} />

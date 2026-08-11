@@ -1,11 +1,11 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, Pressable} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
-import PlaceDetailHeader from '../../components/placeDetail/PlaceDetailHeader';
+import Header from '../../components/notification/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ReportReasonItem from '../../components/reviewReport/ReportReasonItem';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
 import {spacing} from '../../constants/spacing';
@@ -32,10 +32,11 @@ export default function ReviewReportScreen({navigation, route}: Props) {
     const [comment,setComment] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [showToast, setShowToast] = useState(false);
+    const commentInputRef = useRef<TextInput>(null);
 
     return (
         <View style={[styles.container, {paddingTop: insets.top}]}>
-            <PlaceDetailHeader title="리뷰 신고" onBack={() => navigation.goBack()} />
+            <Header title="리뷰 신고" onBack={() => navigation.goBack()} />
             <View style={styles.content}>
                 <Text style={styles.title}>신고 사유를 작성해주세요.</Text>
                 {REASONS.map(reason => (
@@ -43,24 +44,40 @@ export default function ReviewReportScreen({navigation, route}: Props) {
                         key={reason}
                         label={reason}
                         selected={selected === reason}
-                        onPress={() => setSelected(reason)}
+                        onPress={() => {
+                            setSelected(reason);
+
+                            // '기타' 라디오 자체를 누른 거면 코멘트를 건드릴 필요 없음
+                            if (reason === '기타') return;
+
+                            // 다른 사유로 바꾼 거면, 기타에 적어뒀던 코멘트는 의미 없어지므로 초기화
+                            setComment('');
+                            // 텍스트 인풋의 포커스도 강제로 풀어줘야
+                            // 나중에 인풋을 다시 눌렀을 때 onFocus가 다시 발생
+                            commentInputRef.current?.blur();
+                        }}
                     />
                 ))}
-                <View style={styles.inputBox}>
+                <Pressable style={styles.inputBox} onPress={() => setSelected('기타')}>
                     <TextInput
+                        ref={commentInputRef}
                         style={styles.input}
                         multiline
                         maxLength={100}
                         placeholder='상세한 신고 사유를 작성해주세요.'
                         placeholderTextColor={colors.text.disabled}
-                        onChangeText={setComment}
+                        onChangeText={text => {
+                            setComment(text);
+                            setSelected('기타');
+                        }}
+                        onFocus={() => setSelected('기타')}
                         value={comment}
                     />
                     <Text style={styles.counter}>
                         <Text style={styles.counterNum}>{comment.length}</Text>
                         {' / 100'}
                     </Text>
-                </View>
+                </Pressable>
             </View>
             <View style={[styles.buttonWrapper, {paddingBottom: insets.bottom + spacing.md}]}>
                 {showToast && <ReportToast />}
@@ -95,7 +112,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     title: {
-        ...typography.b2,
+        ...typography.b3,
         color: colors.text.basic,
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
@@ -111,18 +128,18 @@ const styles = StyleSheet.create({
     input: {
         height: 120,
         textAlignVertical: 'top',
-        ...typography.caption2,
+        ...typography.c2,
         color: colors.text.basic,
         padding: 0,
     },
     counter: {
-        ...typography.caption1,
+        ...typography.c1,
         color: colors.border.default,
         textAlign: 'right',
         marginTop: spacing.xs,
     },
     counterNum: {
-        ...typography.caption1,
+        ...typography.c1,
         color: colors.text.subtle,
     },
     buttonWrapper: {

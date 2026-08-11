@@ -10,7 +10,7 @@ type Props = {
     onBack: () => void;      // 뒤로가기 콜백
 };
 
-export default function PlaceDetailHeader({title, onBack}: Props) {
+export default function Header({title, onBack}: Props) {
     return (
         <View style={styles.container}>
             {/* 뒤로가기 버튼 */}

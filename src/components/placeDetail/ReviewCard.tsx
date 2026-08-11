@@ -4,12 +4,13 @@ import FastImage from 'react-native-fast-image';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
-import {spacing} from '../../constants/spacing';
+import {spacing, gap, padding} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 
 type Props = {
     review: CurrentReview | ArchivedReview;
     onPress?: () => void;
+    isArchived?: boolean;
 };
 
 /**
@@ -29,9 +30,34 @@ export function formatRelativeTime(isoString: string): string {
     return `${diffDay}일 전`;
 }
 
-export default function ReviewCard({review, onPress}: Props) {
+/**
+ * 실시간 탭: "방금"(1분 미만) / "N분 전" / "N시간 전"
+ * 과거 탭: "월/일" (연도가 다르면 "년/월/일")
+ */
+export function formatReviewTime(isoString: string, isArchived: boolean): string {
+    const date = new Date(isoString);
+
+    if (isArchived) {
+        const now = new Date();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        if (date.getFullYear() !== now.getFullYear()) {
+            return `${date.getFullYear()}/${month}/${day}`;
+        }
+        return `${month}/${day}`;
+    }
+
+    const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
+    const diffHour = Math.floor(diffMin / 60);
+
+    if (diffMin < 1) return '방금';
+    if (diffMin < 60) return `${diffMin}분 전`;
+    return `${diffHour}시간 전`;
+}
+
+export default function ReviewCard({review, onPress, isArchived}: Props) {
     const {thumbnail_url, image_url, comment, user, created_at} = review;
-    const timeAgo = formatRelativeTime(created_at);
+    const timeAgo = formatReviewTime(created_at, isArchived ?? false);
 
     return (
         <Pressable onPress={onPress} style={styles.container}>
@@ -40,7 +66,7 @@ export default function ReviewCard({review, onPress}: Props) {
                 style={styles.image}
                 resizeMode={FastImage.resizeMode.cover}
             />
-            {/* 상단: 사용자 정보 + 시간 */}
+            {/* 상단: 사용자 정보 */}
             <View style={styles.topRow}>
                 {/* 사용자 (아바타 + 닉네임) */}
                 <View style={styles.userGroup}>
@@ -53,18 +79,20 @@ export default function ReviewCard({review, onPress}: Props) {
                         {user.nickname}
                     </Text>
                 </View>
-
-                {/* 시간 */}
-                <View style={styles.timeBadge}>
-                    <Text style={styles.timeText}>{timeAgo}</Text>
-                </View>
             </View>
 
-            {/* 하단: 코멘트 (하단에서 살짝 위로 올림) */}
+            {/* 중앙: 코멘트 */}
             <View style={styles.commentArea}>
                 <Text style={styles.comment} numberOfLines={2}>
                     {comment}
                 </Text>
+            </View>
+
+            {/* 하단 중앙: 시간 */}
+            <View style={styles.timeBadgeWrapper}>
+                <View style={styles.timeBadge}>
+                    <Text style={styles.timeText}>{timeAgo}</Text>
+                </View>
             </View>
         </Pressable>
     );
@@ -73,8 +101,10 @@ export default function ReviewCard({review, onPress}: Props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        aspectRatio: 177 / 233,                             // 3:4 비율
-        borderRadius: radius.lg,                            // 12
+        aspectRatio: 177 / 233,  
+        borderWidth: 2,
+        borderColor: colors.surface.muted,                           // 3:4 비율
+        borderRadius: radius.xl,                            // 16
         overflow: 'hidden',
     },
     image: {
@@ -83,20 +113,19 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        borderRadius: radius.lg,
+        borderRadius: radius.xl - 2,                        // container borderWidth(2)만큼 뺀 반지름
         backgroundColor: colors.surface.muted,
     },
     topRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: spacing.s,                                 // 8
-        gap: spacing.xs,                                    // 4
+        justifyContent: 'center',
+        padding: padding.md,            
     },
     userGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.xs,                                    // 4
+        gap: gap.sm,                                    
         flexShrink: 1,
     },
     avatar: {
@@ -106,21 +135,28 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface.muted,
     },
     nickname: {
-        ...typography.caption1,
+        ...typography.c3,
         color: colors.text.inverse,
         textShadowColor: 'rgba(0,0,0,0.6)',
         textShadowOffset: {width: 0, height: 1},
         textShadowRadius: 2,
         flexShrink: 1,
     },
+    timeBadgeWrapper: {
+        position: 'absolute',
+        bottom: padding.s,                                  // 8
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+    },
     timeBadge: {
-        backgroundColor: colors.background.dimDarkest,
-        borderRadius: radius.full,
-        paddingHorizontal: spacing.md,                      // 12
-        paddingVertical: spacing.xs,                        // 4
+        backgroundColor: colors.background.dimDarker,
+        borderRadius: radius.md,
+        paddingHorizontal: padding.sm,                      // 10
+        paddingVertical: padding.xs,                        // 4
     },
     timeText: {
-        ...typography.caption1,
+        ...typography.c2,
         color: colors.text.inverse,
     },
     commentArea: {
@@ -129,11 +165,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         alignItems: 'center',
-        paddingHorizontal: spacing.lg,
+        paddingHorizontal: padding.lg,
         zIndex: 1,
     },
     comment: {
-        ...typography.b3,                                   // fontSize: 12, bold
+        ...typography.c1,                                   // fontSize: 12, bold
         color: colors.text.inverse,
         letterSpacing: -0.06,
         textShadowColor: 'rgba(0,0,0,0.7)',

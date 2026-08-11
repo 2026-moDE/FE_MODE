@@ -1,10 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import {View, Text, TextInput, StyleSheet} from 'react-native';
+import React, {useEffect, useState, useRef, forwardRef, useImperativeHandle} from 'react';
+import {View, Text, TextInput, StyleSheet, Keyboard, Platform} from 'react-native';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
-import {formatRelativeTime} from './ReviewCard';
 
-function formatAbsoluteDate(isoString: string): string {
+export function formatAbsoluteDate(isoString: string): string {
     const date = new Date(isoString);
     const y = date.getFullYear();
     const m = date.getMonth() + 1;
@@ -15,44 +14,69 @@ function formatAbsoluteDate(isoString: string): string {
 type Props = {
     review: CurrentReview | ArchivedReview;
     isOwner: boolean;
-    useAbsoluteDate?: boolean;
     onChangeComment?: (reviewId: number, comment: string) => void;
 };
 
-// 리뷰 풀스크린 뷰어 중하단: 작성 시간 + 코멘트(본인이면 편집 가능)
-export default function ReviewPhotoComment({review, isOwner, useAbsoluteDate, onChangeComment}: Props) {
-    const [changedComment, setChangedComment] = useState(review.comment ?? '');
+export type ReviewPhotoCommentHandle = {
+    // 텍스트 끝에 커서 놓고 키보드 띄우기 (⋮ 메뉴의 "수정하기"에서 호출)
+    focusEnd: () => void;
+};
 
-    // 사진이 바뀌면(review가 바뀌면) 편집 중이던 텍스트를 새 리뷰의 코멘트로 리셋
-    useEffect(() => {
-        setChangedComment(review.comment ?? '');
-    }, [review]);
+const ReviewPhotoComment = forwardRef<ReviewPhotoCommentHandle, Props>(
+    ({review, isOwner, onChangeComment}, ref) => {
+        const [changedComment, setChangedComment] = useState(review.comment ?? '');
+        const [selection, setSelection] = useState<{start: number; end: number} | undefined>(undefined);
+        const inputRef = useRef<TextInput>(null);
 
-    return (
-        <View style={styles.commentArea} pointerEvents={isOwner ? 'auto' : 'none'}>
-            <View style={styles.timeBadge}>
-                <Text style={styles.timeText}>
-                    {useAbsoluteDate ? formatAbsoluteDate(review.created_at) : formatRelativeTime(review.created_at)}
-                </Text>
+        // 사진이 바뀌면(review가 바뀌면) 편집 중이던 텍스트를 새 리뷰의 코멘트로 리셋
+        useEffect(() => {
+            setChangedComment(review.comment ?? '');
+        }, [review]);
+
+        useImperativeHandle(ref, () => ({
+            focusEnd: () => {
+                const end = changedComment.length;
+                setSelection({start: end, end});
+                inputRef.current?.focus();
+            },
+        }));
+
+        // 키보드가 실제로 사라질 때(뒤로가기·스와이프 등 포함) 강제로 blur시켜서
+        // 커서가 남아있는 문제 방지 + onBlur 저장 로직 확실히 실행되게 함
+        useEffect(() => {
+            const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+            const hideSub = Keyboard.addListener(hideEvent, () => {
+                inputRef.current?.blur();
+            });
+            return () => hideSub.remove();
+        }, []);
+
+        return (
+            <View style={styles.commentArea} pointerEvents={isOwner ? 'auto' : 'none'}>
+                {isOwner ? (
+                    <TextInput
+                        ref={inputRef}
+                        style={styles.comment}
+                        value={changedComment}
+                        onChangeText={setChangedComment}
+                        multiline
+                        selection={selection}
+                        onSelectionChange={e => setSelection(e.nativeEvent.selection)}
+                        onBlur={() => {
+                            if (changedComment !== review.comment) {
+                                onChangeComment?.(review.id, changedComment);
+                            }
+                        }}
+                    />
+                ) : (
+                    <Text style={styles.comment}>{review.comment}</Text>
+                )}
             </View>
-            {isOwner ? (
-                <TextInput
-                    style={styles.comment}
-                    value={changedComment}
-                    onChangeText={setChangedComment}
-                    multiline
-                    onBlur={() => {
-                        if (changedComment !== review.comment) {
-                            onChangeComment?.(review.id, changedComment);
-                        }
-                    }}
-                />
-            ) : (
-                <Text style={styles.comment}>{review.comment}</Text>
-            )}
-        </View>
-    );
-}
+        );
+    },
+);
+
+export default ReviewPhotoComment;
 
 const styles = StyleSheet.create({
     commentArea: {
@@ -64,17 +88,6 @@ const styles = StyleSheet.create({
         gap: 10,
         paddingHorizontal: 24,
         zIndex: 1,
-    },
-    timeBadge: {
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: 9999,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-    },
-    timeText: {
-        color: colors.text.inverse,
-        fontSize: 12,
-        fontWeight: '500',
     },
     comment: {
         color: colors.text.inverse,
