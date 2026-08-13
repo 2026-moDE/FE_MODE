@@ -176,7 +176,10 @@ export default function HomeScreen(){
                         latitude={lat}
                         longitude={lng}
                         count={cluster.properties.point_count}
-                        thumbnailUrl={supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place.thumbnail_url}
+                        thumbnailUrl={(() => {
+                            const leaf = supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place;
+                            return leaf?.thumbnail_small_url ?? leaf?.thumbnail_url;
+                        })()}
                         onPress={() => handleClusterPress(cluster.properties.cluster_id, lat, lng)}
                     />
                 );
@@ -225,7 +228,7 @@ export default function HomeScreen(){
             .then(res => {
                 if (res.places && res.places.length > 0) {
                     const unique = res.places.filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
-                    const newUrls = new Set(unique.map(p => p.thumbnail_url).filter(Boolean) as string[]);
+                    const newUrls = new Set(unique.map(p => p.thumbnail_small_url ?? p.thumbnail_url).filter(Boolean) as string[]);
                     setPlaces(unique);
                     // 기존에 로드된 URL은 유지, 새 URL만 preloader가 채움
                     setReadyUrls(prev => new Set([...prev].filter(url => newUrls.has(url))));
@@ -380,17 +383,20 @@ export default function HomeScreen(){
                     /> }
             </View>
 
-            {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 */}
-            {places.map(place => place.thumbnail_url && !readyUrls.has(place.thumbnail_url) ? (
+            {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 - LiveBubble이 실제로 쓰는 필드(thumbnail_small_url 우선)랑 맞춤 */}
+            {places.map(place => {
+                const bubbleUrl = place.thumbnail_small_url ?? place.thumbnail_url;
+                return bubbleUrl && !readyUrls.has(bubbleUrl) ? (
                 <FastImage
                     key={place.id}
-                    source={{uri: place.thumbnail_url, priority: FastImage.priority.high}}
+                    source={{uri: bubbleUrl, priority: FastImage.priority.high}}
                     style={styles.preloader}
                     resizeMode={FastImage.resizeMode.cover}
-                    onLoad={() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!]))}
-                    onError={() => setReadyUrls(prev => new Set([...prev, place.thumbnail_url!]))}
+                    onLoad={() => setReadyUrls(prev => new Set([...prev, bubbleUrl]))}
+                    onError={() => setReadyUrls(prev => new Set([...prev, bubbleUrl]))}
                 />
-            ) : null)}
+                ) : null;
+            })}
 
             {/* 현위치 버튼 + 리뷰 쓰기 버튼: 바텀시트 상단에 붙어 시트 따라 이동 (미니카드 땐 숨김) */}
             {!placeDetail && (

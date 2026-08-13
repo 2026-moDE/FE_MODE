@@ -10,9 +10,9 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import type {NativeStackScreenProps, NativeStackNavigationProp} from '@react-navigation/native-stack';
 
-import type {AuthStackParamList} from '../../types/navigation';
+import type {AuthStackParamList, AppStackParamList} from '../../types/navigation';
 import {colors} from '../../constants/colors';
 import {fontFamily} from '../../constants/typography';
 import IconChevronDown from '../../assets/icons/IconChevronDown';
@@ -34,9 +34,14 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
 const px = (value: number) => value * scale;
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Terms'>;
+// AuthStack('Terms')과 AppStack('TermsAgreement') 양쪽에서 재사용됨
+type Props =
+  | NativeStackScreenProps<AuthStackParamList, 'Terms'>
+  | NativeStackScreenProps<AppStackParamList, 'TermsAgreement'>;
 
-export default function TermsScreen({navigation}: Props) {
+export default function TermsScreen({navigation, route}: Props) {
+  // AppStack에서 열렸을 때(viewOnly)는 "다음"이 아니라 뒤로가기만 함
+  const viewOnly = route.params?.viewOnly ?? false;
   const [checkedTerms, setCheckedTerms] = useState<number[]>([]);
   const [openTermId, setOpenTermId] = useState<number | null>(null);
 
@@ -72,7 +77,14 @@ export default function TermsScreen({navigation}: Props) {
       return;
     }
 
-    navigation.navigate('ProfileSetup', {
+    // 이미 로그인된 상태에서 약관만 다시 보러 온 경우(viewOnly) - 가입 플로우로 안 이어감
+    if (viewOnly) {
+      navigation.goBack();
+      return;
+    }
+
+    // 여기까지 왔다면 회원가입 중(AuthStack)이라는 뜻 - ProfileSetup은 AuthStack에만 있음
+    (navigation as NativeStackNavigationProp<AuthStackParamList, 'Terms'>).navigate('ProfileSetup', {
       terms_agreed: checkedTerms.includes(1),
       location_terms_agreed: checkedTerms.includes(2),
       privacy_agreed: checkedTerms.includes(3),

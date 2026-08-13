@@ -4,7 +4,7 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 import {Notification} from '../../types/notifications';
-import {formatRelativeTime} from '../placeDetail/ReviewCard';
+import {formatRelativeTime} from '../../utils/date';
 
 const IconRun = require('../../assets/icons/IconRun.png');
 // 기기마다 화면 밀도 차이로 ui깨짐

@@ -1,18 +1,20 @@
 import {apiClient} from './client';
-import {PlaceResponse} from '../types/place';
 import {AutocompleteResponse} from '../types/autocomplete';
-import {SearchHistoryResponse} from '../types/search';
+import {PlaceResponse, SearchHistoryResponse} from '../types/search';
 
 type ApiResponse<T> = {success: boolean; message: string | null; data: T};
 
 // 장소 검색 API → GET /api/search?keyword=...
 export async function searchPlaces(
-  keyword: string,
+  keyword?: string,
   options?: { latitude?: number; longitude?: number },
 ): Promise<PlaceResponse> {
+  const trimmedKeyword = keyword?.trim();
+
   const response = await apiClient.get<ApiResponse<PlaceResponse>>('/api/search', {
     params: {
-      keyword,
+      // 빈 문자열이면 keyword 자체를 안 보냄
+      ...(trimmedKeyword && { keyword: trimmedKeyword }),
       ...(options?.latitude != null && { latitude: options.latitude }),
       ...(options?.longitude != null && { longitude: options.longitude }),
     },

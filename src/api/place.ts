@@ -1,5 +1,5 @@
 import {apiClient} from './client';
-import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse} from '../types/place';
+import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse, RegionResponse} from '../types/place';
 import { Location } from '../types/location';
 
 type FetchNearbyPlacesParams = {
@@ -32,6 +32,12 @@ type ApiResponse<T> = { success: boolean; message: string | null; data: T };
 // 현재 위치 인증 api
 export async function fetchLocationVerify(id:number, location:Location): Promise<LocationVerifyResponse>{
   const response = await apiClient.get<ApiResponse<LocationVerifyResponse>>(`/api/places/${id}/verify-location`,{params:location});
+  return response.data.data;
+}
+
+// 현재 위치 주소 (시/구/동)
+export async function fetchRegion(params:{latitude:number, longitude: number}):Promise<RegionResponse>{
+  const response = await apiClient.get<ApiResponse<RegionResponse>>(`/api/places/region`, {params});
   return response.data.data;
 }
 

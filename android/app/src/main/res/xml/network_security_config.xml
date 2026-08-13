@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 백엔드가 아직 HTTPS 전환 전이라, 이 도메인만 예외로 평문 HTTP 허용 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">moing.co.kr</domain>
+    </domain-config>
+</network-security-config>
