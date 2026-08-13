@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { Place } from '../../types/place';
+import { Place } from '../../types/search';
 import { Location } from '../../types/location';
 import { colors } from '../../constants/colors';
 import { spacing } from '../../constants/spacing';

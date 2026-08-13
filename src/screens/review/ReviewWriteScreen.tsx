@@ -25,7 +25,8 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {useLocation} from '../../context/LocationContext';
-import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
+import {createReview, verifyPlaceLocation, getReviewImagePresignedUrl, type CongestionLevel} from '../../api/review';
+import {uploadImageToS3} from '../../api/imageUpload';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
 import ReviewPreviewModal, {type ReviewVisibility} from '../../components/review/ReviewPreviewModal';
 
@@ -123,12 +124,12 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
       // 2. presigned-url 발급
       console.log('[리뷰] presigned-url 요청');
-      const {presigned_url, image_url} = await getPresignedUrl(`original/review_${Date.now()}.jpg`);
+      const {presigned_url, image_url} = await getReviewImagePresignedUrl(`review_${Date.now()}.jpg`);
       console.log('[리뷰] presigned-url 발급 완료');
 
       // 3. S3 업로드
       console.log('[리뷰] S3 업로드 시작');
-      await uploadImageToS3(photoUri, presigned_url);
+      await uploadImageToS3({presignedUrl: presigned_url, imageUri: photoUri, contentType: 'image/jpeg'});
       console.log('[리뷰] S3 업로드 완료 image_url:', image_url);
 
       // 4. 리뷰 등록

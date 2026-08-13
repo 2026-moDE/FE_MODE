@@ -4,7 +4,7 @@ import {View, ScrollView, StyleSheet} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AppStackParamList} from '../../types/navigation';
-import Header from '../../components/notification/Header';
+import Header from '../../components/common/Header';
 import NotificationSection from '../../components/notification/NotificationSection';
 import SubscriptionCard from '../../components/notification/SubscriptionCard';
 import {Notification, Subscription} from '../../types/notifications';

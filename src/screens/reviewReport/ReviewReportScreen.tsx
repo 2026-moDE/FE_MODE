@@ -2,7 +2,7 @@ import React from 'react';
 import {View, Text, StyleSheet, Pressable} from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
-import Header from '../../components/notification/Header';
+import Header from '../../components/common/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ReportReasonItem from '../../components/reviewReport/ReportReasonItem';
 import { useState, useRef } from 'react';

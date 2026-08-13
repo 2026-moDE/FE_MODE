@@ -13,7 +13,7 @@
  * 쓰는 곳: SearchScreen (타이핑 자동검색, 검색 실행, 현위치로 찾기)
  */
 import { useState, useCallback } from 'react';
-import { Place } from '../types/place';
+import { Place } from '../types/search';
 import { searchPlaces } from '../api/search';
 
 export function useSearchPlaces() {

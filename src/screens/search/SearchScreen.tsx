@@ -5,7 +5,9 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
-import { Place, CATEGORY_LABEL } from '../../types/place';
+import { CATEGORY_LABEL, RegionResponse } from '../../types/place';
+import { Place } from '../../types/search';
+import { fetchRegion } from '../../api/place';
 import SearchHeader from '../../components/search/SearchHeader';
 import RecentSearchList from '../../components/search/RecentSearchList';
 import RecommendedSearchList from '../../components/search/RecommendedSearchList';
@@ -58,6 +60,27 @@ export default function SearchScreen() {
     const { search, places, isLoading } = useSearchPlaces();
     // 현재 위치
     const { location } = useLocation();
+    // 현재 위치 행정동 (시/구/동) 
+    const [region, setRegion] = useState<RegionResponse | null>(null);
+    const [isRegionLoading, setIsRegionLoading] = useState(false);
+    // 카카오 API 호출돼서 이미 조회 중이면 재요청 막음 (연타 방지)
+    const regionFetchingRef = useRef(false);
+
+    const fetchCurrentRegion = useCallback(async (latitude: number, longitude: number) => {
+        if (regionFetchingRef.current) return;
+        regionFetchingRef.current = true;
+        setIsRegionLoading(true);
+        try {
+            const data = await fetchRegion({latitude, longitude});
+            setRegion(data);
+        } catch (e) {
+            console.warn('현재 위치 지역 조회 실패:', e);
+            setRegion(null);
+        } finally {
+            regionFetchingRef.current = false;
+            setIsRegionLoading(false);
+        }
+    }, []);
 
     // 최근 검색어 훅 → 화면 들어오면 자동으로 조회
     const { history, fetchHistory, saveHistory, deleteHistory, deleteAllHistory } = useSearchHistory();
@@ -160,6 +183,7 @@ export default function SearchScreen() {
         setMode('location');
         setIsLocationMode(true);
         search(searchText, { latitude: location.latitude, longitude: location.longitude });
+        fetchCurrentRegion(location.latitude, location.longitude);
     };
 
     return (
@@ -220,10 +244,13 @@ export default function SearchScreen() {
                                 <View style={styles.locationChip}>
                                     <View style={styles.locationChipLabelRow}>
                                         <Image source={currentLocationIcon} style={styles.locationChipIcon} resizeMode="contain" />
-                                        {/* 하드 코딩 제거하기 */}
                                         <Text style={styles.locationChipLabel}>현재 위치</Text>
                                     </View>
-                                    <Text style={styles.locationChipName}>자양동</Text>
+                                    <Text style={styles.locationChipName}>
+                                        {isRegionLoading
+                                            ? '위치 확인 중...'
+                                            : region?.region_3depth_name ?? '위치 확인 불가'}
+                                    </Text>
                                 </View>
                             )}
                             <PlaceCardList places={places} onSelect={handleSelectPlace} location={location} />
@@ -232,8 +259,8 @@ export default function SearchScreen() {
                 </ScrollView>
             )}
 
-            {/* 현재 위치로 장소 찾기 (검색어가 있을 때만 - 빈 검색어는 백엔드 카카오 검색이 결과를 못 줌) */}
-            {(mode === 'typing' || mode === 'searched') && (
+            {/* 현재 위치로 장소 찾기 */}
+            {(mode !== 'location') && (
                 <View style={[styles.locationButtonWrapper, keyboardHeight > 0 && {bottom: keyboardHeight + 12}]}>
                     <LocationButton onPress={handleLocationSearch} />
                 </View>

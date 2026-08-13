@@ -1,15 +1,9 @@
 import {apiClient} from './client';
+import {getPresignedUrl} from './imageUpload';
+
+type ApiResponse<T> = {success: boolean; message: string | null; data: T};
 
 export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH';
-
-type PresignedUrlResponse = {
-  success: boolean;
-  message: string;
-  data: {
-    presigned_url: string;
-    image_url: string;
-  };
-};
 
 export type CreateReviewRequest = {
   place_id: number;
@@ -42,38 +36,25 @@ type VerifyLocationResponse = {
   };
 };
 
-// 1. S3 presigned URL 발급
-export async function getPresignedUrl(fileName: string) {
-  const response = await apiClient.post<PresignedUrlResponse>(
-    '/api/s3/presigned-url',
-    {
-      file_name: fileName,
-      content_type: 'image/jpeg',
-    },
-  );
-
-  return response.data.data;
+type EmojiReaction = {
+  emoji : string;
+  count : number;
+  is_mine : boolean;
 }
 
-// 2. presigned_url로 S3에 이미지 업로드
-export async function uploadImageToS3(photoUri: string, presignedUrl: string) {
-  const imageResponse = await fetch(photoUri);
-  const blob = await imageResponse.blob();
+type EmojiReactionsResponse = {
+  reactions: EmojiReaction[];
+}
 
-  const uploadResponse = await fetch(presignedUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'image/jpeg',
-    },
-    body: blob,
+// 리뷰 이미지 업로드용 presigned URL 발급 (original/파일명)
+export async function getReviewImagePresignedUrl(fileName: string) {
+  return getPresignedUrl({
+    file_name: `original/${fileName}`,
+    content_type: 'image/jpeg',
   });
-
-  if (!uploadResponse.ok) {
-    throw new Error('S3 이미지 업로드 실패');
-  }
 }
 
-// 3. 리뷰 작성
+// 리뷰 작성
 export async function createReview(body: CreateReviewRequest) {
   const response = await apiClient.post<CreateReviewResponse>(
     '/api/reviews',
@@ -83,7 +64,7 @@ export async function createReview(body: CreateReviewRequest) {
   return response.data.data.review;
 }
 
-// 4. 위치 인증 확인
+// 위치 인증 확인
 export async function verifyPlaceLocation(
   placeId: number,
   latitude: number,
@@ -122,4 +103,23 @@ export async function changeReview(
   body:{comment:string}){
   const response = await apiClient.patch(`/api/reviews/${id}`,body)
   return response.data;
+}
+
+// 리뷰 이모지 추가  api
+export async function addEmoji(id:number, emoji:string){
+  const response = await apiClient.post(`/api/reviews/${id}/reactions`,{emoji})
+  return response.data;
+}
+
+// 리뷰 이모지 삭제 api
+export async function removeEmoji(id:number, emoji:string){
+  const response = await apiClient.delete(`/api/reviews/${id}/reactions`,{
+    params: {emoji},
+  })
+  return response.data;
+}
+// 리뷰 이모지 반응 목록 조회 api
+export async function fetchEmojis(id:number): Promise<EmojiReactionsResponse> {
+  const response = await apiClient.get<ApiResponse<EmojiReactionsResponse>>(`/api/reviews/${id}/reactions`)
+  return response.data.data;
 }

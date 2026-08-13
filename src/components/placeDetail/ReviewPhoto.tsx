@@ -10,8 +10,8 @@ import ReviewMenuModal from './ReviewMenuModal';
 import {BottomSheetModal, BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import ReviewChatModal from './ReviewChatModal';
 import {useReviewPhotoReactions, ReviewPhotoReactionButtons, ReviewPhotoEmojiPicker} from './ReviewPhotoReactions';
-import ReviewPhotoComment, {formatAbsoluteDate, ReviewPhotoCommentHandle} from './ReviewPhotoComment';
-import {formatRelativeTime} from './ReviewCard';
+import ReviewPhotoComment, {ReviewPhotoCommentHandle} from './ReviewPhotoComment';
+import {formatRelativeTime, formatAbsoluteDate} from '../../utils/date';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 
 type Props = {
@@ -89,12 +89,13 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
     const review = reviews[currentIndex];
 
     // 이전/다음 사진 (양 끝에서는 비활성)
+    // 편집 중이었으면 그 탭은 "편집 닫기"로만 처리하고, 사진 넘기기는 취소함
     const handlePrev = () => {
-        Keyboard.dismiss();   // 코멘트 입력 중이었으면 blur → 저장
+        if (commentRef.current?.blurIfEditing()) return;
         if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
     };
     const handleNext = () => {
-        Keyboard.dismiss();   // 코멘트 입력 중이었으면 blur → 저장
+        if (commentRef.current?.blurIfEditing()) return;
         if (currentIndex < reviews.length - 1) setCurrentIndex(currentIndex + 1);
     };
 
@@ -227,7 +228,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                     </View>
 
                     {/* 하단 썸네일 스트립 - Animated.View 안에 있어서 스와이프시 함께 이동 */}
-                    {thumbnailReviews.length > 1 && (
+                    {/* {thumbnailReviews.length > 1 && (
                         <ScrollView
                             ref={thumbnailScrollRef}
                             horizontal
@@ -251,7 +252,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                                 </Pressable>
                             ))}
                         </ScrollView>
-                    )}
+                    )} */}
                 </Animated.View>
 
                 {/* ── 이모지 반응 : 화면 전체 오버레이 + 이모지 목록 ── */}
