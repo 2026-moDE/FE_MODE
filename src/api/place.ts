@@ -1,6 +1,7 @@
 import {apiClient} from './client';
-import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse, RegionResponse} from '../types/place';
+import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse} from '../types/place';
 import { Location } from '../types/location';
+import { RegionResponse } from '../types/place';
 
 type FetchNearbyPlacesParams = {
   latitude: number;
@@ -32,12 +33,6 @@ type ApiResponse<T> = { success: boolean; message: string | null; data: T };
 // 현재 위치 인증 api
 export async function fetchLocationVerify(id:number, location:Location): Promise<LocationVerifyResponse>{
   const response = await apiClient.get<ApiResponse<LocationVerifyResponse>>(`/api/places/${id}/verify-location`,{params:location});
-  return response.data.data;
-}
-
-// 현재 위치 주소 (시/구/동)
-export async function fetchRegion(params:{latitude:number, longitude: number}):Promise<RegionResponse>{
-  const response = await apiClient.get<ApiResponse<RegionResponse>>(`/api/places/region`, {params});
   return response.data.data;
 }
 
@@ -81,5 +76,11 @@ export async function unsubscribe(id:number):Promise<SubscribeResponse>{
 
   const response = await apiClient.delete<ApiResponse<SubscribeResponse>>(`/api/places/${id}/subscribe`);
   console.log('[장소 구독 취소 응답]', response.data);
+  return response.data.data;
+}
+
+// 현재 위치 주소 (시/구/동)
+export async function fetchRegion(params:{latitude:number, longitude: number}):Promise<RegionResponse>{
+  const response = await apiClient.get<ApiResponse<RegionResponse>>(`/api/places/region`, {params});
   return response.data.data;
 }

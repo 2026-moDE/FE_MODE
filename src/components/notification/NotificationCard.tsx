@@ -5,10 +5,23 @@ import {spacing} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 import {Notification} from '../../types/notifications';
 import {formatRelativeTime} from '../../utils/date';
+import IconFriend from '../../assets/icons/IconFriend';
 
-const IconRun = require('../../assets/icons/IconRun.png');
+// 리뷰 알림 세부 종류별 아이콘 (type은 REVIEW로 같아서 title 문구로 구분)
+const iconReviewPost = require('../../assets/image/alarm_post.png');
+const iconReviewEmoji = require('../../assets/image/alarm_emoji.png');
+const iconReviewComment = require('../../assets/image/alarm_comment.png');
+const iconReviewNew = require('../../assets/image/alarm_new.png');
 // 기기마다 화면 밀도 차이로 ui깨짐
-const ICON_SIZE = PixelRatio.roundToNearestPixel(40 / PixelRatio.get()); 
+const ICON_SIZE = PixelRatio.roundToNearestPixel(40 / PixelRatio.get());
+
+// 리뷰 알림 title로 세부 아이콘 판별 (새 리뷰 작성 / 반응 / 댓글 / 그 외)
+function getReviewIconSource(title: string) {
+    if (title.includes('반응')) return iconReviewEmoji;
+    if (title.includes('댓글')) return iconReviewComment;
+    if (title.includes('작성됐어요')) return iconReviewPost;
+    return iconReviewNew;
+}
 
 type Props = {
     item: Notification;
@@ -16,15 +29,22 @@ type Props = {
 };
 
 export default function NotificationCard({item, onPress}: Props) {
-    const {id, title, body, is_read, created_at} = item;
+    const {id, type, title, body, is_read, created_at} = item;
 
     const timeAgo = formatRelativeTime(created_at);
+    const isFriendType = type === 'FRIEND_REQUEST' || type === 'FRIEND_ACCEPT';
 
     return (
         <Pressable
             style={styles.container}
             onPress={() => onPress?.(id)}>
-            <Image source={IconRun} style={[styles.icon, is_read && styles.iconRead]} />
+            {isFriendType ? (
+                <View style={[styles.iconWrapper, is_read && styles.iconRead]}>
+                    <IconFriend size={ICON_SIZE} color={colors.icon.subtle} />
+                </View>
+            ) : (
+                <Image source={getReviewIconSource(title)} style={[styles.icon, is_read && styles.iconRead]} />
+            )}
             <View style={styles.content}>
                 <View style={styles.titleRow}>
                     <Text style={[styles.title, is_read && styles.titleRead]} numberOfLines={1}>
@@ -53,6 +73,12 @@ const styles = StyleSheet.create({
         width: ICON_SIZE,
         height: ICON_SIZE,
         resizeMode: 'contain',
+    },
+    iconWrapper: {
+        width: ICON_SIZE,
+        height: ICON_SIZE,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     iconRead: {
         opacity: 0.4,

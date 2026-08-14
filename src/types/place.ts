@@ -1,7 +1,7 @@
 // ─────────────────── 공용 Union 타입 ───────────────────
 
-// 장소 카테고리 (임의..?)
-export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'BAR' | 'PARK' | 'SHOPPING';
+// 장소 카테고리
+export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'POPUP' | 'CONCERT' | 'ETC';
 
 // 혼잡도 레벨
 export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED' | 'MEDIUM' | 'HIGH';
@@ -13,9 +13,9 @@ export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
     CAFE:       '카페',
     RESTAURANT: '음식점',
-    BAR:        '술집',
-    PARK:       '공원',
-    SHOPPING:   '쇼핑',
+    POPUP:      '팝업스토어',
+    CONCERT:    '콘서트',
+    ETC:        '기타',
 };
 
 // ─────────────────── 장소 상세 조회 api (GET /api/places/:id) ───────────────────
@@ -24,9 +24,12 @@ export type PlaceDetail = {
     name: string;
     address: string;
     category: PlaceCategory;
-    business_hours: string;
+    business_hours: string | null;
     is_subscribed: boolean;
     congestion_level: CongestionLevel | null;
+    congestion_index: number | null;
+    congestion_review_count: number;
+    congestion_updated_at: string | null;
     review_count: number;
 };
 
@@ -69,10 +72,10 @@ export type CurrentReview = {
     thumbnail_small_url : string | null;
     congestion_level: CongestionLevel;
     comment: string;
-    helpful_count: number;
-    is_helpful: boolean;
-    is_mine : boolean;          
-    user: ReviewUser;             
+    is_mine : boolean;
+    visibility?: 'PUBLIC' | 'FRIENDS';
+    is_friend?: boolean;
+    user: ReviewUser;
     created_at: string;
 };
 
@@ -91,7 +94,9 @@ export type ArchivedReview = {
     congestion_level: CongestionLevel;
     comment: string;
     helpful_count: number;
-    is_mine : boolean; 
+    is_mine : boolean;
+    visibility : 'PUBLIC' | 'FRIENDS';
+    is_friend : boolean; 
     user: ReviewUser;
     created_at: string;
 };

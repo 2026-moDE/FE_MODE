@@ -14,7 +14,7 @@ import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RouteProp} from '@react-navigation/native';
 import type {ReviewStackParamList} from '../../types/navigation';
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -584,9 +584,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   aiBubbleText: {
+    ...typography.c1,
     color: colors.text.basic,
-    fontSize: px(12),
-    fontFamily: fontFamily.bold,
   },
   aiBubbleTail: {
     position: 'absolute',

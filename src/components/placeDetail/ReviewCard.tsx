@@ -7,6 +7,7 @@ import {radius} from '../../constants/radius';
 import {spacing, gap, padding} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 import {formatReviewTime} from '../../utils/date';
+import IconFriend from '../../assets/icons/IconFriend';
 
 type Props = {
     review: CurrentReview | ArchivedReview;
@@ -15,11 +16,11 @@ type Props = {
 };
 
 export default function ReviewCard({review, onPress, isArchived}: Props) {
-    const {thumbnail_url, image_url, comment, user, created_at} = review;
+    const {thumbnail_url, image_url, comment, user, created_at, is_friend} = review;
     const timeAgo = formatReviewTime(created_at, isArchived ?? false);
 
     return (
-        <Pressable onPress={onPress} style={styles.container}>
+        <Pressable onPress={onPress} style={[styles.container, is_friend && styles.containerFriend]}>
             <FastImage
                 source={{uri: thumbnail_url ?? image_url , priority: FastImage.priority.high}}
                 style={styles.image}
@@ -37,6 +38,8 @@ export default function ReviewCard({review, onPress, isArchived}: Props) {
                     <Text style={styles.nickname} numberOfLines={1}>
                         {user.nickname}
                     </Text>
+                    {/* 친구가 남긴 리뷰 표시 */}
+                    {is_friend && <IconFriend size={14} color={colors.brand.primary} />}
                 </View>
             </View>
 
@@ -60,11 +63,15 @@ export default function ReviewCard({review, onPress, isArchived}: Props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        aspectRatio: 177 / 233,  
+        aspectRatio: 177 / 233,
         borderWidth: 2,
         borderColor: colors.surface.muted,                           // 3:4 비율
         borderRadius: radius.xl,                            // 16
         overflow: 'hidden',
+    },
+    // 친구가 남긴 리뷰
+    containerFriend: {
+        borderColor: colors.border.brand,
     },
     image: {
         position: 'absolute',
