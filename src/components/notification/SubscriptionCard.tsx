@@ -16,13 +16,14 @@ type Props = {
 };
 
 export default function SubscriptionCard({place, onToggle, onPress}: Props) {
-    const {place: {id: placeId, name, address, thumbnail_url}, is_active} = place;
+    const {place: {id: placeId, name, address, thumbnail_url, thumbnail_small_url}, is_active} = place;
+    const bubbleThumbnail = thumbnail_small_url ?? thumbnail_url;
 
     return (
         <Pressable style={styles.container} onPress={() => onPress(placeId, name)}>
-            {thumbnail_url ? (
+            {bubbleThumbnail ? (
                 <FastImage
-                    source={{uri: thumbnail_url, priority: FastImage.priority.normal}}
+                    source={{uri: bubbleThumbnail, priority: FastImage.priority.normal}}
                     style={styles.thumbnail}
                     resizeMode={FastImage.resizeMode.cover}
                 />

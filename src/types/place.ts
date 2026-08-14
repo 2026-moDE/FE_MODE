@@ -18,23 +18,6 @@ export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
     SHOPPING:   '쇼핑',
 };
 
-// ─────────────────── 장소 검색 api (GET /api/search) ───────────────────
-export type Place = {
-    id: number;
-    name: string;
-    address: string;
-    category: PlaceCategory;
-    congestion_level: CongestionLevel;
-    thumbnail_url: string;
-    thumbnail_small_url?: string | null;
-    latitude?: number;
-    longitude?: number;
-};
-
-export type PlaceResponse = {
-    places: Place[];
-};
-
 // ─────────────────── 장소 상세 조회 api (GET /api/places/:id) ───────────────────
 export type PlaceDetail = {
     id: number;
@@ -140,3 +123,10 @@ export type CongestionResponse = {
 export type SubscribeResponse = {
     is_subscribed: boolean;
 };
+
+// 현재 위치 주소 (시/구/동) - 바다·해외 좌표 등은 null로 올 수 있음
+export type RegionResponse = {
+    region_1depth_name : string | null; // 시,도
+    region_2depth_name : string | null; // 구, 군
+    region_3depth_name : string | null; // 동
+}

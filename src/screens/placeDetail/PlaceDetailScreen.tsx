@@ -6,13 +6,13 @@ import {AppStackParamList} from '../../types/navigation';
 import {PlaceDetail, CurrentReview, ArchivedReview} from '../../types/place';
 import {useLocation} from '../../context/LocationContext';
 import {formatDistance} from '../../utils/distance';
-import Header from '../../components/notification/Header';
+import Header from '../../components/common/Header';
 import PlaceDetailInfo from '../../components/placeDetail/PlaceDetailInfo';
 import {ReviewTabKey} from '../../components/placeDetail/ReviewTabs';
 import ReviewCard from '../../components/placeDetail/ReviewCard';
+import ArchivedReviewStack from '../../components/placeDetail/ArchivedReviewStack';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
-import {radius} from '../../constants/radius';
 import {typography} from '../../constants/typography';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
 import {
@@ -187,14 +187,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                     // "과거 리뷰 확인하기" 타일
                     if (item === 'archive-entry') {
                         return (
-                            <Pressable style={styles.archiveCard} onPress={() => setActiveTab('archived')}>
-                                <View style={styles.archiveStack}>
-                                    <View style={[styles.stackCard, styles.stackCardBack2]} />
-                                    <View style={[styles.stackCard, styles.stackCardBack1]} />
-                                    <View style={[styles.stackCard, styles.stackCardFront]} />
-                                </View>
-                                <Text style={styles.archiveLabel}>과거 리뷰 확인하기</Text>
-                            </Pressable>
+                            <ArchivedReviewStack
+                                reviews={archivedReviews.slice(0, 3)}
+                                onPress={() => setActiveTab('archived')}
+                            />
                         );
                     }
                     // 빈 자리 (홀수 마지막 칸) - 공간만 차지하고 안 보임
@@ -300,43 +296,6 @@ const styles = StyleSheet.create({
         ...typography.b3,                         
         color: colors.text.inverse,
         paddingHorizontal: spacing.lg,            
-    },
-    archiveCard: {
-        flex: 1,
-        aspectRatio: 177 / 233,                    // ReviewCard와 동일 비율
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.md,                       
-    },
-    archiveStack: {
-        width: 90,
-        height: 100,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    stackCard: {
-        position: 'absolute',
-        width: 70,
-        height: 92,
-        borderRadius: radius.md,                   // 8
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.35)',
-        backgroundColor: 'rgba(255,255,255,0.14)',
-    },
-    stackCardBack2: {
-        transform: [{rotate: '-10deg'}, {translateX: -20}, {translateY: -30}],
-    },
-    stackCardBack1: {
-        transform: [{rotate: '10deg'}, {translateX: 20}, {translateY: -20}],
-    },
-    stackCardFront: {
-        backgroundColor: colors.surface.muted,
-        borderColor: colors.surface.muted,
-    },
-    archiveLabel: {
-        ...typography.c2,                        
-        color: colors.text.disabled,
-        textAlign: 'center',
     },
     quickReviewRow: {
         position: 'absolute',

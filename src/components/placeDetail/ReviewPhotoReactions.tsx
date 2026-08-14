@@ -1,7 +1,7 @@
 import React, {useRef, useState} from 'react';
 import {View, Text, Pressable, Animated, StyleSheet} from 'react-native';
 import FastImage from 'react-native-fast-image';
-import {colors} from '../../constants/colors';
+import BlurOverlay from '../common/BlurOverlay';
 
 const chatIcon = require('../../assets/image/chat.png');
 const emojiIcon = require('../../assets/image/emoji.png');
@@ -86,7 +86,9 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPicker
     if (!visible) return null;
     return (
         <>
-            <Pressable style={styles.overlay} onPress={onClose} />
+            <Pressable style={styles.overlay} onPress={onClose}>
+                <BlurOverlay />
+            </Pressable>
             <View style={styles.picker}>
                 {EMOJIS.map(emoji => (
                     <Pressable key={emoji} onPress={() => onSelect(emoji)}>
@@ -132,7 +134,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: colors.background.dimDarker,  // rgba(0,0,0,0.5)
         zIndex: 2,                   // 이모지 목록(3)보다 아래
     },
     picker: {

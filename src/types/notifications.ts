@@ -25,6 +25,7 @@ export type Subscription = {
         name : string;
         address : string;
         thumbnail_url : string | null;
+        thumbnail_small_url : string | null;
     }
     is_active : boolean;
     created_at : string;
