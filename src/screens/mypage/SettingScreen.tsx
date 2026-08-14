@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   },
 
   toggleTrackOn: {
-    backgroundColor: colors.button.primaryFill,
+    backgroundColor: colors.brand.secondary,
   },
 
   toggleThumb: {

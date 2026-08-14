@@ -9,7 +9,12 @@ import {
   Image,
 } from 'react-native';
 
-import {fontFamily, fontSize} from '../../constants/typography';
+import {
+  fontFamily,
+  fontSize,
+  lineHeight,
+  letterSpacing,
+} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -116,11 +121,12 @@ const styles = StyleSheet.create({
 
   description: {
     width: px(280),
-    fontSize: px(fontSize.b2),
+    fontSize: px(fontSize.b6),
     fontFamily: fontFamily.medium,
     color: colors.text.subtle,
     textAlign: 'center',
-    lineHeight: px(17),
+    lineHeight: px(lineHeight.b6),
+    letterSpacing: letterSpacing.b6,
     includeFontPadding: false,
     marginBottom: px(spacing.xl),
   },
@@ -146,10 +152,11 @@ const styles = StyleSheet.create({
   },
 
   keepButtonText: {
-    fontSize: px(fontSize.b2),
+    fontSize: px(fontSize.b5),
     fontFamily: fontFamily.bold,
     color: colors.text.basic,
-    lineHeight: px(17),
+    lineHeight: px(lineHeight.b5),
+    letterSpacing: letterSpacing.b5,
     includeFontPadding: false,
   },
 
@@ -163,10 +170,11 @@ const styles = StyleSheet.create({
   },
 
   exitButtonText: {
-    fontSize: px(fontSize.b2),
+    fontSize: px(fontSize.b5),
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
-    lineHeight: px(17),
+    lineHeight: px(lineHeight.b5),
+    letterSpacing: letterSpacing.b5,
     includeFontPadding: false,
   },
 });

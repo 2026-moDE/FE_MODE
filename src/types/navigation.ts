@@ -51,6 +51,8 @@ export type AppStackParamList = {
 
   MyMap: undefined;
 
+  MonthlyReview: undefined;
+
   Setting: undefined;
 
   TermsOfService: undefined;

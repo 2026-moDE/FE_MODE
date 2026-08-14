@@ -25,7 +25,7 @@ const parseTableLine = (line: string) =>
     .slice(1, -1)
     .map(cell => cell.trim());
 
-// termsMock의 body는 "### 제N조" / "- 항목" / "| 표 |" 마크다운 표기를 사용합니다.
+// termsMock의 body는 "### 제조" / "- 항목" / "| 표 |" 마크다운 표기를 사용합니다.
 function parseBody(raw: string): Block[] {
   const lines = raw
     .split('\n')
