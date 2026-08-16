@@ -59,7 +59,7 @@ export type AppStackParamList = {
 
   TermsAgreement: {viewOnly?: boolean} | undefined;
 
-  FollowList: {type: 'follower' | 'following'};
+  FollowList: undefined;
 };
 
 // 리뷰 작성 전용 스택

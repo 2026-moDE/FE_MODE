@@ -1,6 +1,6 @@
 import React, {useRef, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ActivityIndicator, TextInput} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
 import {fontFamily, fontSize} from '../../constants/typography';
@@ -12,8 +12,9 @@ import {formatRelativeTime} from '../../utils/date';
 import ReviewMenuModal from '../placeDetail/ReviewMenuModal';
 import ReviewReactionsModal from './ReviewReactionsModal';
 import {MyProfile, MyReview} from '../../api/mypage';
+import {fetchEmojis, EmojiReaction} from '../../api/review';
 
-const chatIcon = require('../../assets/image/chat.png');
+const chatIcon = require('../../assets/image/comment.png');
 const emojiIcon = require('../../assets/image/emoji.png');
 const menuIcon = require('../../assets/image/vertical_ellipis.png');
 
@@ -43,10 +44,26 @@ export default function RecentReviewSection({
   const [draftComments, setDraftComments] = useState<Record<number, string>>({});
   const inputRefs = useRef<Record<number, TextInput | null>>({});
   const reactionsSheetRef = useRef<BottomSheetModal>(null);
+  const [reactions, setReactions] = useState<EmojiReaction[]>([]);
+  const [isReactionsLoading, setIsReactionsLoading] = useState(false);
 
   const openMenu = (reviewId: number) => {
     menuTargetRef.current = reviewId;
     setMenuVisible(true);
+  };
+
+  const openReactions = async (reviewId: number) => {
+    reactionsSheetRef.current?.present();
+    setIsReactionsLoading(true);
+    try {
+      const res = await fetchEmojis(reviewId);
+      setReactions(res.reactions);
+    } catch (error) {
+      console.log('[이모지 반응 조회 실패]', error);
+      setReactions([]);
+    } finally {
+      setIsReactionsLoading(false);
+    }
   };
 
   return (
@@ -146,7 +163,7 @@ export default function RecentReviewSection({
                   style={[styles.cardReactionIcon, styles.cardReactionIconFirst]}
                   resizeMode="contain"
                 />
-                <TouchableOpacity hitSlop={10} onPress={() => reactionsSheetRef.current?.present()}>
+                <TouchableOpacity hitSlop={10} onPress={() => openReactions(review.id)}>
                   <Image source={emojiIcon} style={styles.cardReactionIcon} resizeMode="contain" />
                 </TouchableOpacity>
               </View>
@@ -172,7 +189,7 @@ export default function RecentReviewSection({
         }}
       />
 
-      <ReviewReactionsModal ref={reactionsSheetRef} reactions={[]} />
+      <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
     </View>
   );
 }

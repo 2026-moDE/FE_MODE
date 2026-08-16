@@ -58,10 +58,14 @@ type VerifyLocationResponse = {
   };
 };
 
-type EmojiReaction = {
+export type EmojiReaction = {
   emoji : string;
-  count : number;
   is_mine : boolean;
+  user: {
+    nickname: string;
+    profile_image_url: string | null;
+    profile_url: string | null;
+  };
 }
 
 type EmojiReactionsResponse = {

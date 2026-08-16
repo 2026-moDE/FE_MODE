@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ActivityIndicator} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 
 import {fontFamily, fontSize, lineHeight, letterSpacing} from '../../constants/typography';

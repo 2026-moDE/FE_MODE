@@ -97,7 +97,7 @@ export default function MypageScreen() {
           isProfileLoading={isProfileLoading}
           onPressBack={() => navigation.navigate('Tab', {screen: 'Home'})}
           onPressSettings={() => navigation.navigate('Setting')}
-          onPressFriends={() => navigation.navigate('FollowList', {type: 'follower'})}
+          onPressFriends={() => navigation.navigate('FollowList')}
         />
 
         <ProfileActionButtons

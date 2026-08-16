@@ -11,7 +11,7 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -120,7 +120,7 @@ export default function MyMapScreen({navigation}: Props) {
       latitude: group.latitude,
       longitude: group.longitude,
       congestion_level: group.representativeReview.congestion_level as CongestionLevel,
-      thumbnail_url: group.representativeReview.image_url ?? '',
+      thumbnail_url: group.representativeReview.thumbnail_url ?? group.representativeReview.image_url ?? '',
       thumbnail_small_url: group.representativeReview.thumbnail_small_url ?? null,
     }));
   }, [locatedGroups]);
