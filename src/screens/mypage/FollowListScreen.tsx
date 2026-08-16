@@ -11,25 +11,26 @@ import {
   Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
-import {spacing} from '../../constants/spacing';
+import {gap, spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconSearch from '../../assets/icons/IconSearch';
+import IconFriendAdd from '../../assets/icons/IconFriendAdd';
 
-const peopleIcon = require('../../assets/image/people.png');
+const emptyProfileIcon = require('../../assets/image/empty_profile.png');
 
 const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const scale = SCREEN_WIDTH / DESIGN_WIDTH;
 const px = (value: number) => value * scale;
 
-type FollowListType = 'follower' | 'following';
+type FriendTab = 'friends' | 'requests';
 
-type FollowUser = {
+type FriendUser = {
   id: number;
   nickname: string;
   profileImageUrl: string | null;
@@ -37,14 +38,14 @@ type FollowUser = {
 
 export default function FollowListScreen() {
   const navigation = useNavigation<any>();
-  const route = useRoute<any>();
-  const type: FollowListType = route.params?.type ?? 'following';
+  const [activeTab, setActiveTab] = useState<FriendTab>('friends');
   const [keyword, setKeyword] = useState('');
 
-  const title = type === 'follower' ? '팔로워' : '팔로잉';
+  // TODO: api 연결 - 친구 목록 / 친구 요청 목록 조회
+  const friends: FriendUser[] = [{id: 1, nickname: '서루', profileImageUrl: null}];
+  const requests: FriendUser[] = [];
 
-  // TODO: api 연결 - type에 따라 팔로워/팔로잉 목록 조회
-  const users: FollowUser[] = [];
+  const users = activeTab === 'friends' ? friends : requests;
 
   const filteredUsers = useMemo(() => {
     const trimmed = keyword.trim();
@@ -68,10 +69,26 @@ export default function FollowListScreen() {
           <IconArrowLeft size={px(20)} color={colors.icon.basic} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>{title}</Text>
+        <Text style={styles.headerTitle}>친구</Text>
 
         <TouchableOpacity activeOpacity={0.7} style={styles.headerButton}>
-          <Image source={peopleIcon} style={styles.peopleIcon} resizeMode="contain" />
+          <IconFriendAdd size={px(22)} color={colors.icon.basic} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.tabRow}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.tabItem, activeTab === 'friends' && styles.tabItemActive]}
+          onPress={() => setActiveTab('friends')}>
+          <Text style={[styles.tabLabel, activeTab === 'friends' && styles.tabLabelActive]}>친구</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.tabItem, activeTab === 'requests' && styles.tabItemActive]}
+          onPress={() => setActiveTab('requests')}>
+          <Text style={[styles.tabLabel, activeTab === 'requests' && styles.tabLabelActive]}>요청</Text>
         </TouchableOpacity>
       </View>
 
@@ -86,23 +103,20 @@ export default function FollowListScreen() {
         <IconSearch size={px(16)} color={colors.icon.tertiary} />
       </View>
 
-      <Text style={styles.listLabel}>{title}</Text>
+      <Text style={styles.listLabel}>{activeTab === 'friends' ? '친구 목록' : '받은 요청'}</Text>
 
       <FlatList
         data={filteredUsers}
         keyExtractor={item => String(item.id)}
         contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({item}: {item: FollowUser}) => (
+        renderItem={({item}: {item: FriendUser}) => (
           <View style={styles.userRow}>
-            <View style={styles.avatar}>
-              {item.profileImageUrl ? (
-                <Image
-                  source={{uri: item.profileImageUrl}}
-                  style={styles.avatarImage}
-                  resizeMode="cover"
-                />
-              ) : null}
+            <View style={styles.profile}>
+              <Image
+                source={item.profileImageUrl ? {uri: item.profileImageUrl} : emptyProfileIcon}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
             </View>
 
             <Text style={styles.userName}>{item.nickname}</Text>
@@ -134,20 +148,43 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  peopleIcon: {
-    width: px(24),
-    height: px(24),
-  },
-
   headerTitle: {
     fontFamily: fontFamily.bold,
     fontSize: px(18),
     color: colors.text.basic,
   },
 
+  tabRow: {
+    flexDirection: 'row',
+    width: '100%',
+  },
+
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: px(spacing.md),
+    borderBottomWidth: 2,
+    borderBottomColor: colors.border.default,
+  },
+
+  tabItemActive: {
+    borderBottomColor: colors.border.black,
+  },
+
+  tabLabel: {
+    fontSize: px(15),
+    fontFamily: fontFamily.medium,
+    color: colors.text.tertiary,
+  },
+
+  tabLabelActive: {
+    fontFamily: fontFamily.bold,
+    color: colors.text.basic,
+  },
+
   searchBox: {
-    marginHorizontal: px(spacing['2xl']),
-    marginTop: px(spacing.sm),
+    marginHorizontal: px(spacing.lg),
+    marginTop: px(20),
     height: px(40),
     flexDirection: 'row',
     alignItems: 'center',
@@ -168,8 +205,8 @@ const styles = StyleSheet.create({
   },
 
   listLabel: {
-    marginTop: px(spacing.xl),
-    marginBottom: px(spacing.sm),
+    marginTop: px(gap['2xl']),
+    marginBottom: px(spacing.lg),
     marginHorizontal: px(spacing['2xl']),
     fontSize: px(14),
     fontFamily: fontFamily.medium,
@@ -177,13 +214,8 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: px(spacing['2xl']),
+    paddingHorizontal: px(spacing.lg),
     paddingBottom: px(spacing['2xl']),
-  },
-
-  separator: {
-    height: 1,
-    backgroundColor: colors.border.subtle,
   },
 
   userRow: {
@@ -192,25 +224,25 @@ const styles = StyleSheet.create({
     paddingVertical: px(spacing.md),
   },
 
-  avatar: {
+  profile: {
     width: px(40),
     height: px(40),
-    borderRadius: px(radius.full),
+    borderRadius: px(radius.lg),
     backgroundColor: colors.surface.default,
     borderWidth: 1,
     borderColor: colors.border.default,
     overflow: 'hidden',
   },
 
-  avatarImage: {
+  profileImage: {
     width: '100%',
     height: '100%',
   },
 
   userName: {
-    marginLeft: px(spacing.md),
-    fontSize: px(14),
-    fontFamily: fontFamily.medium,
+    marginLeft: px(spacing.lg),
+    fontSize: px(16),
+    fontFamily: fontFamily.semiBold,
     color: colors.text.basic,
   },
 });

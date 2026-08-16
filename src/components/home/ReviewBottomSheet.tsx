@@ -1,7 +1,7 @@
 import React, {useMemo, forwardRef} from 'react';
 import {Text, View, StyleSheet, Pressable, ActivityIndicator} from 'react-native';
 import BottomSheet, {BottomSheetFlatList} from '@gorhom/bottom-sheet';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
 import {spacing} from '../../constants/spacing';

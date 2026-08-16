@@ -62,7 +62,8 @@ export default function MyMapSection({mapRef}: Props) {
         congestion_level:
         group.representativeReview.congestion_level as CongestionLevel,
         thumbnail_url:
-        group.representativeReview.thumbnail_small_url ?? group.representativeReview.image_url ?? '',
+        group.representativeReview.thumbnail_url ?? group.representativeReview.image_url ?? '',
+        thumbnail_small_url: group.representativeReview.thumbnail_small_url ?? null,
     }));
     }, [locatedGroups]);
 

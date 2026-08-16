@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 
 import {useNavigation} from '@react-navigation/native';
 import {fontFamily} from '../../constants/typography';
@@ -93,7 +93,7 @@ export default function ProfileSection({
         <TouchableOpacity
           activeOpacity={0.7}
           style={styles.followItem}
-          onPress={() => navigation.navigate('FollowList', {type: 'follower'})}>
+          onPress={() => navigation.navigate('FollowList')}>
           <Text style={styles.followLabel}>팔로워</Text>
           <Text style={styles.followCount}>{profile?.follower_count ?? 0}</Text>
         </TouchableOpacity>
@@ -101,7 +101,7 @@ export default function ProfileSection({
         <TouchableOpacity
           activeOpacity={0.7}
           style={styles.followItem}
-          onPress={() => navigation.navigate('FollowList', {type: 'following'})}>
+          onPress={() => navigation.navigate('FollowList')}>
           <Text style={styles.followLabel}>팔로잉</Text>
           <Text style={styles.followCount}>{profile?.following_count ?? 0}</Text>
         </TouchableOpacity>

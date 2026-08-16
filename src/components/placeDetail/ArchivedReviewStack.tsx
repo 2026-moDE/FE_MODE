@@ -1,23 +1,30 @@
 import React from 'react';
-import {View, Text, Pressable, StyleSheet} from 'react-native';
-import FastImage from 'react-native-fast-image';
-import {ArchivedReview} from '../../types/place';
+import {View, Text, Pressable, StyleSheet, StyleProp, ViewStyle} from 'react-native';
+import FastImage from '@d11/react-native-fast-image';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 
+type StackPhoto = {
+    image_url: string;
+    thumbnail_url?: string | null;
+    thumbnail_small_url?: string | null;
+};
+
 type Props = {
-    reviews: ArchivedReview[];   // 최신순 정렬된 과거 리뷰 목록, 최소 1개 이상이어야 함
+    reviews: StackPhoto[];   // 최신순 정렬된 과거 리뷰 목록, 최소 1개 이상이어야 함
     onPress: () => void;
+    label?: string;
+    style?: StyleProp<ViewStyle>;
 };
 
 
-export default function ArchivedReviewStack({reviews, onPress}: Props) {
+export default function ArchivedReviewStack({reviews, onPress, label = '과거 리뷰 확인하기', style}: Props) {
     const [front, back1, back2] = reviews;
 
     return (
-        <Pressable style={styles.card} onPress={onPress}>
+        <Pressable style={[styles.card, style]} onPress={onPress}>
             <View style={styles.stack}>
                 {/* 맨 뒤(왼쪽): 3번째로 최신 리뷰 */}
                 <View
@@ -55,7 +62,7 @@ export default function ArchivedReviewStack({reviews, onPress}: Props) {
                     />
                 </View>
             </View>
-            <Text style={styles.label}>과거 리뷰 확인하기</Text>
+            <Text style={styles.label}>{label}</Text>
         </Pressable>
     );
 }

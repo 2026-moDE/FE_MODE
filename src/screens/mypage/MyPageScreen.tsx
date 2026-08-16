@@ -1,41 +1,29 @@
-﻿import React, {useCallback, useRef, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  TouchableOpacity,
-  Dimensions,
-  Image,
-} from 'react-native';
+import React, {useCallback, useRef, useState} from 'react';
+import {StyleSheet, StatusBar, ScrollView, Share} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
-import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
-import {spacing} from '../../constants/spacing';
-import ProfileSection from '../../components/mypage/ProfileSection';
-import ReviewSection from '../../components/mypage/ReviewSection';
-import MyMapSection from '../../components/mypage/MyMapSection';
-import IconArrowLeft from '../../assets/icons/IconArrowLeft';
-import {getMyProfile, MyProfile} from '../../api/mypage';
+import ProfileHeaderCard from '../../components/mypage/ProfileHeaderCard';
+import ProfileActionButtons from '../../components/mypage/ProfileActionButtons';
+import MyMapRow from '../../components/mypage/MyMapRow';
+import RecentReviewSection from '../../components/mypage/RecentReviewSection';
+import ProfileShareModal from '../../components/mypage/ProfileShareModal';
+import {getMyProfile, getMyReviews, MyProfile, MyReview} from '../../api/mypage';
+import {changeReview, deleteReview} from '../../api/review';
 
-const settingIcon = require('../../assets/image/setting.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
-
-type TabType = 'review' | 'mymap';
+const RECENT_REVIEW_LIMIT = 100;
 
 export default function MypageScreen() {
   const navigation = useNavigation<any>();
-  const [activeTab, setActiveTab] = useState<TabType>('review');
   const mapRef = useRef<NaverMapViewRef>(null);
+  const shareModalRef = useRef<BottomSheetModal>(null);
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [recentReviews, setRecentReviews] = useState<MyReview[]>([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -50,92 +38,90 @@ export default function MypageScreen() {
     }
   }, []);
 
+  const loadRecentReviews = useCallback(async () => {
+    try {
+      const data = await getMyReviews({limit: RECENT_REVIEW_LIMIT});
+      setRecentReviews(data.reviews);
+    } catch (error) {
+      console.log('[최신 리뷰 조회 실패]', error);
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadProfile();
-    }, [loadProfile]),
+      loadRecentReviews();
+    }, [loadProfile, loadRecentReviews]),
   );
+
+  const handleDeleteReview = async (reviewId: number) => {
+    try {
+      await deleteReview(reviewId);
+      setRecentReviews(prev => prev.filter(r => r.id !== reviewId));
+    } catch (error) {
+      console.log('[리뷰 삭제 실패]', error);
+    }
+  };
+
+  const handleEditReviewComment = async (reviewId: number, comment: string) => {
+    try {
+      await changeReview(reviewId, {comment});
+      setRecentReviews(prev => prev.map(r => (r.id === reviewId ? {...r, comment} : r)));
+    } catch (error) {
+      console.log('[리뷰 수정 실패]', error);
+    }
+  };
+
+  const handleShareProfile = async () => {
+    try {
+      await Share.share({
+        message: `${profile?.nickname ?? '모잉'}님의 모잉 프로필을 확인해보세요!`,
+      });
+    } catch (error) {
+      console.log('[프로필 공유 실패]', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.background.white} />
 
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.headerButton}
-            onPress={() =>
-              navigation.navigate('Tab', {
-                screen: 'Home',
-              })
-            }>
-            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
-          </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>마이페이지</Text>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.headerButton}
-            onPress={() => navigation.navigate('Setting')}>
-            <Image
-              source={settingIcon}
-              style={styles.settingImage}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
-
-        <ProfileSection
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
+        <ProfileHeaderCard
           profile={profile}
-          isLoading={isProfileLoading}
+          isProfileLoading={isProfileLoading}
+          onPressBack={() => navigation.navigate('Tab', {screen: 'Home'})}
+          onPressSettings={() => navigation.navigate('Setting')}
+          onPressFriends={() => navigation.navigate('FollowList')}
         />
 
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.tabButton}
-            onPress={() => setActiveTab('review')}>
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'review' && styles.activeTabText,
-              ]}>
-              리뷰
-            </Text>
-          </TouchableOpacity>
+        <ProfileActionButtons
+          onPressEdit={() =>
+            navigation.navigate('ProfileEdit', {
+              nickname: profile?.nickname ?? '',
+              profileImageUrl: profile?.profile_image_url ?? null,
+            })
+          }
+          onPressShare={() => shareModalRef.current?.present()}
+        />
 
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.tabButton}
-            onPress={() => setActiveTab('mymap')}>
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'mymap' && styles.activeTabText,
-              ]}>
-              마이맵
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <MyMapRow mapRef={mapRef} reviews={recentReviews} />
 
-        <View style={styles.tabLine}>
-          <View
-            style={[
-              styles.activeLine,
-              activeTab === 'mymap' && styles.activeLineRight,
-            ]}
-          />
-        </View>
+        <RecentReviewSection
+          profile={profile}
+          recentReviews={recentReviews}
+          isReviewsLoading={isReviewsLoading}
+          onDeleteReview={handleDeleteReview}
+          onEditComment={handleEditReviewComment}
+        />
+      </ScrollView>
 
-        {activeTab === 'review' ? (
-          <ReviewSection profile={profile} />
-        ) : (
-          <MyMapSection mapRef={mapRef} />
-        )}
-
-      </View>
+      <ProfileShareModal ref={shareModalRef} onSelectShare={handleShareProfile} />
     </SafeAreaView>
   );
 }
@@ -143,77 +129,15 @@ export default function MypageScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.white,
+    backgroundColor: colors.background.dark,
   },
 
   container: {
     flex: 1,
-    backgroundColor: colors.background.white,
-  },
-
-  header: {
-    height: px(54),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
-  },
-
-  headerButton: {
-    width: px(34),
-    height: px(34),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  headerTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    color: colors.text.basic,
-  },
-
-  settingImage: {
-    width: px(22),
-    height: px(22),
-    tintColor: colors.icon.basic,
-  },
-
-  tabRow: {
-    height: px(38),
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  tabButton: {
-    flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  tabText: {
-    fontSize: px(14),
-    fontFamily: fontFamily.medium,
-    color: colors.text.tertiary,
-  },
-
-  activeTabText: {
-    fontFamily: fontFamily.bold,
-    color: colors.text.basic,
-  },
-
-  tabLine: {
-    height: 1,
-    backgroundColor: colors.divider.default,
-  },
-
-  activeLine: {
-    width: SCREEN_WIDTH / 2,
-    height: px(2),
     backgroundColor: colors.background.dark,
   },
 
-  activeLineRight: {
-    marginLeft: SCREEN_WIDTH / 2,
+  scrollContent: {
+    paddingBottom: 110,
   },
 });

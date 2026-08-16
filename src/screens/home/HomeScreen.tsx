@@ -1,6 +1,6 @@
 import React, {useRef, useEffect, useState, useCallback, useMemo} from "react";
 import {View, Text, StyleSheet, ActivityIndicator, useWindowDimensions} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";

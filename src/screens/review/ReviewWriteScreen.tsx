@@ -334,7 +334,8 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: 56,
+    height: px(52),
+    paddingVertical: px(spacing.sm),
     justifyContent: 'center',
     alignItems: 'center',
   },

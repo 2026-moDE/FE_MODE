@@ -12,6 +12,7 @@ import ProfileEditScreen from '../screens/mypage/ProfileEditScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
 import MyMapScreen from '../screens/mypage/MyMapScreen';
+import MonthlyReviewScreen from '../screens/mypage/MonthlyReviewScreen';
 import SettingScreen from '../screens/mypage/SettingScreen';
 import TermsOfServiceScreen from '../screens/mypage/TermsOfServiceScreen';
 import TermsScreen from '../screens/auth/TermsScreen';
@@ -47,6 +48,7 @@ export default function AppNavigator() {
       <Stack.Screen name='Notification' component={NotificationScreen}/>
       <Stack.Screen name='ReviewReport' component={ReviewReportScreen}/>
       <Stack.Screen name='MyMap' component={MyMapScreen} options={{animation: 'fade'}} />
+      <Stack.Screen name='MonthlyReview' component={MonthlyReviewScreen} options={{animation: 'fade'}} />
       <Stack.Screen name='Setting' component={SettingScreen} />
       <Stack.Screen name='TermsOfService' component={TermsOfServiceScreen} />
       <Stack.Screen name='TermsAgreement' component={TermsScreen} />
