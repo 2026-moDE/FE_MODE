@@ -9,7 +9,9 @@ import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import {AppStackParamList} from '../../types/navigation';
+import {MyReview} from '../../api/mypage';
 import MyMapSection from './MyMapSection';
+import ArchivedReviewStack from '../placeDetail/ArchivedReviewStack';
 
 const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -18,10 +20,13 @@ const px = (value: number) => value * scale;
 
 type Props = {
   mapRef: React.RefObject<NaverMapViewRef | null>;
+  reviews: MyReview[];
 };
 
-export default function MyMapRow({mapRef}: Props) {
+export default function MyMapRow({mapRef, reviews}: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+
+  const photoReviews = reviews.filter((r): r is MyReview & {image_url: string} => !!r.image_url).slice(0, 3);
 
   return (
     <View style={styles.myMapRow}>
@@ -29,17 +34,28 @@ export default function MyMapRow({mapRef}: Props) {
         <MyMapSection mapRef={mapRef} />
       </View>
 
-      <TouchableOpacity
-        style={styles.monthlyReviewCard}
-        activeOpacity={0.85}
-        onPress={() => navigation.navigate('MonthlyReview')}>
-        <View style={styles.cardStackIcon}>
-          <View style={[styles.cardStackLayer, styles.cardStackLayerBack]} />
-          <View style={[styles.cardStackLayer, styles.cardStackLayerMid]} />
-          <View style={[styles.cardStackLayer, styles.cardStackLayerFront]} />
-        </View>
-        <Text style={styles.monthlyReviewText}>월별 리뷰 확인하기</Text>
-      </TouchableOpacity>
+      <View style={styles.monthlyReviewCard}>
+        {photoReviews.length > 0 ? (
+          <ArchivedReviewStack
+            reviews={photoReviews}
+            onPress={() => navigation.navigate('MonthlyReview')}
+            label="월별 리뷰 확인하기"
+            style={{width: '100%', height: '100%', aspectRatio: undefined, flex: undefined}}
+          />
+        ) : (
+          <TouchableOpacity
+            style={styles.emptyMonthlyReview}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('MonthlyReview')}>
+            <View style={styles.cardStackIcon}>
+              <View style={[styles.cardStackLayer, styles.cardStackLayerBack]} />
+              <View style={[styles.cardStackLayer, styles.cardStackLayerMid]} />
+              <View style={[styles.cardStackLayer, styles.cardStackLayerFront]} />
+            </View>
+            <Text style={styles.monthlyReviewText}>월별 리뷰 확인하기</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -64,8 +80,13 @@ const styles = StyleSheet.create({
   monthlyReviewCard: {
     width: px(168),
     height: px(224),
-    borderRadius: px(radius.lg),
-    backgroundColor: colors.button.secondaryFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+      paddingTop: px(40),
+  },
+
+  emptyMonthlyReview: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

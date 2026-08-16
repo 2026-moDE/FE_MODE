@@ -1,14 +1,16 @@
 import React, {useRef, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ActivityIndicator, TextInput} from 'react-native';
 import FastImage from 'react-native-fast-image';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
 import {fontFamily, fontSize} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
-import {formatRelativeTime} from '../placeDetail/ReviewCard';
+import {formatRelativeTime} from '../../utils/date';
 import ReviewMenuModal from '../placeDetail/ReviewMenuModal';
+import ReviewReactionsModal from './ReviewReactionsModal';
 import {MyProfile, MyReview} from '../../api/mypage';
 
 const chatIcon = require('../../assets/image/chat.png');
@@ -40,6 +42,7 @@ export default function RecentReviewSection({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draftComments, setDraftComments] = useState<Record<number, string>>({});
   const inputRefs = useRef<Record<number, TextInput | null>>({});
+  const reactionsSheetRef = useRef<BottomSheetModal>(null);
 
   const openMenu = (reviewId: number) => {
     menuTargetRef.current = reviewId;
@@ -143,7 +146,9 @@ export default function RecentReviewSection({
                   style={[styles.cardReactionIcon, styles.cardReactionIconFirst]}
                   resizeMode="contain"
                 />
-                <Image source={emojiIcon} style={styles.cardReactionIcon} resizeMode="contain" />
+                <TouchableOpacity hitSlop={10} onPress={() => reactionsSheetRef.current?.present()}>
+                  <Image source={emojiIcon} style={styles.cardReactionIcon} resizeMode="contain" />
+                </TouchableOpacity>
               </View>
             </View>
           ))}
@@ -166,6 +171,8 @@ export default function RecentReviewSection({
           setTimeout(() => inputRefs.current[id]?.focus(), 50);
         }}
       />
+
+      <ReviewReactionsModal ref={reactionsSheetRef} reactions={[]} />
     </View>
   );
 }
