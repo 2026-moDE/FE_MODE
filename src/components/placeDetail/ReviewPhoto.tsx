@@ -13,6 +13,7 @@ import {useReviewPhotoReactions, ReviewPhotoReactionButtons, ReviewPhotoEmojiPic
 import ReviewPhotoComment, {ReviewPhotoCommentHandle} from './ReviewPhotoComment';
 import {formatRelativeTime, formatAbsoluteDate} from '../../utils/date';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
+import {addEmoji, removeEmoji, fetchEmojis} from '../../api/review';
 
 type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
@@ -24,6 +25,8 @@ type Props = {
     onReport: () => void;
     onChangeComment?: (reviewId: number, comment: string) => void;
     useAbsoluteDate?: boolean;
+    // 내 리뷰일 때 이모지 버튼 누르면 피커 대신 반응 목록을 보여줘야 함 (다른 화면, 별도 구현)
+    onOpenReactionList?: (reviewId: number) => void;
 };
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
@@ -35,7 +38,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList}: Props) {
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const isOwner = reviews[currentIndex]?.is_mine ?? false;
@@ -47,8 +50,10 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
     const [imageRatio, setImageRatio] = useState<number | null>(null);
     //댓글
     const modalRef = useRef<BottomSheetModal>(null);
-    // 채팅/이모지 반응
-    const {showPicker, selectedEmoji, emojiPop, togglePicker, closePicker, selectEmoji} = useReviewPhotoReactions();
+    // 채팅/이모지 반응 (애니메이션만 담당)
+    const {showPicker, emojiPop, emojiBurst, isExiting, togglePicker, closePicker, playSelectAnimation, playCancelAnimation, syncEmoji} = useReviewPhotoReactions();
+    // 리뷰별 이모지 선택 상태 (리뷰마다 따로 관리해야 다른 리뷰로 넘어가도 안 섞임)
+    const [emojiSelections, setEmojiSelections] = useState<Record<number, string>>({});
 
     // image_url 있는 리뷰만 썸네일로, 원래 index 보존
     const thumbnailReviews = reviews
@@ -87,8 +92,67 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
 
 
     const review = reviews[currentIndex];
+    const selectedEmoji = review ? emojiSelections[review.id] ?? null : null;
 
-    // 이전/다음 사진 (양 끝에서는 비활성)
+    // 지금 보고 있는 리뷰 index를 비동기 콜백에서도 최신값으로 읽기 위한 ref
+    const currentIndexRef = useRef(currentIndex);
+    useEffect(() => {
+        currentIndexRef.current = currentIndex;
+    }, [currentIndex]);
+
+    // 리뷰(사진)마다 서버에 저장된 내 리액션을 한 번만 조회해서 초기 상태로 채움
+    const fetchedEmojiReviewIds = useRef<Set<number>>(new Set());
+    useEffect(() => {
+        if (!review || fetchedEmojiReviewIds.current.has(review.id)) return;
+        fetchedEmojiReviewIds.current.add(review.id);
+        const reviewId = review.id;
+
+        fetchEmojis(reviewId)
+            .then(res => {
+                const mine = res.reactions.find(r => r.is_mine);
+                if (mine) {
+                    setEmojiSelections(prev => ({...prev, [reviewId]: mine.emoji}));
+                    // 데이터가 도착했을 때도 여전히 이 리뷰를 보고 있으면 애니메이션 없이 바로 반영
+                    if (reviews[currentIndexRef.current]?.id === reviewId) {
+                        syncEmoji(true);
+                    }
+                }
+            })
+            .catch(err => console.warn('이모지 반응 조회 실패:', err?.message));
+    }, [currentIndex]);
+
+    // 리뷰(사진) 전환 시에만(선택/취소 애니메이션과는 별개로), 그 리뷰의 실제 선택 상태로 즉시 맞춤
+    useEffect(() => {
+        if (!review) return;
+        syncEmoji(!!emojiSelections[review.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentIndex]);
+
+    // 이모지 선택
+    const handleSelectEmoji = (emoji: string) => {
+        if (!review) return;
+        setEmojiSelections(prev => ({...prev, [review.id]: emoji}));
+        playSelectAnimation();
+        addEmoji(review.id, emoji).catch(err => console.warn('이모지 추가 실패:', err?.message));
+    };
+
+    // 이모지 선택 취소
+    const handleCancelEmoji = () => {
+        // 퇴장 애니메이션 재생 중에 중복으로 눌리는 것 방지 (겹치면 애니메이션/터치가 꼬임)
+        if (!review || !selectedEmoji || isExiting) return;
+        const emoji = selectedEmoji;
+        const reviewId = review.id;
+        removeEmoji(reviewId, emoji).catch(err => console.warn('이모지 삭제 실패:', err?.message));
+        playCancelAnimation(() => {
+            setEmojiSelections(prev => {
+                const next = {...prev};
+                delete next[reviewId];
+                return next;
+            });
+        });
+    };
+
+    // 이전/다음 사진
     // 편집 중이었으면 그 탭은 "편집 닫기"로만 처리하고, 사진 넘기기는 취소함
     const handlePrev = () => {
         if (commentRef.current?.blurIfEditing()) return;
@@ -99,7 +163,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
         if (currentIndex < reviews.length - 1) setCurrentIndex(currentIndex + 1);
     };
 
-    // 스와이프 닫기 제스처 (사진이 따라 움직임)
+    // 스와이프 닫기 제스처
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => false,
@@ -223,7 +287,14 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                             onOpenChat={() => modalRef.current?.present()}
                             selectedEmoji={selectedEmoji}
                             emojiPop={emojiPop}
-                            onPressEmojiButton={togglePicker}
+                            emojiBurst={emojiBurst}
+                            isExiting={isExiting}
+                            onPressEmojiButton={
+                                isOwner
+                                    ? () => onOpenReactionList?.(review.id)
+                                    : togglePicker
+                            }
+                            onCancelEmoji={handleCancelEmoji}
                         />
                     </View>
 
@@ -256,7 +327,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                 </Animated.View>
 
                 {/* ── 이모지 반응 : 화면 전체 오버레이 + 이모지 목록 ── */}
-                <ReviewPhotoEmojiPicker visible={showPicker} onClose={closePicker} onSelect={selectEmoji} />
+                <ReviewPhotoEmojiPicker visible={showPicker} onClose={closePicker} onSelect={handleSelectEmoji} />
             </Pressable>
         </>
 
@@ -294,7 +365,7 @@ const styles = StyleSheet.create({
 // ─────────────────── 리뷰 사진 관련  ─────────────────── 
     imageWrapper: {
         marginHorizontal: spacing.xl,   // 20 - 이미지 양옆 여백
-        aspectRatio: 2 / 3,
+        aspectRatio: 9 / 16,
         borderRadius: radius.xl,
         backgroundColor: colors.surface.muted,
         marginBottom : 10,   // 위 여백(중앙정렬)과 비슷하게 맞춤

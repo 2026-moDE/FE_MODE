@@ -1,6 +1,7 @@
 // ─────────────────── 알림 목록 api (GET /api/users/me/notifications) ─────────────────── 
 export type Notification = {
     id: number;
+    type : 'REVIEW' | 'FRIEND_REQUEST' | 'FRIEND_ACCEPT';
     title: string;
     body: string;
     place: {
