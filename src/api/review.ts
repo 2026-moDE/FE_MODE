@@ -31,6 +31,7 @@ export type CreateReviewRequest = {
   place_id: number;
   image_url: string;
   congestion_level: CongestionLevel;
+  visibility: 'PUBLIC' | 'FRIENDS';
   quick_tag?: string;
   comment?: string;
   latitude: number;

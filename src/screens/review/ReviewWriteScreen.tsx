@@ -30,6 +30,9 @@ import {uploadImageToS3} from '../../api/imageUpload';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
 import ReviewPreviewModal, {type ReviewVisibility} from '../../components/review/ReviewPreviewModal';
 
+const getVisibilityValue = (visibility: ReviewVisibility): 'PUBLIC' | 'FRIENDS' =>
+  visibility === 'all' ? 'PUBLIC' : 'FRIENDS';
+
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
 const refreshCameraIcon = require('../../assets/image/refresh_camera.png');
@@ -71,7 +74,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exitModalVisible, setExitModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
-  const [, setReviewVisibility] = useState<ReviewVisibility>('all');
 
   const now = new Date();
   const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -93,7 +95,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       navigation.navigate('ReviewCamera');
     };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (visibility: ReviewVisibility) => {
     if (isSubmitting) return;
     if (!isSubmitActive || !selectedCongestion) return;
 
@@ -137,6 +139,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
         place_id: Number(placeId),
         image_url,
         congestion_level: getCongestionLevel(selectedCongestion),
+        visibility: getVisibilityValue(visibility),
         latitude,
         longitude,
         ...(reviewText.trim() && {comment: reviewText.trim()}),
@@ -289,7 +292,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             visible={previewModalVisible}
             photoUri={photoUri}
             reviewText={reviewText}
-            onChangeVisibility={setReviewVisibility}
             isSubmitting={isSubmitting}
             onClose={() => setPreviewModalVisible(false)}
             onSubmit={handleSubmit}
