@@ -12,7 +12,12 @@
           "package_name": "com.mode.moing"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "13447974389-e8epu3f2ahdppe115dnf5i95b2ds8psk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyArBDlyqlEpKUnspzWkscwuS7uSfbD21nc"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "13447974389-e8epu3f2ahdppe115dnf5i95b2ds8psk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "13447974389-a714ju67fpd5h19gc4bl6t51lj35gc0n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mode.moing"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +48,20 @@
           "package_name": "com.moing.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "13447974389-6nhiic9vf2q9o4kq85b6f9cg8h84anag.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.moing.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "13447974389-e8epu3f2ahdppe115dnf5i95b2ds8psk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyArBDlyqlEpKUnspzWkscwuS7uSfbD21nc"
@@ -39,7 +69,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "13447974389-e8epu3f2ahdppe115dnf5i95b2ds8psk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "13447974389-a714ju67fpd5h19gc4bl6t51lj35gc0n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mode.moing"
+              }
+            }
+          ]
         }
       }
     }

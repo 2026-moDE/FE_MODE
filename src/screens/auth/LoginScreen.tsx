@@ -90,6 +90,8 @@ export default function LoginScreen({navigation}: Props) {
       setIsLoggedIn(true);
     } catch (error: any) {
       console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
 
       Alert.alert(
         '로그인 실패',
@@ -146,6 +148,10 @@ export default function LoginScreen({navigation}: Props) {
       if (isErrorWithCode(error) && error.code === statusCodes.IN_PROGRESS) {
         return;
       }
+
+      console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
 
       Alert.alert(
         '로그인 실패',
