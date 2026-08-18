@@ -37,7 +37,11 @@ export const socialLoginApi = async ({
   const data: SocialLoginResponse = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || `소셜 로그인 실패: ${response.status}`);
+    const error = new Error(
+      data.message || `소셜 로그인 실패: ${response.status}`,
+    ) as Error & {response?: {status: number; data: SocialLoginResponse}};
+    error.response = {status: response.status, data};
+    throw error;
   }
 
   return data;

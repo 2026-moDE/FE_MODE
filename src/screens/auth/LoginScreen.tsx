@@ -90,6 +90,8 @@ export default function LoginScreen({navigation}: Props) {
       setIsLoggedIn(true);
     } catch (error: any) {
       console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
 
       Alert.alert(
         '로그인 실패',
@@ -113,18 +115,18 @@ export default function LoginScreen({navigation}: Props) {
         return;
       }
 
-      // 백엔드 access_token 필드는 소셜 SDK의 OAuth accessToken을 기대함(Kakao와 동일 패턴).
-      const {accessToken} = await GoogleSignin.getTokens();
+      // 백엔드 access_token 필드에는 Google의 idToken을 담아 전달함(백엔드 스펙 확인 완료).
+      const idToken = response.data.idToken;
 
-      if (!accessToken) {
-        throw new Error('Google 액세스 토큰을 가져오지 못했습니다.');
+      if (!idToken) {
+        throw new Error('Google ID 토큰을 가져오지 못했습니다.');
       }
 
       const fcmToken = await getFcmToken();
 
       const result = await socialLoginApi({
         provider: 'GOOGLE',
-        accessToken,
+        accessToken: idToken,
         fcmToken,
       });
 
@@ -146,6 +148,10 @@ export default function LoginScreen({navigation}: Props) {
       if (isErrorWithCode(error) && error.code === statusCodes.IN_PROGRESS) {
         return;
       }
+
+      console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
 
       Alert.alert(
         '로그인 실패',
