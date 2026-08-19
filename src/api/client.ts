@@ -1,5 +1,5 @@
 import axios, {InternalAxiosRequestConfig} from 'axios';
-import {getAccessToken, clearTokens} from '../storage/tokenStorage';
+import {getAccessToken} from '../storage/tokenStorage';
 import {refreshAccessTokenApi} from './auth';
 
 export const BASE_URL = 'http://moing.co.kr:8080';
@@ -36,6 +36,9 @@ apiClient.interceptors.request.use(
   },
 );
 
+// 동시에 여러 요청이 401을 받아도 재발급은 한 번만 실행되도록 진행 중인 요청을 공유
+let refreshPromise: Promise<string> | null = null;
+
 // 응답 인터셉터: 401이면 토큰 재발급 후 원래 요청 재시도
 apiClient.interceptors.response.use(
   response => response,
@@ -55,13 +58,19 @@ apiClient.interceptors.response.use(
 
       try {
         console.log('[토큰 만료] access_token 재발급 시도');
-        const newAccessToken = await refreshAccessTokenApi();
+
+        if (!refreshPromise) {
+          refreshPromise = refreshAccessTokenApi().finally(() => {
+            refreshPromise = null;
+          });
+        }
+        const newAccessToken = await refreshPromise;
+
         console.log('[토큰 재발급 완료] 원래 요청 재시도');
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        console.log('[토큰 재발급 실패] 로컬 토큰 삭제');
-        await clearTokens();
+        console.log('[토큰 재발급 실패]');
         return Promise.reject(refreshError);
       }
     }

@@ -2,7 +2,7 @@ import type {
   SocialLoginProvider,
   SocialLoginResponse,
 } from '../types/auth';
-import {getAccessToken, getRefreshToken, saveAccessToken, clearTokens} from '../storage/tokenStorage';
+import {getAccessToken, getRefreshToken, saveTokens, clearTokens} from '../storage/tokenStorage';
 
 const BASE_URL = 'http://moing.co.kr:8080';
 
@@ -37,7 +37,11 @@ export const socialLoginApi = async ({
   const data: SocialLoginResponse = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || `소셜 로그인 실패: ${response.status}`);
+    const error = new Error(
+      data.message || `소셜 로그인 실패: ${response.status}`,
+    ) as Error & {response?: {status: number; data: SocialLoginResponse}};
+    error.response = {status: response.status, data};
+    throw error;
   }
 
   return data;
@@ -70,17 +74,23 @@ export const refreshAccessTokenApi = async () => {
   console.log('[토큰 재발급 응답]', data);
 
   if (!response.ok || data.success === false) {
-    await clearTokens();
+    // refresh_token 자체가 무효(401)인 경우에만 로컬 토큰 삭제.
+    // 그 외 일시적 오류(네트워크/5xx 등)로는 아직 유효할 refresh_token을 지우지 않는다.
+    if (response.status === 401) {
+      await clearTokens();
+    }
     throw new Error(data.message || `토큰 재발급 실패: ${response.status}`);
   }
 
   const newAccessToken = data.data?.access_token ?? data.access_token;
+  const newRefreshToken = data.data?.refresh_token ?? data.refresh_token;
 
   if (!newAccessToken) {
     throw new Error('응답에 access_token이 없습니다.');
   }
 
-  await saveAccessToken(newAccessToken);
+  // 서버가 refresh_token을 로테이션(재발급)해서 내려주는 경우를 대비해 함께 저장
+  await saveTokens(newAccessToken, newRefreshToken);
 
   console.log('[토큰 재발급 성공] 새 access_token 저장 완료');
 

@@ -11,7 +11,8 @@ import {
   Animated,
   PanResponder,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
+import LinearGradient from 'react-native-linear-gradient';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
@@ -119,7 +120,7 @@ export default function MyMapScreen({navigation}: Props) {
       latitude: group.latitude,
       longitude: group.longitude,
       congestion_level: group.representativeReview.congestion_level as CongestionLevel,
-      thumbnail_url: group.representativeReview.image_url ?? '',
+      thumbnail_url: group.representativeReview.thumbnail_url ?? group.representativeReview.image_url ?? '',
       thumbnail_small_url: group.representativeReview.thumbnail_small_url ?? null,
     }));
   }, [locatedGroups]);
@@ -279,72 +280,80 @@ export default function MyMapScreen({navigation}: Props) {
 
   return (
     <View style={styles.container}>
-      {/* 헤더 */}
-      <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
-        <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={10}>
-            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
-          </Pressable>
-          <Text style={styles.headerTitle}>마이맵</Text>
-          <View style={styles.headerButton} />
-        </View>
-      </SafeAreaView>
+      {/* 지도 카드 */}
+      <View style={styles.mapCard}>
+        <MapView
+          ref={mapRef}
+          initialCamera={{latitude: 37.5665, longitude: 126.978, zoom: 6}}
+          isShowLocationButton={false}
+          showLocationMarker={false}
+          onTapMap={handleTapMap}
+          onCameraChanged={(params) => {
+            if (cameraDebounceRef.current) clearTimeout(cameraDebounceRef.current);
+            cameraDebounceRef.current = setTimeout(() => {
+              const { latitude, longitude, latitudeDelta, longitudeDelta } = params.region;
+              const padLng = longitudeDelta * 0.3;
+              const padLat = latitudeDelta * 0.3;
+              setZoom(params.zoom ?? 6);
+              setBounds([
+                Math.max(longitude - longitudeDelta / 2 - padLng, -180),
+                Math.max(latitude - latitudeDelta / 2 - padLat, -90),
+                Math.min(longitude + longitudeDelta / 2 + padLng, 180),
+                Math.min(latitude + latitudeDelta / 2 + padLat, 90),
+              ]);
+            }, 150);
+          }}>
+          {clusters.map(cluster => {
+            const [lng, lat] = cluster.geometry.coordinates;
+            if (cluster.properties.cluster) {
+              const leafPlace = supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place;
 
-      {/* 지도 */}
-      <MapView
-        ref={mapRef}
-        initialCamera={{latitude: 37.5665, longitude: 126.978, zoom: 6}}
-        isShowLocationButton={false}
-        showLocationMarker={false}
-        onTapMap={handleTapMap}
-        onCameraChanged={(params) => {
-          if (cameraDebounceRef.current) clearTimeout(cameraDebounceRef.current);
-          cameraDebounceRef.current = setTimeout(() => {
-            const { latitude, longitude, latitudeDelta, longitudeDelta } = params.region;
-            const padLng = longitudeDelta * 0.3;
-            const padLat = latitudeDelta * 0.3;
-            setZoom(params.zoom ?? 6);
-            setBounds([
-              Math.max(longitude - longitudeDelta / 2 - padLng, -180),
-              Math.max(latitude - latitudeDelta / 2 - padLat, -90),
-              Math.min(longitude + longitudeDelta / 2 + padLng, 180),
-              Math.min(latitude + latitudeDelta / 2 + padLat, 90),
-            ]);
-          }, 150);
-        }}>
-        {clusters.map(cluster => {
-          const [lng, lat] = cluster.geometry.coordinates;
-          if (cluster.properties.cluster) {
-            const leafPlace = supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place;
-
+              return (
+                <ClusterBubble
+                  key={`my-map-cluster-${cluster.properties.cluster_id}`}
+                  latitude={lat}
+                  longitude={lng}
+                  count={cluster.properties.point_count}
+                  thumbnailUrl={leafPlace?.thumbnail_small_url ?? leafPlace?.thumbnail_url}
+                  onPress={() => handleClusterPress(cluster.properties.cluster_id, lat, lng)}
+                />
+              );
+            }
+            const place = cluster.properties.place;
             return (
-              <ClusterBubble
-                key={`my-map-cluster-${cluster.properties.cluster_id}`}
-                latitude={lat}
-                longitude={lng}
-                count={cluster.properties.point_count}
-                thumbnailUrl={leafPlace?.thumbnail_small_url ?? leafPlace?.thumbnail_url}
-                onPress={() => handleClusterPress(cluster.properties.cluster_id, lat, lng)}
+              <LiveBubble
+                key={`my-map-full-${place.id}`}
+                place={place}
+                onPress={handlePlacePress}
+                monochrome
               />
             );
-          }
-          const place = cluster.properties.place;
-          return (
-            <LiveBubble
-              key={`my-map-full-${place.id}`}
-              place={place}
-              onPress={handlePlacePress}
-              monochrome
-            />
-          );
-        })}
-      </MapView>
+          })}
+        </MapView>
 
-      {loading && (
-        <View style={styles.statusBox}>
-          <ActivityIndicator size="small" color={colors.icon.basic} />
+        {/* 헤더 (지도 위 오버레이) */}
+        <View style={styles.headerGradientWrap} pointerEvents="none">
+          <LinearGradient
+            colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
+            style={styles.headerGradient}
+          />
         </View>
-      )}
+        <SafeAreaView edges={['top']} style={styles.headerSafeArea} pointerEvents="box-none">
+          <View style={styles.header}>
+            <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={10}>
+              <IconArrowLeft size={px(20)} color={colors.icon.inverse} />
+            </Pressable>
+            <Text style={styles.headerTitle}>마이맵</Text>
+            <View style={styles.headerButton} />
+          </View>
+        </SafeAreaView>
+
+        {loading && (
+          <View style={styles.statusBox}>
+            <ActivityIndicator size="small" color={colors.icon.basic} />
+          </View>
+        )}
+      </View>
 
       {/* 하단 바텀시트 */}
       {visibleReviews.filter(r => r.image_url).length > 0 && (
@@ -427,10 +436,27 @@ export default function MyMapScreen({navigation}: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.white,
+    backgroundColor: colors.background.dimDarkest,
+  },
+  mapCard: {
+    flex: 1,
+  },
+  headerGradientWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: px(100),
+  },
+  headerGradient: {
+    flex: 1,
   },
   headerSafeArea: {
-    backgroundColor: colors.background.white,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -448,7 +474,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: px(18),
     fontFamily: fontFamily.bold,
-    color: colors.text.basic,
+    color: colors.text.inverse,
   },
   statusBox: {
     position: 'absolute',
@@ -463,14 +489,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingTop: spacing.sm,
-    backgroundColor: colors.background.white,
+    backgroundColor: colors.background.dark,
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
-    elevation: 10,
-    shadowColor: '#000000',
-    shadowOffset: {width: 0, height: -3},
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
     overflow: 'hidden',
   },
   sheetHeader: {
@@ -490,7 +511,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 16,
     fontFamily: fontFamily.bold,
-    color: colors.text.basic,
+    color: colors.text.inverse,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.md,
   },
@@ -506,5 +527,7 @@ const styles = StyleSheet.create({
     height: (SCREEN_WIDTH - 40 - 32) / 5,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.muted,
+    borderWidth: px(2),
+    borderColor: colors.border.inverse,
   },
 });

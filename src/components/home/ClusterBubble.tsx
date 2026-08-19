@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import {NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';

@@ -51,13 +51,17 @@ export type AppStackParamList = {
 
   MyMap: undefined;
 
+  MonthlyReview: undefined;
+
   Setting: undefined;
 
   TermsOfService: undefined;
 
   TermsAgreement: {viewOnly?: boolean} | undefined;
 
-  FollowList: {type: 'follower' | 'following'};
+  FollowList: undefined;
+
+  FriendSearch: undefined;
 };
 
 // 리뷰 작성 전용 스택

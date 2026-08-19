@@ -23,10 +23,9 @@ type ReviewPreviewModalProps = {
   visible: boolean;
   photoUri: string;
   reviewText: string;
-  onChangeVisibility: (visibility: ReviewVisibility) => void;
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (visibility: ReviewVisibility) => void;
 };
 
 const DESIGN_WIDTH = 393;
@@ -38,7 +37,6 @@ const ReviewPreviewModal = ({
   visible,
   photoUri,
   reviewText,
-  onChangeVisibility,
   isSubmitting,
   onClose,
   onSubmit,
@@ -80,10 +78,7 @@ const ReviewPreviewModal = ({
               <Pressable
                 style={[styles.visibilityButton, isSubmitting && styles.visibilityButtonDisabled]}
                 disabled={isSubmitting}
-                onPress={() => {
-                  onChangeVisibility('all');
-                  onSubmit();
-                }}>
+                onPress={() => onSubmit('all')}>
                 <IconGlobe size={px(16)} color={colors.text.inverse} />
                 <Text allowFontScaling={false} style={styles.visibilityTextAll}>
                   전체 공개
@@ -93,10 +88,7 @@ const ReviewPreviewModal = ({
               <Pressable
                 style={[styles.visibilityButton, isSubmitting && styles.visibilityButtonDisabled]}
                 disabled={isSubmitting}
-                onPress={() => {
-                  onChangeVisibility('friends');
-                  onSubmit();
-                }}>
+                onPress={() => onSubmit('friends')}>
                 <IconStar size={px(16)} color={colors.text.brand} filled />
                 <Text allowFontScaling={false} style={styles.visibilityTextFriends}>
                   친구 공개

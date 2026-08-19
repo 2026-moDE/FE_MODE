@@ -9,6 +9,12 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import {loginWithKakaoAccount} from '@react-native-seoul/kakao-login';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import {socialLoginApi} from '../../api/auth';
 import {saveTokens} from '../../storage/tokenStorage';
 import {useAuth} from '../../context/AuthContext';
@@ -84,6 +90,8 @@ export default function LoginScreen({navigation}: Props) {
       setIsLoggedIn(true);
     } catch (error: any) {
       console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
 
       Alert.alert(
         '로그인 실패',
@@ -94,9 +102,64 @@ export default function LoginScreen({navigation}: Props) {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: 구글 로그인 SDK 연동
-    Alert.alert('안내', 'Google 로그인은 준비 중입니다.');
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoginLoading(true);
+
+      await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});
+
+      const response = await GoogleSignin.signIn();
+
+      if (!isSuccessResponse(response)) {
+        // 사용자가 로그인을 취소한 경우 별도 안내 없이 종료
+        return;
+      }
+
+      // 백엔드 access_token 필드에는 Google의 idToken을 담아 전달함(백엔드 스펙 확인 완료).
+      const idToken = response.data.idToken;
+
+      if (!idToken) {
+        throw new Error('Google ID 토큰을 가져오지 못했습니다.');
+      }
+
+      const fcmToken = await getFcmToken();
+
+      const result = await socialLoginApi({
+        provider: 'GOOGLE',
+        accessToken: idToken,
+        fcmToken,
+      });
+
+      if (!result.success || !result.data) {
+        throw new Error(result.message || '로그인 응답이 올바르지 않습니다.');
+      }
+
+      const {access_token, refresh_token, is_new_user, user} = result.data;
+
+      await saveTokens(access_token, refresh_token);
+
+      if (is_new_user) {
+        navigation.navigate('Terms');
+        return;
+      }
+
+      setIsLoggedIn(true);
+    } catch (error: any) {
+      if (isErrorWithCode(error) && error.code === statusCodes.IN_PROGRESS) {
+        return;
+      }
+
+      console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
+
+      Alert.alert(
+        '로그인 실패',
+        error?.message || '로그인 중 문제가 발생했습니다.',
+      );
+    } finally {
+      setIsLoginLoading(false);
+    }
   };
 
   const handleAppleLogin = () => {
@@ -151,6 +214,7 @@ export default function LoginScreen({navigation}: Props) {
           />
           <GoogleLoginButton
             onPress={handleGoogleLogin}
+            disabled={isLoginLoading}
             style={{marginTop: 5 * scale}}
             scale={scale}
           />

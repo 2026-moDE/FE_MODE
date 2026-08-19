@@ -1,6 +1,6 @@
 import React, {useRef, useState} from 'react';
 import {View, Text, Pressable, Animated, StyleSheet} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import BlurOverlay from '../common/BlurOverlay';
 
 const chatIcon = require('../../assets/image/comment.png');
