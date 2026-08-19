@@ -6,7 +6,6 @@ import {
   StyleSheet,
   StatusBar,
   Alert,
-  useWindowDimensions,
 } from 'react-native';
 import {loginWithKakaoAccount} from '@react-native-seoul/kakao-login';
 import {
@@ -32,9 +31,6 @@ import AppleLoginButton from '../../components/auth/AppleLoginButton';
 const logo = require('../../assets/image/logo.png');
 const iphoneMockup = require('../../assets/image/iphone_mockup.png');
 
-// 디자인(Figma) 기준 프레임 너비. 목업 이미지·로고 위치를 이 값 대비 비율로 환산해
-// 기기 화면 너비가 달라져도 디자인과 동일한 비율로 보이게 한다.
-const DESIGN_WIDTH = 393;
 const LOGO_TOP = 78;
 const LOGO_WIDTH = 75;
 const LOGO_HEIGHT = 40;
@@ -47,8 +43,6 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 export default function LoginScreen({navigation}: Props) {
   const [isLoginLoading, setIsLoginLoading] = React.useState(false);
   const {setIsLoggedIn} = useAuth();
-  const {width: windowWidth} = useWindowDimensions();
-  const scale = windowWidth / DESIGN_WIDTH;
   const insets = useSafeAreaInsets();
 
   const handleKakaoLogin = async () => {
@@ -175,9 +169,9 @@ export default function LoginScreen({navigation}: Props) {
         <Image
           source={logo}
           style={{
-            width: LOGO_WIDTH * scale,
-            height: LOGO_HEIGHT * scale,
-            marginTop: LOGO_TOP * scale,
+            width: LOGO_WIDTH,
+            height: LOGO_HEIGHT,
+            marginTop: LOGO_TOP,
           }}
           resizeMode="contain"
         />
@@ -185,9 +179,9 @@ export default function LoginScreen({navigation}: Props) {
         <Image
           source={iphoneMockup}
           style={{
-            width: MOCKUP_WIDTH * scale,
-            height: MOCKUP_HEIGHT * scale,
-            marginTop: LOGO_MOCKUP_GAP * scale,
+            width: MOCKUP_WIDTH,
+            height: MOCKUP_HEIGHT,
+            marginTop: LOGO_MOCKUP_GAP,
           }}
           resizeMode="contain"
         />
@@ -210,18 +204,15 @@ export default function LoginScreen({navigation}: Props) {
           <KakaoLoginButton
             onPress={handleKakaoLogin}
             disabled={isLoginLoading}
-            scale={scale}
           />
           <GoogleLoginButton
             onPress={handleGoogleLogin}
             disabled={isLoginLoading}
-            style={{marginTop: 5 * scale}}
-            scale={scale}
+            style={{marginTop: 5}}
           />
           <AppleLoginButton
             onPress={handleAppleLogin}
-            style={{marginTop: 5 * scale}}
-            scale={scale}
+            style={{marginTop: 5}}
           />
         </View>
       </View>

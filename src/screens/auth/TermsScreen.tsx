@@ -1,14 +1,5 @@
 import React, {useState} from 'react';
-import {
-  Dimensions,
-  Image,
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps, NativeStackNavigationProp} from '@react-navigation/native-stack';
 
@@ -28,11 +19,6 @@ const appliedFontFamily = fontFamily ?? {
 };
 
 const logo = require('../../assets/image/logo_navy.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 // AuthStack('Terms')과 AppStack('TermsAgreement') 양쪽에서 재사용됨
 type Props =
@@ -186,7 +172,7 @@ function TermRow({
 
         <Pressable onPress={onTogglePress}>
           <View style={isOpen && styles.chevronOpen}>
-            <IconChevronDown size={px(20)} color={colors.gray[300]} />
+            <IconChevronDown size={20} color={colors.gray[300]} />
           </View>
         </Pressable>
       </View>
@@ -208,8 +194,8 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    paddingHorizontal: px(16),
-    paddingBottom: px(16),
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     backgroundColor: colors.white,
   },
 
@@ -220,24 +206,24 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingHorizontal: px(16),
-    paddingTop: px(100),
+    paddingHorizontal: 16,
+    paddingTop: 100,
     paddingBottom: 0,
     alignItems: 'center',
   },
 
   logo: {
-    width: px(94),
-    height: px(50),
-    marginBottom: px(40),
+    width: 94,
+    height: 50,
+    marginBottom: 40,
   },
 
   title: {
     color: colors.gray[900],
-    fontSize: px(24),
+    fontSize: 24,
     fontWeight: '700',
-    lineHeight: px(28),
-    letterSpacing: px(-0.48),
+    lineHeight: 28,
+    letterSpacing: (-0.48),
     textAlign: 'center',
     fontFamily: appliedFontFamily.bold,
     includeFontPadding: false,
@@ -245,26 +231,26 @@ const styles = StyleSheet.create({
 
   agreementArea: {
     width: '100%',
-    marginTop: px(102),
+    marginTop: 102,
     alignItems: 'center',
   },
 
   allAgreeBox: {
     width: '100%',
-    height: px(52),
+    height: 52,
     borderWidth: 1,
     borderColor: colors.gray[200],
-    borderRadius: px(12),
-    paddingHorizontal: px(16),
+    borderRadius: 12,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
   },
 
   checkIcon: {
-    width: px(18),
-    height: px(18),
+    width: 18,
+    height: 18,
     color: colors.gray[300],
-    fontSize: px(14),
+    fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',
     fontFamily: appliedFontFamily.bold,
@@ -275,21 +261,21 @@ const styles = StyleSheet.create({
   },
 
   allAgreeText: {
-    marginLeft: px(10),
+    marginLeft: 10,
     color: colors.gray[400],
-    fontSize: px(14),
+    fontSize: 14,
     fontWeight: '600',
     fontFamily: appliedFontFamily.bold,
   },
   termList: {
     width: '100%',
-    marginTop: px(40),
-    gap: px(6),
+    marginTop: 40,
+    gap: 6,
   },
 
   termRow: {
-    paddingVertical: px(6),
-    paddingHorizontal: px(16),
+    paddingVertical: 6,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -301,10 +287,10 @@ const styles = StyleSheet.create({
   },
 
   termCheck: {
-    width: px(18),
-    height: px(18),
+    width: 18,
+    height: 18,
     color: colors.gray[300],
-    fontSize: px(14),
+    fontSize: 14,
     fontWeight: '700',
     textAlign: 'center',
     fontFamily: appliedFontFamily.bold,
@@ -315,12 +301,12 @@ const styles = StyleSheet.create({
   },
 
   termText: {
-    marginLeft: px(10),
+    marginLeft: 10,
     color: colors.gray[500],
-    fontSize: px(14),
+    fontSize: 14,
     fontWeight: '400',
-    lineHeight: px(18),
-    letterSpacing: px(-0.28),
+    lineHeight: 18,
+    letterSpacing: (-0.28),
     fontFamily: appliedFontFamily.regular,
   },
   chevronOpen: {
@@ -328,16 +314,16 @@ const styles = StyleSheet.create({
   },
 
   termBody: {
-    marginTop: px(8),
-    paddingHorizontal: px(16),
-    paddingBottom: px(10),
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
 
   bottomButton: {
     marginTop: 0,
     flexShrink: 0,
-    height: px(52),
-    borderRadius: px(12),
+    height: 52,
+    borderRadius: 12,
     backgroundColor: colors.navy[900],
     alignItems: 'center',
     justifyContent: 'center',
@@ -349,7 +335,7 @@ const styles = StyleSheet.create({
 
   bottomButtonText: {
     color: colors.white,
-    fontSize: px(16),
+    fontSize: 16,
     fontWeight: '700',
     fontFamily: appliedFontFamily.bold,
   },

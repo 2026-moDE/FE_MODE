@@ -1,7 +1,9 @@
 import React, {useRef, useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ActivityIndicator, TextInput} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {fontFamily, fontSize} from '../../constants/typography';
 import {colors} from '../../constants/colors';
@@ -11,17 +13,14 @@ import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import {formatRelativeTime} from '../../utils/date';
 import ReviewMenuModal from '../placeDetail/ReviewMenuModal';
 import ReviewReactionsModal from './ReviewReactionsModal';
+import QuickReviewButton from '../home/QuickReviewButton';
 import {MyProfile, MyReview} from '../../api/mypage';
 import {fetchEmojis, EmojiReaction} from '../../api/review';
+import {AppStackParamList} from '../../types/navigation';
 
 const chatIcon = require('../../assets/image/comment.png');
 const emojiIcon = require('../../assets/image/emoji.png');
 const menuIcon = require('../../assets/image/vertical_ellipis.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type Props = {
   profile: MyProfile | null;
@@ -38,6 +37,7 @@ export default function RecentReviewSection({
   onDeleteReview,
   onEditComment,
 }: Props) {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const menuTargetRef = useRef<number | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -71,7 +71,12 @@ export default function RecentReviewSection({
       {isReviewsLoading ? (
         <ActivityIndicator size="small" color={colors.icon.basic} style={styles.loadingIndicator} />
       ) : recentReviews.length === 0 ? (
-        <Text style={styles.emptyText}>작성한 리뷰가 없어요</Text>
+        <View style={styles.emptyBox}>
+          <Text style={styles.emptyText}>아직 작성한 리뷰가 없어요</Text>
+          <QuickReviewButton
+            onPress={() => navigation.navigate('ReviewStack', {screen: 'ReviewCamera'})}
+          />
+        </View>
       ) : (
         <View style={styles.list}>
           {recentReviews.map(review => (
@@ -154,7 +159,7 @@ export default function RecentReviewSection({
               </View>
 
               <View style={styles.cardFooter}>
-                <IconPlaceLocation size={px(24)} color={colors.icon.inverse} />
+                <IconPlaceLocation size={24} color={colors.icon.inverse} />
                 <Text style={styles.cardPlaceName} numberOfLines={1}>
                   {review.place.name}
                 </Text>
@@ -196,37 +201,44 @@ export default function RecentReviewSection({
 
 const styles = StyleSheet.create({
   section: {
-    marginTop: px(24),
-    paddingHorizontal: px(spacing.xl),
+    marginTop: 24,
+    paddingHorizontal: spacing.xl,
   },
 
   loadingIndicator: {
-    marginTop: px(8),
+    marginTop: 8,
+  },
+
+  emptyBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 160,
+    gap: spacing.md,
   },
 
   emptyText: {
-    fontFamily: fontFamily.medium,
-    fontSize: px(13),
-    color: colors.text.disabled,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 16,
+    color: colors.text.inverse,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: px(12),
+    marginBottom: 12,
   },
 
   headerAvatar: {
-    width: px(32),
-    height: px(32),
-    borderRadius: px(radius.full),
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
     backgroundColor: colors.surface.muted,
-    marginRight: px(spacing.sm),
+    marginRight: spacing.sm,
   },
 
   headerNickname: {
     fontFamily: fontFamily.bold,
-    fontSize: px(fontSize.b1),
+    fontSize: fontSize.b1,
     color: colors.text.inverse,
     flexShrink: 1,
     includeFontPadding: false,
@@ -235,33 +247,33 @@ const styles = StyleSheet.create({
 
   headerTime: {
     fontFamily: fontFamily.medium,
-    fontSize: px(fontSize.c2),
+    fontSize: fontSize.c2,
     color: colors.text.inverse,
-    marginLeft: px(spacing.md),
+    marginLeft: spacing.md,
   },
 
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(spacing.lg),
+    gap: spacing.lg,
     marginLeft: 'auto',
   },
 
   headerActionButton: {
-    width: px(24),
-    height: px(24),
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   headerActionIcon: {
-    width: px(18),
-    height: px(18),
+    width: 18,
+    height: 18,
     tintColor: colors.icon.inverse,
   },
 
   list: {
-    gap: px(spacing['2xl']),
+    gap: spacing['2xl'],
   },
 
   card: {
@@ -270,8 +282,8 @@ const styles = StyleSheet.create({
 
   cardPhoto: {
     width: '100%',
-    height: px(628),
-    borderRadius: px(radius.xl),
+    height: 628,
+    borderRadius: radius.xl,
     overflow: 'hidden',
     backgroundColor: colors.surface.subtleDarker,
   },
@@ -299,12 +311,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingHorizontal: px(spacing.lg),
+    paddingHorizontal: spacing.lg,
   },
 
   cardCommentText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(fontSize.b1),
+    fontSize: fontSize.b1,
     color: colors.text.inverse,
     letterSpacing: -0.06,
     textAlign: 'center',
@@ -321,23 +333,23 @@ const styles = StyleSheet.create({
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: px(spacing.lg),
+    paddingTop: spacing.lg,
   },
 
   cardPlaceName: {
     fontFamily: fontFamily.bold,
-    fontSize: px(fontSize.b3),
+    fontSize: fontSize.b3,
     color: colors.text.inverse,
     flexShrink: 1,
-    marginLeft: px(spacing.xs),
-    marginRight: px(spacing.md),
+    marginLeft: spacing.xs,
+    marginRight: spacing.md,
   },
 
   cardReactionIcon: {
-    width: px(32),
-    height: px(32),
+    width: 32,
+    height: 32,
     tintColor: colors.icon.inverse,
-    marginLeft: px(spacing.lg),
+    marginLeft: spacing.lg,
   },
 
   cardReactionIconFirst: {

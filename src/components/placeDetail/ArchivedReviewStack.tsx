@@ -13,7 +13,7 @@ type StackPhoto = {
 };
 
 type Props = {
-    reviews: StackPhoto[];   // 최신순 정렬된 과거 리뷰 목록, 최소 1개 이상이어야 함
+    reviews: StackPhoto[];   // 최신순 정렬된 과거 리뷰 목록, 비어있으면 빈 카드 스택으로 표시
     onPress: () => void;
     label?: string;
     style?: StyleProp<ViewStyle>;
@@ -54,12 +54,19 @@ export default function ArchivedReviewStack({reviews, onPress, label = '과거 �
                 </View>
 
                 {/* 맨 앞 리뷰 */}
-                <View style={[styles.stackCard, styles.front]}>
-                    <FastImage
-                        source={{uri: front.thumbnail_small_url ?? front.thumbnail_url ?? front.image_url}}
-                        style={styles.stackImage}
-                        resizeMode={FastImage.resizeMode.cover}
-                    />
+                <View
+                    style={[
+                        styles.stackCard,
+                        styles.front,
+                        !front && {backgroundColor: colors.surface.inverse, borderColor: colors.border.inverse},
+                    ]}>
+                    {front && (
+                        <FastImage
+                            source={{uri: front.thumbnail_small_url ?? front.thumbnail_url ?? front.image_url}}
+                            style={styles.stackImage}
+                            resizeMode={FastImage.resizeMode.cover}
+                        />
+                    )}
                 </View>
             </View>
             <Text style={styles.label}>{label}</Text>
@@ -106,7 +113,7 @@ const styles = StyleSheet.create({
     },
     label: {
         ...typography.c2,
-        color: colors.text.disabled,
+        color: colors.text.inverse,
         textAlign: 'center',
     },
 });

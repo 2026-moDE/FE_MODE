@@ -1,14 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Pressable,
-  Dimensions,
-  Modal,
-  Image,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, Pressable, Modal, Image} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {NaverMapView, NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
@@ -25,11 +16,6 @@ type Props = NativeStackScreenProps<
   ReviewStackParamList,
   'ReviewLocationConfirm'
 >;
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
   const {
@@ -96,7 +82,6 @@ const handleConfirmLocation = () => {
     reviewText,
   });
 };
-
 
 const handleLocationFailConfirm = () => {
   setLocationFailVisible(false);
@@ -168,13 +153,13 @@ const handleLocationFailConfirm = () => {
             <Pressable
                 style={styles.noButton}
                 onPress={handleNo}>
-                <Text style={styles.noButtonText}>아니에요</Text>
+                <Text style={styles.noButtonText} numberOfLines={1} ellipsizeMode="tail">아니에요</Text>
             </Pressable>
 
             <Pressable style={styles.yesButton} onPress={handleConfirmLocation}>
                 <View style={styles.yesButtonContent}>
                 <Text style={styles.checkText}>✓</Text>
-                <Text style={styles.yesButtonText}>네 맞아요</Text>
+                <Text style={styles.yesButtonText} numberOfLines={1} ellipsizeMode="tail">네 맞아요</Text>
                 </View>
             </Pressable>
         </View>
@@ -219,16 +204,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.white,
-    paddingHorizontal: px(spacing.lg),
+    paddingHorizontal: spacing.lg,
   },
 
   // 우상단 × 닫기 버튼
   closeButton: {
     position: 'absolute',
-    top: px(spacing.xl),
-    right: px(spacing.lg),
-    width: px(32),
-    height: px(32),
+    top: spacing.xl,
+    right: spacing.lg,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -236,22 +221,22 @@ const styles = StyleSheet.create({
 
   closeText: {
     fontFamily: fontFamily.regular,
-    fontSize: px(30),
-    lineHeight: px(30),
+    fontSize: 30,
+    lineHeight: 30,
     color: '#1F2933',
     includeFontPadding: false,
   },
 
   titleBox: {
-    marginTop: px(116),
+    marginTop: 116,
     alignItems: 'center',
   },
 
   // 메인 질문 텍스트
   title: {
     fontFamily: fontFamily.bold,
-    fontSize: px(22),
-    lineHeight: px(26),
+    fontSize: 22,
+    lineHeight: 26,
     color: colors.text.basic,
     includeFontPadding: false,
     textAlign: 'center',
@@ -259,10 +244,10 @@ const styles = StyleSheet.create({
 
   // 안내 부제목
   subTitle: {
-    marginTop: px(spacing.s),
+    marginTop: spacing.s,
     fontFamily: fontFamily.bold,
-    fontSize: px(14),
-    lineHeight: px(17),
+    fontSize: 14,
+    lineHeight: 17,
     color: '#4B5563',
     includeFontPadding: false,
     textAlign: 'center',
@@ -270,22 +255,21 @@ const styles = StyleSheet.create({
 
   // 장소 카드 전체 컨테이너
   placeCard: {
-    width: px(360),
-    height: px(329),
-    alignSelf: 'center',
-    marginTop: px(spacing['4xl']),
+    alignSelf: 'stretch',
+    height: 329,
+    marginTop: spacing['4xl'],
     borderWidth: 1,
     borderColor: colors.border.default,
-    borderRadius: px(radius.lg),
-    padding: px(spacing.xs),
+    borderRadius: radius.lg,
+    padding: spacing.xs,
     backgroundColor: colors.surface.white,
   },
 
   // 지도 표시 영역
   mapBox: {
     width: '100%',
-    height: px(244),
-    borderRadius: px(radius.md),
+    height: 244,
+    borderRadius: radius.md,
   },
 
   naverMap: {
@@ -300,7 +284,7 @@ const styles = StyleSheet.create({
   // 지도 준비 전 임시 안내 문구
   mapPlaceholderText: {
     fontFamily: fontFamily.medium,
-    fontSize: px(14),
+    fontSize: 14,
     color: '#9CA3AF',
     includeFontPadding: false,
   },
@@ -308,11 +292,11 @@ const styles = StyleSheet.create({
   // 위치 아이콘 + 장소명/주소 가로 배치
   placeInfoBox: {
     flex: 1,
-    paddingTop: px(spacing.md),
-    paddingHorizontal: px(spacing.s),
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.s,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: px(spacing.s),
+    gap: spacing.s,
     backgroundColor: colors.surface.white,
   },
 
@@ -331,19 +315,19 @@ const styles = StyleSheet.create({
   placeName: {
     flexShrink: 1,
     fontFamily: fontFamily.bold,
-    fontSize: px(20),
-    lineHeight: px(24),
+    fontSize: 20,
+    lineHeight: 24,
     color: colors.text.basic,
     includeFontPadding: false,
-    marginRight: px(spacing.s),
+    marginRight: spacing.s,
   },
 
   // 도로명 주소 — 작은 회색 텍스트
   placeAddress: {
-    marginTop: px(spacing.s),
+    marginTop: spacing.s,
     fontFamily: fontFamily.medium,
-    fontSize: px(13),
-    lineHeight: px(17),
+    fontSize: 13,
+    lineHeight: 17,
     color: '#6B7280',
     includeFontPadding: false,
   },
@@ -351,20 +335,20 @@ const styles = StyleSheet.create({
   // 하단 버튼 영역
   bottomButtonBox: {
     position: 'absolute',
-    left: px(spacing.lg),
-    right: px(spacing.lg),
-    bottom: px(33),
-    height: px(48),
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 33,
+    height: 48,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
 
-  // '아니에요' 버튼
+  // '아니에요' 버튼 — yesButton과 14:25 비율(기존 126dp:225dp) 유지
   noButton: {
-    width: px(126),
-    height: px(48),
-    borderRadius: px(radius.lg),
+    flex: 14,
+    height: 48,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: colors.button.tertiaryFill,
@@ -372,11 +356,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // '네 맞아요' 버튼
+  // '네 맞아요' 버튼 — noButton과 25:14 비율(기존 225dp:126dp) 유지
   yesButton: {
-    width: px(225),
-    height: px(48),
-    borderRadius: px(radius.lg),
+    flex: 25,
+    height: 48,
+    borderRadius: radius.lg,
     backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -389,25 +373,25 @@ const styles = StyleSheet.create({
 
     noButtonText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(21),
+    fontSize: 18,
+    lineHeight: 21,
     color: '#B8BDC7',
     includeFontPadding: false,
     },
 
     checkText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(24),
-    lineHeight: px(21),
+    fontSize: 24,
+    lineHeight: 21,
     color: colors.text.inverse,
     includeFontPadding: false,
-    marginRight: px(spacing.s),
+    marginRight: spacing.s,
     },
 
     yesButtonText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(21),
+    fontSize: 18,
+    lineHeight: 21,
     color: colors.text.inverse,
     includeFontPadding: false,
     },
@@ -420,51 +404,51 @@ const styles = StyleSheet.create({
 
   locationFailModal: {
     width: '100%',
-    height: px(358),
+    height: 358,
     backgroundColor: colors.surface.white,
 
-    borderTopLeftRadius: px(radius.lg),
-    borderTopRightRadius: px(radius.lg),
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
 
-    paddingTop: px(45),
-    paddingRight: px(spacing.lg),
-    paddingBottom: px(44),
-    paddingLeft: px(17),
+    paddingTop: 45,
+    paddingRight: spacing.lg,
+    paddingBottom: 44,
+    paddingLeft: 17,
 
     alignItems: 'center',
   },
 
   cautionIcon: {
-    width: px(74),
-    height: px(74),
+    width: 74,
+    height: 74,
     resizeMode: 'contain',
-    marginBottom: px(spacing.lg),
+    marginBottom: spacing.lg,
   },
 
   modalTitle: {
     fontFamily: fontFamily.bold,
-    fontSize: px(24),
-    lineHeight: px(29),
+    fontSize: 24,
+    lineHeight: 29,
     color: colors.text.basic,
     textAlign: 'center',
     includeFontPadding: false,
-    marginBottom: px(spacing.md),
+    marginBottom: spacing.md,
   },
 
   modalDescription: {
     fontFamily: fontFamily.medium,
-    fontSize: px(18),
-    lineHeight: px(22),
+    fontSize: 18,
+    lineHeight: 22,
     color: colors.text.subtle,
     textAlign: 'center',
     includeFontPadding: false,
-    marginBottom: px(44),
+    marginBottom: 44,
   },
 
   modalButton: {
-    width: px(360),
-    height: px(52),
-    borderRadius: px(radius.lg),
+    alignSelf: 'stretch',
+    height: 52,
+    borderRadius: radius.lg,
     backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -472,8 +456,8 @@ const styles = StyleSheet.create({
 
   modalButtonText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(21),
+    fontSize: 18,
+    lineHeight: 21,
     color: colors.text.inverse,
     includeFontPadding: false,
   },

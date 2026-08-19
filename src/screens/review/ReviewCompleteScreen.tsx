@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Pressable,
-  Image,
-  Dimensions,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, Pressable, Image} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
@@ -18,12 +10,6 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewComplete'>;
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 const completeMapIcon = require('../../assets/image/map_yellow.png');
 
@@ -75,33 +61,33 @@ const styles = StyleSheet.create({
 
   centerBox: {
     position: 'absolute',
-    top: px(264),
+    top: 264,
     left: 0,
     right: 0,
     alignItems: 'center',
   },
 
   completeIcon: {
-    width: px(99),
-    height: px(99),
+    width: 99,
+    height: 99,
     resizeMode: 'contain',
   },
 
   completeText: {
-    marginTop: px(spacing.lg),
+    marginTop: spacing.lg,
     fontFamily: fontFamily.bold,
-    fontSize: px(22),
-    lineHeight: px(26),
+    fontSize: 22,
+    lineHeight: 26,
     color: '#111827',
     includeFontPadding: false,
   },
 
   homeButton: {
     position: 'absolute',
-    left: px(spacing.lg),
-    right: px(spacing.lg),
-    height: px(52),
-    borderRadius: px(radius.md),
+    left: spacing.lg,
+    right: spacing.lg,
+    height: 52,
+    borderRadius: radius.md,
     backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -109,8 +95,8 @@ const styles = StyleSheet.create({
 
   homeButtonText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(21),
+    fontSize: 18,
+    lineHeight: 21,
     color: colors.text.inverse,
     includeFontPadding: false,
   },

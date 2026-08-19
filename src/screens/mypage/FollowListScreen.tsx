@@ -1,16 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  TouchableOpacity,
-  Pressable,
-  Dimensions,
-  TextInput,
-  FlatList,
-  Image,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, TouchableOpacity, Pressable, TextInput, FlatList, Image} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -39,11 +28,6 @@ import IconFriendAdd from '../../assets/icons/IconFriendAdd';
 
 const emptyProfileIcon = require('../../assets/image/empty_profile.png');
 
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
-
 type FriendTab = 'friends' | 'requests';
 
 type FriendUser = {
@@ -52,7 +36,7 @@ type FriendUser = {
   profileImageUrl: string | null;
 };
 
-const DELETE_ACTION_WIDTH = px(64);
+const DELETE_ACTION_WIDTH = 64;
 
 function FriendListItem({
   item,
@@ -299,7 +283,7 @@ export default function FollowListScreen() {
             activeOpacity={0.7}
             style={styles.headerButton}
             onPress={() => navigation.goBack()}>
-            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
+            <IconArrowLeft size={20} color={colors.icon.basic} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>친구</Text>
@@ -308,7 +292,7 @@ export default function FollowListScreen() {
             activeOpacity={0.7}
             style={styles.headerButton}
             onPress={() => navigation.navigate('FriendSearch')}>
-            <IconFriendAdd size={px(22)} color={colors.icon.basic} />
+            <IconFriendAdd size={22} color={colors.icon.basic} />
           </TouchableOpacity>
         </View>
 
@@ -337,7 +321,7 @@ export default function FollowListScreen() {
               value={keyword}
               onChangeText={setKeyword}
             />
-            <IconSearch size={px(16)} color={colors.icon.tertiary} />
+            <IconSearch size={16} color={colors.icon.tertiary} />
           </View>
         )}
 
@@ -381,23 +365,23 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: px(54),
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
+    paddingHorizontal: spacing.lg,
   },
 
   headerButton: {
-    width: px(34),
-    height: px(34),
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   headerTitle: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
+    fontSize: 18,
     color: colors.text.basic,
   },
 
@@ -409,7 +393,7 @@ const styles = StyleSheet.create({
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: px(spacing.md),
+    paddingVertical: spacing.md,
     borderBottomWidth: 2,
     borderBottomColor: colors.border.default,
   },
@@ -419,7 +403,7 @@ const styles = StyleSheet.create({
   },
 
   tabLabel: {
-    fontSize: px(15),
+    fontSize: 15,
     fontFamily: fontFamily.medium,
     color: colors.text.tertiary,
   },
@@ -430,14 +414,14 @@ const styles = StyleSheet.create({
   },
 
   searchBox: {
-    marginHorizontal: px(spacing.lg),
-    marginTop: px(20),
-    height: px(40),
+    marginHorizontal: spacing.lg,
+    marginTop: 20,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
-    borderRadius: px(radius.lg),
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border.default,
     backgroundColor: colors.surface.white,
@@ -445,27 +429,27 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.regular,
     color: colors.text.basic,
     padding: 0,
   },
 
   listLabel: {
-    marginTop: px(gap['2xl']),
-    marginBottom: px(spacing.lg),
-    marginHorizontal: px(spacing['2xl']),
-    fontSize: px(14),
+    marginTop: gap['2xl'],
+    marginBottom: spacing.lg,
+    marginHorizontal: spacing['2xl'],
+    fontSize: 14,
     fontFamily: fontFamily.medium,
     color: colors.text.tertiary,
   },
 
   list: {
-    marginTop: px(-spacing.md),
+    marginTop: (-spacing.md),
   },
 
   listContent: {
-    paddingBottom: px(spacing['2xl']),
+    paddingBottom: spacing['2xl'],
   },
 
   rowContainer: {
@@ -475,15 +459,15 @@ const styles = StyleSheet.create({
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: px(spacing.md),
-    paddingHorizontal: px(spacing.lg),
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.background.white,
   },
 
   profile: {
-    width: px(40),
-    height: px(40),
-    borderRadius: px(radius.lg),
+    width: 40,
+    height: 40,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface.default,
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -496,8 +480,8 @@ const styles = StyleSheet.create({
   },
 
   userName: {
-    marginLeft: px(spacing.lg),
-    fontSize: px(16),
+    marginLeft: spacing.lg,
+    fontSize: 16,
     fontFamily: fontFamily.semiBold,
     color: colors.text.basic,
   },
@@ -507,7 +491,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     right: 0,
-    width: px(64),
+    width: 64,
     backgroundColor: colors.brand.secondary,
   },
 
@@ -518,7 +502,7 @@ const styles = StyleSheet.create({
   },
 
   deleteText: {
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.semiBold,
     color: colors.text.inverse,
   },
@@ -527,8 +511,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: px(spacing.md),
-    paddingHorizontal: px(spacing.lg),
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.background.white,
   },
 
@@ -541,31 +525,31 @@ const styles = StyleSheet.create({
   requestActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(spacing.sm),
+    gap: spacing.sm,
   },
 
   acceptButton: {
-    paddingHorizontal: px(spacing.md),
-    paddingVertical: px(spacing.s),
-    borderRadius: px(radius.md),
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.s,
+    borderRadius: radius.md,
     backgroundColor: colors.brand.secondary,
   },
 
   acceptButtonText: {
-    fontSize: px(13),
+    fontSize: 13,
     fontFamily: fontFamily.semiBold,
     color: colors.text.inverse,
   },
 
   rejectButton: {
-    width: px(24),
-    height: px(24),
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   rejectButtonText: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.regular,
     color: colors.icon.subtle,
   },

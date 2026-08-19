@@ -8,17 +8,16 @@ type Props = {
     onPress: () => void;
     disabled?: boolean;
     style?: StyleProp<ViewStyle>;
-    scale?: number;
 };
 
-export default function KakaoLoginButton({onPress, disabled, style, scale = 1}: Props) {
+export default function KakaoLoginButton({onPress, disabled, style}: Props) {
     return (
         <SocialLoginButton
             label="카카오 로그인"
             icon={
                 <Image
                     source={kakaoLogo}
-                    style={{width: 18 * scale, height: 17 * scale, resizeMode: 'contain'}}
+                    style={{width: 18, height: 17, resizeMode: 'contain'}}
                 />
             }
             onPress={onPress}
@@ -26,7 +25,6 @@ export default function KakaoLoginButton({onPress, disabled, style, scale = 1}: 
             backgroundColor="#FEE500"
             textColor="rgba(0, 0, 0, 0.85)"
             style={style}
-            scale={scale}
         />
     );
 }

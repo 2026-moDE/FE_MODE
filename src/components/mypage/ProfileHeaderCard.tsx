@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -12,11 +12,6 @@ import IconChevronDown from '../../assets/icons/IconChevronDown';
 import {MyProfile} from '../../api/mypage';
 
 const settingIcon = require('../../assets/image/setting.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type Props = {
   profile: MyProfile | null;
@@ -58,7 +53,7 @@ export default function ProfileHeaderCard({
         activeOpacity={0.7}
         style={[styles.profileIconButton, styles.profileBackButton]}
         onPress={onPressBack}>
-        <IconArrowLeft size={px(25)} color={colors.icon.inverse} />
+        <IconArrowLeft size={25} color={colors.icon.inverse} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -84,7 +79,7 @@ export default function ProfileHeaderCard({
             <Text style={styles.profileFriendCount}>{profile?.follower_count ?? 0}</Text>
           </View>
           <IconChevronDown
-            size={px(16)}
+            size={16}
             color={colors.icon.inverse}
             style={styles.friendCountArrow}
           />
@@ -97,9 +92,9 @@ export default function ProfileHeaderCard({
 const styles = StyleSheet.create({
   profileCard: {
     width: '100%',
-    height: px(448),
-    borderBottomLeftRadius: px(radius.xl),
-    borderBottomRightRadius: px(radius.xl),
+    height: 448,
+    borderBottomLeftRadius: radius.xl,
+    borderBottomRightRadius: radius.xl,
     overflow: 'hidden',
     backgroundColor: colors.background.dark,
   },
@@ -126,37 +121,37 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: px(120),
+    height: 120,
   },
 
   profileIconButton: {
     position: 'absolute',
-    top: px(spacing.lg),
-    width: px(36),
-    height: px(36),
+    top: spacing.lg,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   profileBackButton: {
-    left: px(spacing.xl),
+    left: spacing.xl,
   },
 
   profileSettingButton: {
-    right: px(spacing.xl),
+    right: spacing.xl,
   },
 
   settingImage: {
-    width: px(28),
-    height: px(28),
+    width: 28,
+    height: 28,
     tintColor: colors.icon.inverse,
   },
 
   profileBottomRow: {
     position: 'absolute',
-    left: px(spacing.xl),
-    right: px(spacing.xl),
-    bottom: px(spacing.lg),
+    left: spacing.xl,
+    right: spacing.xl,
+    bottom: spacing.lg,
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
@@ -164,21 +159,21 @@ const styles = StyleSheet.create({
 
   profileNickname: {
     fontFamily: fontFamily.bold,
-    fontSize: px(fontSize.h1),
-    lineHeight: px(lineHeight.h1),
+    fontSize: fontSize.h1,
+    lineHeight: lineHeight.h1,
     color: colors.text.inverse,
   },
 
   friendCountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(12),
+    gap: 12,
   },
 
   friendCountTextRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(8),
+    gap: 8,
   },
 
   friendCountArrow: {
@@ -187,16 +182,16 @@ const styles = StyleSheet.create({
 
   profileFriendLabel: {
     fontFamily: fontFamily.semiBold,
-    fontSize: px(fontSize.b5),
-    lineHeight: px(lineHeight.b5),
+    fontSize: fontSize.b5,
+    lineHeight: lineHeight.b5,
     letterSpacing: letterSpacing.b5,
     color: colors.text.inverse,
   },
 
   profileFriendCount: {
     fontFamily: fontFamily.regular,
-    fontSize: px(fontSize.b6),
-    lineHeight: px(lineHeight.b6),
+    fontSize: fontSize.b6,
+    lineHeight: lineHeight.b6,
     letterSpacing: letterSpacing.b6,
     color: colors.text.inverse,
   },
