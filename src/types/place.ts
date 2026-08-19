@@ -73,8 +73,8 @@ export type CurrentReview = {
     congestion_level: CongestionLevel;
     comment: string;
     is_mine : boolean;
-    visibility?: 'PUBLIC' | 'FRIENDS';
-    is_friend?: boolean;
+    visibility: 'PUBLIC' | 'FRIENDS';
+    is_friend: boolean;
     user: ReviewUser;
     created_at: string;
 };

@@ -22,7 +22,6 @@ apiClient.interceptors.request.use(
     const token = await getAccessToken();
 
     console.log('[API 요청 URL]', config.url);
-    console.log('[저장된 accessToken]', token);
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

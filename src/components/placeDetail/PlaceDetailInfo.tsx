@@ -9,7 +9,6 @@ import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import {colors} from '../../constants/colors';
 import {gap, padding} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
-import {radius} from '../../constants/radius';
 
 const crowdIcon = require('../../assets/image/crowd.png');
 
@@ -49,7 +48,7 @@ export default function PlaceDetailInfo({
                     <IconArrowLeft size={21} color={colors.icon.inverse} />
                 </TouchableOpacity>
 
-                <Text style={styles.placeName} numberOfLines={1}>
+                <Text style={styles.placeName}>
                     {name}
                 </Text>
 
@@ -66,30 +65,23 @@ export default function PlaceDetailInfo({
                 </Pressable>
             </View>
 
-            {/* 정보 영역 */}
-            <View style={styles.infoGroup}>
-                {/* 주소 + 거리 */}
-                <View style={styles.infoRow}>
+            {/* 정보 영역: 주소 + 혼잡도 한 줄 */}
+            <View style={styles.infoRow}>
+                <View style={styles.addressGroup}>
                     <IconPlaceLocation size={22} color={colors.icon.tertiary} />
-                    <View style={styles.addressWrapper}>
-                        <Text style={styles.addressText}>{address}</Text>
-                        {/* {distance && <Text style={styles.distanceText}>{distance}</Text>} */}
-                    </View>
+                    <Text style={styles.addressText}>{address}</Text>
+                    {/* {distance && <Text style={styles.distanceText}>{distance}</Text>} */}
                 </View>
 
-                {/* 혼잡도 */}
-                <View style={styles.infoRow}>
+                <View style={styles.congestionGroup}>
                     <Image source={crowdIcon} style={styles.crowdIcon} resizeMode="contain" />
-                    <Text style={styles.congestionText}>
-                        혼잡도 <Text style={styles.congestionLevel}>{congestionLabel}</Text>
-                    </Text>
+                    <Text style={styles.congestionText}>혼잡도</Text>
+                    <Text style={styles.congestionLevel}>{congestionLabel}</Text>
                 </View>
 
                 {/* 영업 시간 */}
-                {/* <View style={styles.infoRow}>
-                    <IconClock size={24} color={colors.icon.subtle} />
-                    <Text style={styles.businessText}>{business_hours}</Text>
-                </View> */}
+                {/* <IconClock size={24} color={colors.icon.subtle} />
+                <Text style={styles.businessText}>{business_hours}</Text> */}
             </View>
         </View>
     );
@@ -126,15 +118,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    infoGroup: {
-        gap: gap.xs,                                 // 4
-    },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: gap.md,                                 // 12
     },
-    addressWrapper: {
+    addressGroup: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: gap.xs,                                 // 4 - 핀 아이콘 ↔ 주소
         flex: 1,
     },
     addressText: {
@@ -142,10 +134,18 @@ const styles = StyleSheet.create({
         color: colors.text.disabled,                     // #C4C4C8
         fontWeight: '400',
         letterSpacing: -0.07,
+        flex: 1,
     },
     crowdIcon: {
         width: 24,
         height: 24,
+        flexShrink: 0,
+    },
+    congestionGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: gap.xs,                                 // 4 - 혼잡도 아이콘 ↔ "혼잡도" ↔ "보통"
+        flexShrink: 0,
     },
     congestionText: {
         ...typography.b6,                                // fontSize: 14
