@@ -1,0 +1,232 @@
+import React from 'react';
+import {View, Text, Image, Pressable, StyleSheet} from 'react-native';
+import FastImage from 'react-native-fast-image';
+import {ReviewComment} from '../../api/review';
+import {colors} from '../../constants/colors';
+import {typography} from '../../constants/typography';
+import {padding, gap} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
+import {formatCommentDate} from '../../utils/date';
+import IconChevronDown from '../../assets/icons/IconChevronDown';
+import IconFriend from '../../assets/icons/IconFriend';
+import CommentInput from './CommentInput';
+
+const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
+
+type Props = {
+    comment: ReviewComment;
+    onPressMenu?: () => void;
+    onPressReplyToggle?: () => void;
+    onSubmitReply?: (content: string) => void;
+    // 답글 펼침 상태
+    repliesExpanded?: boolean;
+    // 답글 입력창 포커스 시작/종료
+    onReplyFocusChange?: (focused: boolean) => void;
+    // true면 조회만 가능 - 답글 입력창 자체를 안 그림
+    readOnly?: boolean;
+};
+
+// 댓글 본문: 서버가 볼 권한 없으면 content를 null. 답글은 폰트가 더 작음(c2)
+// 비밀 댓글(is_secret)이고 볼 권한 있으면(=댓글 작성자 or 리뷰 작성자) 노란 별 + 노란 텍스트로 본문 그대로 보여줌
+function CommentBody({content, isSecret, isReply}: {content: string | null; isSecret?: boolean; isReply?: boolean}) {
+    if (content === null) {
+        return (
+            <View style={styles.secretRow}>
+                <IconFriend size={14} color={colors.icon.brand} />
+                <Text style={styles.secretLabel}>친구에게만 보이는 댓글이에요</Text>
+            </View>
+        );
+    }
+    if (isSecret) {
+        return (
+            <View style={styles.secretRow}>
+                <IconFriend size={14} color={colors.icon.brand} />
+                <Text style={[styles.commentText, styles.secretCommentText, isReply && styles.replyCommentText]}>
+                    {content}
+                </Text>
+            </View>
+        );
+    }
+    return <Text style={[styles.commentText, isReply && styles.replyCommentText]}>{content}</Text>;
+}
+
+// 댓글 리스트 아이템 (답글 접힘/펼침 둘 다 처리)
+export default function ReviewCommentItem({
+    comment,
+    onPressMenu,
+    onPressReplyToggle,
+    onSubmitReply,
+    repliesExpanded,
+    onReplyFocusChange,
+    readOnly,
+}: Props) {
+    const {user, content, is_secret, created_at, replies} = comment;
+    const replyCount = replies.length;
+    // 비밀 댓글인데 볼 권한이 없으면(content null) 답글 자체를 달 수 없음 - 토글 UI 없앰
+    const canShowReplyToggle = content !== null;
+
+    return (
+        <View style={styles.container}>
+            {/* 상단: 아바타 + 닉네임(최대 8자) + 날짜 + ⋮ 메뉴 */}
+            <View style={styles.header}>
+                <View style={styles.userGroup}>
+                    <FastImage
+                        source={{uri: user.profile_url ?? user.profile_image_url}}
+                        style={styles.avatar}
+                        resizeMode={FastImage.resizeMode.cover}
+                    />
+                    <Text style={styles.nickname} numberOfLines={1}>
+                        {user.nickname}
+                    </Text>
+                    <Text style={styles.date}>{formatCommentDate(created_at)}</Text>
+                </View>
+                <Pressable hitSlop={10} onPress={onPressMenu}>
+                    <Image source={verticalEllipsisIcon} style={styles.menuIcon} resizeMode="contain" />
+                </Pressable>
+            </View>
+
+            {/* 본문 + (펼쳤을 때) 답글 목록 + 답글 입력창 + 답글 토글*/}
+            <View style={styles.body}>
+                <CommentBody content={content} isSecret={is_secret} />
+
+                {canShowReplyToggle && repliesExpanded && (
+                    <>
+                        {replies.map(reply => (
+                            <View key={reply.id} style={styles.replyItem}>
+                                <View style={styles.replyHeader}>
+                                    <FastImage
+                                        source={{uri: reply.user.profile_url ?? reply.user.profile_image_url}}
+                                        style={styles.replyAvatar}
+                                        resizeMode={FastImage.resizeMode.cover}
+                                    />
+                                    <Text style={styles.replyNickname} numberOfLines={1}>
+                                        {reply.user.nickname}
+                                    </Text>
+                                </View>
+                                <CommentBody content={reply.content} isSecret={reply.is_secret} isReply />
+                            </View>
+                        ))}
+
+                        {!readOnly && (
+                            <View style={styles.inputWrapper}>
+                                <CommentInput
+                                    onSubmit={text => onSubmitReply?.(text)}
+                                    variant="compact"
+                                    onFocus={() => onReplyFocusChange?.(true)}
+                                    onBlur={() => onReplyFocusChange?.(false)}
+                                />
+                            </View>
+                        )}
+                    </>
+                )}
+                {canShowReplyToggle && (
+                    <Pressable style={styles.replyToggle} onPress={onPressReplyToggle}>
+                        <Text style={styles.replyText}>
+                            {repliesExpanded ? '답글' : `답글 ${replyCount}`}
+                        </Text>
+                        <View style={repliesExpanded ? styles.chevronOpen : undefined}>
+                            <IconChevronDown size={16} color={colors.icon.inverse} />
+                        </View>
+                    </Pressable>
+                )}
+            </View>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        padding: padding.sm,               // 10
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    userGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: gap.sm,                       // 8
+        flexShrink: 1,
+    },
+    avatar: {
+        width: 28,
+        height: 28,
+        borderRadius: radius.md,         
+        backgroundColor: colors.surface.muted,
+    },
+    nickname: {
+        ...typography.c1,
+        color: colors.text.inverse,
+        flexShrink: 1,
+    },
+    date: {
+        ...typography.c3,
+        color: 'rgba(255,255,255,0.5)',
+    },
+    menuIcon: {
+        width: 24,
+        height: 24,
+        tintColor: colors.icon.inverse,
+    },
+    body: {
+        paddingLeft: padding['4xl'],       // 40 - 헤더보다 들여쓰기
+        gap: gap.sm,                       // 8 - 헤더 ↔ 본문 간격은 이 View의 marginTop으로 대체
+        marginTop: gap.sm,
+    },
+    secretRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: gap.sm,                       // 8 - 아이콘 ↔ 라벨 텍스트
+    },
+    secretLabel: {
+        ...typography.b5,
+        color: colors.text.brand,
+    },
+    commentText: {
+        ...typography.b4,
+        color: colors.text.inverse,
+    },
+    secretCommentText: {
+        color: colors.text.brand,
+        flexShrink: 1,
+    },
+    replyCommentText: {
+        ...typography.c2,
+    },
+    replyItem: {
+        gap: gap.sm,                       // 8
+        marginTop: gap.sm,
+    },
+    replyHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: gap.sm,                       // 8
+    },
+    replyAvatar: {
+        width: 20,
+        height: 20,
+        borderRadius: radius.sm,           // 4
+        backgroundColor: colors.surface.muted,
+    },
+    replyNickname: {
+        ...typography.c3,
+        color: colors.text.inverse,
+        flexShrink: 1,
+    },
+    inputWrapper: {
+        marginTop: gap.sm,
+    },
+    replyToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    replyText: {
+        ...typography.c3,
+        color: colors.text.inverse,
+        marginRight: gap.xs,               // 4 - "답글 N" ↔ 화살표
+    },
+    chevronOpen: {
+        transform: [{rotate: '180deg'}],
+    },
+});

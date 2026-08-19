@@ -116,7 +116,7 @@ type EmojiPickerProps = {
     onSelect: (emoji: string) => void;
 };
 
-// 이모지 반응 피커: 화면 전체(사진+썸네일) 오버레이 + 이모지 목록
+// 이모지 선택 화면
 export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPickerProps) {
     if (!visible) return null;
     return (

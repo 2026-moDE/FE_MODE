@@ -79,6 +79,9 @@ export default function ReviewSection({profile}: Props) {
         helpful_count: r.helpful_count,
         is_helpful: false,
         is_mine: true,
+        // /api/users/me/reviews엔 visibility/is_friend가 없음 - ReviewPhoto를 readOnlyComments로 열어서 댓글 입력창 자체가 없으니 더미값으로
+        visibility: 'PUBLIC', // 더미값
+        is_friend: false, // 더미값
         user: {
           id: profile?.id ?? 0,
           nickname: profile?.nickname ?? '',
@@ -182,6 +185,7 @@ export default function ReviewSection({profile}: Props) {
       reviews={photoReviews}
       startIndex={imageIndex ?? 0}
       visible={imageIndex !== null}
+      readOnlyComments
       onClose={() => {
         setImageIndex(null);
         setViewerMonthKey(null);

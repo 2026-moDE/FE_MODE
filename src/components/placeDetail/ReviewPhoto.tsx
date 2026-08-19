@@ -7,7 +7,7 @@ import {radius} from '../../constants/radius';
 import { spacing } from '../../constants/spacing';
 import {fontFamily, fontSize} from '../../constants/typography';
 import ReviewMenuModal from './ReviewMenuModal';
-import {BottomSheetModal, BottomSheetModalProvider} from '@gorhom/bottom-sheet';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import ReviewChatModal from './ReviewChatModal';
 import {useReviewPhotoReactions, ReviewPhotoReactionButtons, ReviewPhotoEmojiPicker} from './ReviewPhotoReactions';
 import ReviewPhotoComment, {ReviewPhotoCommentHandle} from './ReviewPhotoComment';
@@ -27,6 +27,8 @@ type Props = {
     useAbsoluteDate?: boolean;
     // 내 리뷰일 때 이모지 버튼 누르면 피커 대신 반응 목록을 보여줘야 함 (다른 화면, 별도 구현)
     onOpenReactionList?: (reviewId: number) => void;
+    // 마이페이지 등에서는 댓글을 조회만 하고 작성은 안 함 - 입력창 자체를 안 보여줌
+    readOnlyComments?: boolean;
 };
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
@@ -38,7 +40,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList, readOnlyComments}: Props) {
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const isOwner = reviews[currentIndex]?.is_mine ?? false;
@@ -341,10 +343,8 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
             onEdit={() => commentRef.current?.focusEnd()}
         />
 
-        {/* 댓글 채팅 시트 (독립) */}
-        <BottomSheetModalProvider>
-            <ReviewChatModal ref={modalRef} reviewId={review.id} />
-        </BottomSheetModalProvider>
+        {/* 댓글 채팅 시트 (독립) - Provider는 App.tsx 최상단 것 하나만 사용 */}
+        <ReviewChatModal ref={modalRef} reviewId={review.id} reviewVisibility={review.visibility} readOnly={readOnlyComments} />
         </>
     );
 }
