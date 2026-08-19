@@ -103,6 +103,7 @@ const styles = StyleSheet.create({
         borderRadius: radius.lg,           // 12
         borderWidth: 1,
         borderColor: colors.border.subtle,
+        backgroundColor: colors.background.dimDarkest,
     },
     input: {
         ...typography.b6,

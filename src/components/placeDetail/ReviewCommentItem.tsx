@@ -1,6 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, Text, Image, Pressable, StyleSheet} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from '@d11/react-native-fast-image';
 import {ReviewComment} from '../../api/review';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
@@ -12,10 +12,16 @@ import IconFriend from '../../assets/icons/IconFriend';
 import CommentInput from './CommentInput';
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
+const sirenIcon = require('../../assets/image/siren.png');
+const trashIcon = require('../../assets/image/trash.png');
+const warningIcon = require('../../assets/image/warning.png');
 
 type Props = {
     comment: ReviewComment;
     onPressMenu?: () => void;
+    // 댓글 삭제(본인 댓글) / 신고(남의 댓글)
+    onDeleteComment?: () => void;
+    onReportComment?: () => void;
     onPressReplyToggle?: () => void;
     onSubmitReply?: (content: string) => void;
     // 답글 펼침 상태
@@ -26,9 +32,27 @@ type Props = {
     readOnly?: boolean;
 };
 
-// 댓글 본문: 서버가 볼 권한 없으면 content를 null. 답글은 폰트가 더 작음(c2)
+// 댓글 본문: 서버가 볼 권한 없으면 content를 null.
 // 비밀 댓글(is_secret)이고 볼 권한 있으면(=댓글 작성자 or 리뷰 작성자) 노란 별 + 노란 텍스트로 본문 그대로 보여줌
-function CommentBody({content, isSecret, isReply}: {content: string | null; isSecret?: boolean; isReply?: boolean}) {
+function CommentBody({
+    content,
+    isSecret,
+    isDeleted,
+    isReply,
+}: {
+    content: string | null;
+    isSecret?: boolean;
+    isDeleted?: boolean;
+    isReply?: boolean;
+}) {
+    if (isDeleted) {
+        return (
+            <View style={styles.deletedRow}>
+                <Image source={warningIcon} style={styles.deletedIcon} resizeMode="contain" />
+                <Text style={styles.deletedText}>삭제된 댓글입니다</Text>
+            </View>
+        );
+    }
     if (content === null) {
         return (
             <View style={styles.secretRow}>
@@ -54,16 +78,20 @@ function CommentBody({content, isSecret, isReply}: {content: string | null; isSe
 export default function ReviewCommentItem({
     comment,
     onPressMenu,
+    onDeleteComment,
+    onReportComment,
     onPressReplyToggle,
     onSubmitReply,
     repliesExpanded,
     onReplyFocusChange,
     readOnly,
 }: Props) {
-    const {user, content, is_secret, created_at, replies} = comment;
+    const {user, content, is_secret, is_mine, created_at, replies} = comment;
     const replyCount = replies.length;
-    // 비밀 댓글인데 볼 권한이 없으면(content null) 답글 자체를 달 수 없음 - 토글 UI 없앰
+    // 비밀 댓글인데 볼 권한이 없으면(content null) 답글 자체를 달 수 없음
     const canShowReplyToggle = content !== null;
+    // ⋮ 눌렀을 때 뜨는 삭제/신고 팝오버
+    const [menuOpen, setMenuOpen] = useState(false);
 
     return (
         <View style={styles.container}>
@@ -80,14 +108,38 @@ export default function ReviewCommentItem({
                     </Text>
                     <Text style={styles.date}>{formatCommentDate(created_at)}</Text>
                 </View>
-                <Pressable hitSlop={10} onPress={onPressMenu}>
+                <Pressable
+                    hitSlop={10}
+                    onPress={() => {
+                        onPressMenu?.();
+                        setMenuOpen(prev => !prev);
+                    }}>
                     <Image source={verticalEllipsisIcon} style={styles.menuIcon} resizeMode="contain" />
                 </Pressable>
+
+                {menuOpen && (
+                    <Pressable
+                        style={styles.menuPopoverItem}
+                        onPress={() => {
+                            setMenuOpen(false);
+                            if (is_mine) onDeleteComment?.();
+                            else onReportComment?.();
+                        }}>
+                        <Image
+                            source={is_mine ? trashIcon : sirenIcon}
+                            style={styles.menuPopoverIcon}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.menuPopoverText}>
+                            {is_mine ? '삭제하기' : '신고하기'}
+                        </Text>
+                    </Pressable>
+                )}
             </View>
 
             {/* 본문 + (펼쳤을 때) 답글 목록 + 답글 입력창 + 답글 토글*/}
             <View style={styles.body}>
-                <CommentBody content={content} isSecret={is_secret} />
+                <CommentBody content={content} isSecret={is_secret} isDeleted={comment.is_deleted} />
 
                 {canShowReplyToggle && repliesExpanded && (
                     <>
@@ -103,7 +155,7 @@ export default function ReviewCommentItem({
                                         {reply.user.nickname}
                                     </Text>
                                 </View>
-                                <CommentBody content={reply.content} isSecret={reply.is_secret} isReply />
+                                <CommentBody content={reply.content} isSecret={reply.is_secret} isDeleted={reply.is_deleted} isReply />
                             </View>
                         ))}
 
@@ -169,6 +221,29 @@ const styles = StyleSheet.create({
         height: 24,
         tintColor: colors.icon.inverse,
     },
+    menuPopoverItem: {
+        position: 'absolute',
+        top: '100%',
+        marginTop: gap.xs,  
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: gap.sm,                       // 8
+        paddingVertical: padding.s,        // 8
+        paddingHorizontal: padding.sm,     // 10
+        backgroundColor: colors.button.secondaryFill,
+        borderRadius: radius.md,           // 8
+        zIndex: 10,
+    },
+    menuPopoverIcon: {
+        width: 16,
+        height: 16,
+    },
+    menuPopoverText: {
+        ...typography.c1,
+        color: colors.text.inverse,
+    },
     body: {
         paddingLeft: padding['4xl'],       // 40 - 헤더보다 들여쓰기
         gap: gap.sm,                       // 8 - 헤더 ↔ 본문 간격은 이 View의 marginTop으로 대체
@@ -178,6 +253,19 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: gap.sm,                       // 8 - 아이콘 ↔ 라벨 텍스트
+    },
+    deletedRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: gap.sm,                    
+    },
+    deletedIcon: {
+        width: 14,
+        height: 14,
+    },
+    deletedText: {
+        ...typography.b6,
+        color: colors.text.inverse,
     },
     secretLabel: {
         ...typography.b5,

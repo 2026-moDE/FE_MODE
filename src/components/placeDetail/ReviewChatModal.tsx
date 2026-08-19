@@ -1,12 +1,19 @@
 import { BottomSheetModal, BottomSheetFlatList, BottomSheetFooter, BottomSheetFooterProps } from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors } from "../../constants/colors";
-import { spacing, gap } from "../../constants/spacing";
+import { spacing, gap, padding } from "../../constants/spacing";
+import { typography } from "../../constants/typography";
+import { radius } from "../../constants/radius";
 import BlurBackdrop from "../common/BlurBackdrop";
 import ReviewCommentItem from "./ReviewCommentItem";
 import CommentInput from "./CommentInput";
-import { ReviewComment, createComment, createReply, fetchComments } from "../../api/review";
+import { ReviewComment, createComment, createReply, deleteComment, fetchComments } from "../../api/review";
+import type { AppStackParamList } from "../../types/navigation";
+
+const checkWhiteIcon = require("../../assets/image/check_white.png");
 
 type Props = {
     reviewId?: number;   // 어떤 리뷰의 채팅인지
@@ -20,6 +27,7 @@ type Props = {
 // 리뷰 사진 댓글/채팅 바텀시트
 // ref로 present()/dismiss()를 ReviewPhoto에 노출
 export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, ref}: Props) {
+    const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
     const snapPoints = useMemo(() => ['50%', '85%'], []);
 
     const sheetRef = useRef<BottomSheetModal>(null);
@@ -28,7 +36,6 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
     const [comments, setComments] = useState<ReviewComment[]>([]);
 
     // 댓글 목록 조회는 커서 페이지네이션(기본 20개씩)이라, 커서가 끝날 때까지 이어서 다 불러옴
-    // (지금은 무한스크롤 UI가 없어서 전체를 한 번에 로드 - 댓글이 아주 많아지면 요청 수가 늘어남)
     const loadComments = useCallback(async () => {
         if (!reviewId) return;
         try {
@@ -38,7 +45,7 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                 const res = await fetchComments(reviewId, cursor !== undefined ? {cursor} : undefined);
                 all = all.concat(res.comments);
                 cursor = res.next_cursor ?? undefined;
-            } while (cursor !== undefined);
+            } while (cursor !== undefined); // 커서 남아있는 동안 계속 실행
             setComments(all);
         } catch (err: any) {
             console.warn('댓글 목록 조회 실패:', err?.message);
@@ -50,13 +57,13 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         loadComments();
     }, [loadComments]);
 
-    // 댓글 목록 정렬 순서(최신순/오래된순)가 명세서에 없어서 순서를 가정하지 않음
-    // 방금 작성한 댓글/답글의 실제 id로 새로고침된 목록에서 위치를 찾아 그쪽으로 스크롤
+    // 댓글 작성하면 댓글 작성한 곳으로 애니메이션 이동
+    // 방금 작성한 댓글 실제 id로 새로고침된 목록에서 위치를 찾아 그쪽으로 스크롤
     const listRef = useRef<React.ComponentRef<typeof BottomSheetFlatList>>(null);
     const scrollToCommentIdRef = useRef<number | null>(null);
     useEffect(() => {
         if (scrollToCommentIdRef.current === null) return;
-        const commentId = scrollToCommentIdRef.current;
+        const commentId = scrollToCommentIdRef.current; // handleSubmitComment에서 id준 거 가져옴
         scrollToCommentIdRef.current = null;
         const index = comments.findIndex(c => c.id === commentId);
         if (index >= 0) {
@@ -97,13 +104,13 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         setIsSecret(false);
         createComment(reviewId, {content: text, is_secret: isSecret})
             .then(res => {
-                scrollToCommentIdRef.current = res.id;
+                scrollToCommentIdRef.current = res.id; // id넘겨서 나중에 찾을 수 있도록
                 loadComments();
             })
             .catch(err => console.warn('댓글 작성 실패:', err?.message));
     }, [reviewId, isSecret, loadComments]);
 
-    // 답글 작성 - 댓글 아이템 안의 입력창 (답글은 자동 스크롤 대상 아님)
+    // 답글 작성 - 댓글 아이템 안의 입력창
     const handleSubmitReply = useCallback((commentId: number, text: string) => {
         if (!reviewId) return;
         createReply(reviewId, commentId, {content: text})
@@ -111,11 +118,49 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
             .catch(err => console.warn('답글 작성 실패:', err?.message));
     }, [reviewId, loadComments]);
 
+    // 댓글 삭제 - 누르자마자 로컬에서 바로 "삭제된 댓글입니다"로 바꾸고, 실제 삭제는 백그라운드로
+    const [showDeleteToast, setShowDeleteToast] = useState(false);
+    const deleteToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        return () => {
+            if (deleteToastTimerRef.current) clearTimeout(deleteToastTimerRef.current);
+        };
+    }, []);
+    const handleDeleteComment = useCallback((commentId: number) => {
+        if (!reviewId) return;
+        setComments(prev => prev.map(c => {
+            if (c.id === commentId) return {...c, is_deleted: true};
+            if (c.replies.some(r => r.id === commentId)) {
+                return {...c, replies: c.replies.map(r => r.id === commentId ? {...r, is_deleted: true} : r)};
+            }
+            return c;
+        }));
+        deleteComment(reviewId, commentId)
+            .catch(err => console.warn('댓글 삭제 실패:', err?.message));
+
+        // "댓글이 삭제되었어요" 토스트 3초간 노출
+        if (deleteToastTimerRef.current) clearTimeout(deleteToastTimerRef.current);
+        setShowDeleteToast(true);
+        deleteToastTimerRef.current = setTimeout(() => setShowDeleteToast(false), 3000);
+    }, [reviewId]);
+
+    // 댓글 신고 - 신고 페이지로 넘어감 (API는 아직 리뷰 신고용이라 미연결 - commentId만 같이 넘겨둠)
+    const handleReportComment = useCallback((commentId: number) => {
+        if (!reviewId) return;
+        navigation.navigate('ReviewReport', {reviewId, commentId});
+    }, [reviewId, navigation]);
+
     // 입력창을 시트 전용 footer로 렌더링
     const renderFooter = useCallback(
         (props: BottomSheetFooterProps) => (
             <BottomSheetFooter {...props} bottomInset={43}>
                 <View style={styles.inputWrapper}>
+                    {showDeleteToast && (
+                        <View style={styles.deleteToast}>
+                            <Image source={checkWhiteIcon} style={styles.deleteToastIcon} resizeMode="contain" />
+                            <Text style={styles.deleteToastText}>댓글이 삭제되었어요</Text>
+                        </View>
+                    )}
                     <CommentInput
                         onSubmit={handleSubmitComment}
                         showSecretCheckbox={reviewVisibility === 'FRIENDS'}
@@ -125,7 +170,7 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                 </View>
             </BottomSheetFooter>
         ),
-        [handleSubmitComment, reviewVisibility, isSecret],
+        [handleSubmitComment, reviewVisibility, isSecret, showDeleteToast],
     );
 
     return (
@@ -158,6 +203,8 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                         onPressReplyToggle={() => toggleReplies(item.id)}
                         onSubmitReply={text => handleSubmitReply(item.id, text)}
                         onReplyFocusChange={setIsReplyFocused}
+                        onDeleteComment={() => handleDeleteComment(item.id)}
+                        onReportComment={() => handleReportComment(item.id)}
                         readOnly={readOnly}
                     />
                 )}
@@ -190,6 +237,29 @@ const styles = StyleSheet.create({
     inputWrapper: {
         paddingHorizontal: spacing.xl,     // 20 - footer는 content 밖이라 패딩 따로 필요
         paddingTop: gap.lg,                // 16 - 키보드/리스트 ↔ 입력창
-        backgroundColor: colors.background.dimDarkest,
+        position: 'relative',              // 토스트를 얹을 기준점 (레이아웃 흐름엔 안 끼게)
+    },
+    deleteToast: {
+        position: 'absolute',
+        bottom: '100%',
+        left: spacing.xl,
+        right: spacing.xl,
+        marginBottom: gap.lg,              // 16 - 토스트 ↔ 입력창
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: gap.sm,                       // 8
+        paddingVertical: padding.sm,        // 10
+        paddingHorizontal: padding.lg,      // 16
+        backgroundColor: colors.background.dimDarker,
+        borderRadius: radius.md,            // 8
+    },
+    deleteToastIcon: {
+        width: 16,
+        height: 16,
+    },
+    deleteToastText: {
+        ...typography.b5,
+        color: colors.text.inverse,
     },
 });
