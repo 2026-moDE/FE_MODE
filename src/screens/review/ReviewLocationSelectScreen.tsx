@@ -1,16 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Pressable,
-  TextInput,
-  FlatList,
-  Dimensions,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, Pressable, TextInput, FlatList, Image, ActivityIndicator} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
@@ -27,11 +16,6 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewLocationSelect'>;
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 const placePinIcon = require('../../assets/image/place_pin.png');
 const searchIcon = require('../../assets/image/search.png');
@@ -95,7 +79,7 @@ const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           hitSlop={10}>
-          <IconArrowLeft size={px(22)} color="#1F2933" />
+          <IconArrowLeft size={22} color="#1F2933" />
         </Pressable>
 
         <View style={styles.searchBox}>
@@ -179,9 +163,9 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: px(64),
-    paddingHorizontal: px(spacing.lg),
-    paddingBottom: px(spacing.lg),
+    height: 64,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.white,
@@ -190,20 +174,20 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    width: px(32),
-    height: px(32),
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: px(spacing.s),
+    marginRight: spacing.s,
   },
 
   searchBox: {
     flex: 1,
-    height: px(40),
-    borderRadius: px(radius.lg),
+    height: 40,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface.default,
-    paddingLeft: px(spacing.md),
-    paddingRight: px(spacing.lg),
+    paddingLeft: spacing.md,
+    paddingRight: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -213,25 +197,25 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     fontFamily: fontFamily.regular,
-    fontSize: px(12),
+    fontSize: 12,
     color: '#111827',
-    lineHeight: px(14),
+    lineHeight: 14,
   },
 
   searchIcon: {
-    width: px(24),
-    height: px(24),
+    width: 24,
+    height: 24,
     resizeMode: 'contain',
-    marginLeft: px(6),
+    marginLeft: 6,
   },
 
   locationBar: {
-    height: px(44),
-    marginHorizontal: px(spacing.lg),
-    marginTop: px(spacing.md),
-    borderRadius: px(radius.md),
+    height: 44,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    borderRadius: radius.md,
     backgroundColor: colors.surface.subtle,
-    paddingHorizontal: px(spacing.lg),
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -240,24 +224,24 @@ const styles = StyleSheet.create({
   locationLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(6),
+    gap: 6,
   },
 
   locationIcon: {
-    width: px(14),
-    height: px(14),
+    width: 14,
+    height: 14,
     resizeMode: 'contain',
   },
 
   locationText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(13),
+    fontSize: 13,
     color: colors.text.inverse,
   },
 
   savedText: {
     fontFamily: fontFamily.medium,
-    fontSize: px(13),
+    fontSize: 13,
     color: colors.text.inverse,
   },
 
@@ -268,82 +252,82 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingTop: px(spacing.s),
-    paddingBottom: px(spacing['2xl']),
+    paddingTop: spacing.s,
+    paddingBottom: spacing['2xl'],
   },
 
   placeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: px(14),
-    paddingHorizontal: px(spacing.lg),
+    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: '#EEF0F3',
   },
 
   placeTextBox: {
     flex: 1,
-    marginRight: px(spacing.md),
+    marginRight: spacing.md,
   },
 
   placeTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: px(spacing.xs),
-    marginBottom: px(2),
+    gap: spacing.xs,
+    marginBottom: 2,
   },
 
   placeCategoryBadge: {
-    height: px(22),
-    paddingHorizontal: px(spacing.s),
-    borderRadius: px(radius.md),
+    height: 22,
+    paddingHorizontal: spacing.s,
+    borderRadius: radius.md,
     backgroundColor: colors.button.primaryLighter,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: px(spacing.s),
+    marginRight: spacing.s,
   },
 
   placeCategory: {
     fontFamily: fontFamily.bold,
-    fontSize: px(12),
+    fontSize: 12,
     color: colors.text.brand,
-    lineHeight: px(14),
+    lineHeight: 14,
   },
 
   placeAddress: {
-    marginTop: px(spacing.s),
+    marginTop: spacing.s,
     fontFamily: fontFamily.medium,
-    fontSize: px(14),
+    fontSize: 14,
     color: '#8A919E',
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   placeNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(6),
+    gap: 6,
   },
 
   placeName: {
     fontFamily: fontFamily.bold,
-    fontSize: px(20),
+    fontSize: 20,
     color: colors.text.basic,
-    lineHeight: px(24),
-    marginRight: px(spacing.s),
+    lineHeight: 24,
+    marginRight: spacing.s,
   },
 
   placeDistance: {
     fontFamily: fontFamily.regular,
-    fontSize: px(14),
+    fontSize: 14,
     color: colors.text.brand,
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   placeThumbnail: {
-    width: px(80),
-    height: px(80),
-    borderRadius: px(radius.lg),
+    width: 80,
+    height: 80,
+    borderRadius: radius.lg,
     resizeMode: 'cover',
     backgroundColor: colors.navy[50],
   },

@@ -12,19 +12,15 @@ export type Friend = {
   profile_image_url: string | null;
 };
 
-type FriendsResponse = {
-  friends: Friend[];
-};
-
 // 친구 목록 조회 api (ACCEPTED 상태)
 export async function fetchFriends(): Promise<Friend[]> {
   console.log('[친구 목록 조회 요청]');
 
-  const response = await apiClient.get<ApiResponse<FriendsResponse>>('/api/friends');
+  const response = await apiClient.get<ApiResponse<Friend[]>>('/api/friends');
 
   console.log('[친구 목록 조회 응답]', response.data);
 
-  return response.data.data.friends;
+  return response.data.data;
 }
 
 // 친구 취소 api

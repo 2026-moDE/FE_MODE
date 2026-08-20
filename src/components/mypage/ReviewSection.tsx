@@ -20,10 +20,7 @@ import {CurrentReview} from '../../types/place';
 import ReviewPhoto from '../placeDetail/ReviewPhoto';
 import {deleteReview} from '../../api/review';
 
-const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type ReviewGroup = {
   month: string;
@@ -236,31 +233,31 @@ const getDay = (dateString: string) => {
   return String(date.getDate());
 };
 
-const GRID_PADDING_HORIZONTAL = px(spacing.xl);
-const THUMB_GAP = px(spacing.s);
+const GRID_PADDING_HORIZONTAL = spacing.xl;
+const THUMB_GAP = spacing.s;
 const THUMB_SIZE =
   (SCREEN_WIDTH - GRID_PADDING_HORIZONTAL * 2 - THUMB_GAP * 4) / 5;
-const CARD_RADIUS = px(radius.lg);
+const CARD_RADIUS = radius.lg;
 
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: GRID_PADDING_HORIZONTAL,
-    paddingTop: px(15),
+    paddingTop: 15,
 
     // 하단 네비게이션바가 공통으로 깔릴 거라서
     // 마지막 리뷰가 바에 가려지지 않게 여백만 줌
-    paddingBottom: px(110),
+    paddingBottom: 110,
   },
 
   monthBlock: {
-    marginBottom: px(22),
+    marginBottom: 22,
   },
 
   monthTitle: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.bold,
     color: '#000000',
-    marginBottom: px(spacing.md),
+    marginBottom: spacing.md,
   },
 
   reviewGrid: {
@@ -309,7 +306,7 @@ const styles = StyleSheet.create({
   },
 
   dateNumber: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
     textAlign: 'center',
@@ -319,11 +316,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: px(spacing['5xl']),
+    paddingBottom: spacing['5xl'],
   },
 
   emptyText: {
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.medium,
     color: '#999999',
   },

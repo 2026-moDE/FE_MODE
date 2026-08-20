@@ -28,10 +28,7 @@ type ReviewPreviewModalProps = {
   onSubmit: (visibility: ReviewVisibility) => void;
 };
 
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
+const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const ReviewPreviewModal = ({
   visible,
@@ -79,7 +76,7 @@ const ReviewPreviewModal = ({
                 style={[styles.visibilityButton, isSubmitting && styles.visibilityButtonDisabled]}
                 disabled={isSubmitting}
                 onPress={() => onSubmit('all')}>
-                <IconGlobe size={px(16)} color={colors.text.inverse} />
+                <IconGlobe size={16} color={colors.text.inverse} />
                 <Text allowFontScaling={false} style={styles.visibilityTextAll}>
                   전체 공개
                 </Text>
@@ -89,7 +86,7 @@ const ReviewPreviewModal = ({
                 style={[styles.visibilityButton, isSubmitting && styles.visibilityButtonDisabled]}
                 disabled={isSubmitting}
                 onPress={() => onSubmit('friends')}>
-                <IconStar size={px(16)} color={colors.text.brand} filled />
+                <IconStar size={16} color={colors.text.brand} filled />
                 <Text allowFontScaling={false} style={styles.visibilityTextFriends}>
                   친구 공개
                 </Text>
@@ -113,44 +110,44 @@ const styles = StyleSheet.create({
   },
 
   modalBox: {
-    width: px(340),
+    width: 340,
     maxHeight: SCREEN_HEIGHT * 0.86,
     backgroundColor: colors.background.dimDarker,
-    borderRadius: px(radius['2xl']),
-    paddingTop: px(spacing.xl),
-    paddingHorizontal: px(spacing.lg),
-    paddingBottom: px(spacing.xl),
+    borderRadius: radius['2xl'],
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
 
   scrollContent: {
-    paddingBottom: px(spacing.md),
+    paddingBottom: spacing.md,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: px(spacing.lg),
+    marginBottom: spacing.lg,
   },
 
   title: {
-    fontSize: px(fontSize.h4),
-    lineHeight: px(28),
+    fontSize: fontSize.h4,
+    lineHeight: 28,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
     includeFontPadding: false,
   },
 
   closeButton: {
-    width: px(28),
-    height: px(28),
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   closeText: {
-    fontSize: px(28),
-    lineHeight: px(28),
+    fontSize: 28,
+    lineHeight: 28,
     fontFamily: fontFamily.regular,
     color: colors.text.inverse,
     includeFontPadding: false,
@@ -159,7 +156,7 @@ const styles = StyleSheet.create({
   imageWrapper: {
     width: '100%',
     aspectRatio: 2 / 3,
-    borderRadius: px(radius.xl),
+    borderRadius: radius.xl,
     overflow: 'hidden',
     backgroundColor: colors.surface.muted,
   },
@@ -177,11 +174,11 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: px(spacing['2xl']),
+    paddingHorizontal: spacing['2xl'],
   },
 
   comment: {
-    fontSize: px(fontSize.b2),
+    fontSize: fontSize.b2,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
     textAlign: 'center',
@@ -193,19 +190,19 @@ const styles = StyleSheet.create({
 
   visibilityRow: {
     flexDirection: 'row',
-    gap: px(spacing.s),
-    marginTop: px(spacing.lg),
+    gap: spacing.s,
+    marginTop: spacing.lg,
   },
 
   visibilityButton: {
     flex: 1,
-    height: px(44),
-    borderRadius: px(radius.lg),
+    height: 44,
+    borderRadius: radius.lg,
     backgroundColor: colors.background.dimDark,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: px(spacing.xs),
+    gap: spacing.xs,
   },
 
   visibilityButtonDisabled: {
@@ -213,14 +210,14 @@ const styles = StyleSheet.create({
   },
 
   visibilityTextAll: {
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
     includeFontPadding: false,
   },
 
   visibilityTextFriends: {
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.bold,
     color: colors.text.brand,
     includeFontPadding: false,

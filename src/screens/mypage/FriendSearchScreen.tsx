@@ -1,15 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  TouchableOpacity,
-  Dimensions,
-  TextInput,
-  FlatList,
-  Image,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, TouchableOpacity, TextInput, FlatList, Image} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 
@@ -22,11 +12,6 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconSearch from '../../assets/icons/IconSearch';
 
 const emptyProfileIcon = require('../../assets/image/empty_profile.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type SearchResultUser = {
   id: number;
@@ -102,7 +87,7 @@ export default function FriendSearchScreen() {
           activeOpacity={0.7}
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
-          <IconArrowLeft size={px(20)} color={colors.icon.basic} />
+          <IconArrowLeft size={20} color={colors.icon.basic} />
         </TouchableOpacity>
 
         <View style={styles.searchBox}>
@@ -115,7 +100,7 @@ export default function FriendSearchScreen() {
             onChangeText={setKeyword}
             returnKeyType="search"
           />
-          <IconSearch size={px(16)} color={colors.icon.tertiary} />
+          <IconSearch size={16} color={colors.icon.tertiary} />
         </View>
       </View>
 
@@ -168,31 +153,31 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: px(72),
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: px(spacing.lg),
-    paddingVertical: px(spacing.lg),
-    gap: px(spacing.md),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    gap: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.default,
   },
 
   backButton: {
-    width: px(34),
-    height: px(34),
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   searchBox: {
     flex: 1,
-    height: px(40),
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
-    borderRadius: px(radius.lg),
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.surface.default,
     backgroundColor: colors.surface.default,
@@ -200,22 +185,22 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.regular,
     color: colors.text.basic,
     padding: 0,
   },
 
   listContent: {
-    paddingHorizontal: px(spacing.lg),
-    paddingBottom: px(spacing['2xl']),
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing['2xl'],
   },
 
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: px(spacing.md),
+    paddingVertical: spacing.md,
   },
 
   profileGroup: {
@@ -225,28 +210,28 @@ const styles = StyleSheet.create({
   },
 
   requestButton: {
-    paddingHorizontal: px(spacing.md),
-    paddingVertical: px(spacing.s),
-    borderRadius: px(radius.md),
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.s,
+    borderRadius: radius.md,
     backgroundColor: colors.brand.secondary,
   },
 
   requestButtonText: {
-    fontSize: px(13),
+    fontSize: 13,
     fontFamily: fontFamily.semiBold,
     color: colors.text.inverse,
   },
 
   requestedLabel: {
-    fontSize: px(13),
+    fontSize: 13,
     fontFamily: fontFamily.medium,
     color: colors.text.tertiary,
   },
 
   profile: {
-    width: px(40),
-    height: px(40),
-    borderRadius: px(radius.lg),
+    width: 40,
+    height: 40,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface.default,
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -259,8 +244,8 @@ const styles = StyleSheet.create({
   },
 
   userName: {
-    marginLeft: px(spacing.lg),
-    fontSize: px(16),
+    marginLeft: spacing.lg,
+    fontSize: 16,
     fontFamily: fontFamily.semiBold,
     color: colors.text.basic,
   },

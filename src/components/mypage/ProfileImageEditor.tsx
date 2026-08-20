@@ -1,22 +1,10 @@
 import React from 'react';
-import {
-  View,
-  Image,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import {View, Image, StyleSheet, TouchableOpacity, ActivityIndicator} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 
 const pencilIcon = require('../../assets/image/pencil.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type Props = {
   imageUrl: string | null;
@@ -62,16 +50,16 @@ export default function ProfileImageEditor({
 
 const styles = StyleSheet.create({
   profileImageWrapper: {
-    width: px(88),
-    height: px(88),
+    width: 88,
+    height: 88,
     position: 'relative',
     overflow: 'visible',
   },
 
   profileImageBox: {
-    width: px(88),
-    height: px(88),
-    borderRadius: px(radius.lg),
+    width: 88,
+    height: 88,
+    borderRadius: radius.lg,
     backgroundColor: '#F3F3F3',
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -85,11 +73,11 @@ const styles = StyleSheet.create({
 
   imageEditBadge: {
     position: 'absolute',
-    right: px(-10),
-    bottom: px(-8),
-    width: px(36),
-    height: px(36),
-    borderRadius: px(18),
+    right: (-10),
+    bottom: (-8),
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.button.tertiaryFill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -97,8 +85,8 @@ const styles = StyleSheet.create({
   },
 
   imageEditIcon: {
-    width: px(16),
-    height: px(16),
+    width: 16,
+    height: 16,
     tintColor: colors.icon.tertiary,
   },
 });

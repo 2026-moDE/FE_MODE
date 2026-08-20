@@ -11,9 +11,6 @@ type Props = {
     textColor: string;
     borderColor?: string;
     style?: StyleProp<ViewStyle>;
-    // 디자인 기준 프레임 너비(393) 대비 실기기 화면 너비 비율.
-    // 목업 이미지에 적용하는 scale과 동일한 값을 넘겨받아 버튼 크기도 같은 비율로 맞춘다.
-    scale?: number;
 };
 
 export default function SocialLoginButton({
@@ -25,18 +22,12 @@ export default function SocialLoginButton({
     textColor,
     borderColor,
     style,
-    scale = 1,
 }: Props) {
     return (
         <Pressable
             style={({pressed}) => [
                 styles.button,
-                {
-                    backgroundColor,
-                    height: 45 * scale,
-                    borderRadius: 6 * scale,
-                    paddingHorizontal: 14 * scale,
-                },
+                {backgroundColor},
                 borderColor ? {borderColor, borderWidth: 1} : null,
                 pressed && styles.pressed,
                 disabled && styles.pressed,
@@ -45,16 +36,11 @@ export default function SocialLoginButton({
             onPress={onPress}
             disabled={disabled}>
             <View style={[styles.content]}>
-                <View style={[styles.iconWrapper, {marginRight: 6 * scale}]}>{icon}</View>
+                <View style={styles.iconWrapper}>{icon}</View>
                 <Text
-                    style={[
-                        styles.label,
-                        {
-                            color: textColor,
-                            fontSize: 15 * scale,
-                            lineHeight: 22 * scale,
-                        },
-                    ]}>
+                    style={[styles.label, {color: textColor}]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
                     {label}
                 </Text>
             </View>
@@ -65,6 +51,9 @@ export default function SocialLoginButton({
 const styles = StyleSheet.create({
     button: {
         width: '100%',
+        height: 45,
+        borderRadius: 6,
+        paddingHorizontal: 14,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -80,12 +69,15 @@ const styles = StyleSheet.create({
     },
 
     iconWrapper: {
+        marginRight: 6,
         alignItems: 'center',
         justifyContent: 'center',
     },
 
     label: {
         fontFamily: fontFamily.bold,
+        fontSize: 15,
+        lineHeight: 22,
         includeFontPadding: false,
         textAlignVertical: 'center',
     },

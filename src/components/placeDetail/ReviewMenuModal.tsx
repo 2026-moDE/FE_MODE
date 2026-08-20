@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {Modal, View, Text, Pressable, StyleSheet, Dimensions, Image, BackHandler} from 'react-native';
+import {Modal, View, Text, Pressable, StyleSheet, Dimensions, Image} from 'react-native';
 import BlurOverlay from '../common/BlurOverlay';
 import {colors} from '../../constants/colors';
 import {fontFamily, typography} from '../../constants/typography';
@@ -33,16 +33,6 @@ export default function ReviewMenuModal({visible, isOwner, onClose, onDelete, on
         if (!visible) setStep('menu');
     }, [visible]);
 
-    // menu 단계는 RN Modal아니라 뒤로가기 버튼을 직접
-    useEffect(() => {
-        if (!visible || step !== 'menu') return;
-        const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-            onClose();
-            return true;
-        });
-        return () => sub.remove();
-    }, [visible, step, onClose]);
-
     // 리뷰를 신고/삭제하시겠습니까? 모달
     const handleConfirm = () => {
         onClose();
@@ -51,41 +41,42 @@ export default function ReviewMenuModal({visible, isOwner, onClose, onDelete, on
     };
 
     if (step === 'menu') {
-        if (!visible) return null;
         return (
-            <Pressable style={styles.overlay} onPress={onClose}>
-                <BlurOverlay />
-                <View style={styles.menuBar} onStartShouldSetResponder={() => true}>
-                    {isOwner ? (
-                        <>
+            <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+                <Pressable style={styles.overlay} onPress={onClose}>
+                    <BlurOverlay />
+                    <View style={styles.menuBar} onStartShouldSetResponder={() => true}>
+                        {isOwner ? (
+                            <>
+                                <Pressable
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        onClose();
+                                        onEdit?.();
+                                    }}>
+                                    <Image source={editIcon} style={styles.menuIcon} resizeMode="contain" />
+                                    <Text style={styles.menuText}>수정하기</Text>
+                                </Pressable>
+                                <View style={styles.divider} />
+                                <Pressable
+                                    style={styles.menuItem}
+                                    onPress={() => setStep('confirm')}>
+                                    <Image source={trashIcon} style={styles.menuIcon} resizeMode="contain" />
+                                    <Text style={styles.menuText}>삭제하기</Text>
+                                </Pressable>
+                            </>
+                        ) : (
                             <Pressable
                                 style={styles.menuItem}
-                                onPress={() => {
-                                    onClose();
-                                    onEdit?.();
-                                }}>
-                                <Image source={editIcon} style={styles.menuIcon} resizeMode="contain" />
-                                <Text style={styles.menuText}>수정하기</Text>
-                            </Pressable>
-                            <View style={styles.divider} />
-                            <Pressable
-                                style={styles.menuItem}
+                                hitSlop={12}
                                 onPress={() => setStep('confirm')}>
-                                <Image source={trashIcon} style={styles.menuIcon} resizeMode="contain" />
-                                <Text style={styles.menuText}>삭제하기</Text>
+                                <Image source={sirenIcon} style={styles.menuIcon} resizeMode="contain" />
+                                <Text style={styles.menuText}>신고하기</Text>
                             </Pressable>
-                        </>
-                    ) : (
-                        <Pressable
-                            style={styles.menuItem}
-                            hitSlop={12}
-                            onPress={() => setStep('confirm')}>
-                            <Image source={sirenIcon} style={styles.menuIcon} resizeMode="contain" />
-                            <Text style={styles.menuText}>신고하기</Text>
-                        </Pressable>
-                    )}
-                </View>
-            </Pressable>
+                        )}
+                    </View>
+                </Pressable>
+            </Modal>
         );
     }
 
@@ -118,17 +109,10 @@ export default function ReviewMenuModal({visible, isOwner, onClose, onDelete, on
 }
 
 const styles = StyleSheet.create({
-    // ── 메뉴 ── (Modal 없이 화면 전체를 덮는 오버레이라 절대위치로 직접 채움)
+    // ── 메뉴 ──
     overlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        flex: 1,
         justifyContent: 'flex-end',
-        // ReviewPhoto.tsx의 backdrop(사진 배경)이 zIndex/elevation 100이라, 그 위로 올라오려면 그보다 커야 함
-        zIndex: 200,
-        elevation: 200,
     },
     menuBar: {
         backgroundColor: colors.surface.subtleDarker,
