@@ -33,7 +33,7 @@ export type AppStackParamList = {
     placeName: string;
     initialTab?: 'current' | 'archived';
     reviewId?: number;   // 있으면 리뷰 상세 페이지가 아닌 해당 리뷰로
-    notificationAction?: 'chat';   // 댓글 알림으로 들어온 경우 댓글 모달 자동으로 열기
+    notificationAction?: 'chat' | 'reactions';   // 댓글 알림 → 댓글 모달, 반응 알림 → 반응 목록 자동으로 열기
   };
 
   ReviewStack:
