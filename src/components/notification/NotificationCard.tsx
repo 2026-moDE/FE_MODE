@@ -7,19 +7,19 @@ import {Notification} from '../../types/notifications';
 import {formatRelativeTime} from '../../utils/date';
 import IconFriend from '../../assets/icons/IconFriend';
 
-// 리뷰 알림 세부 종류별 아이콘 (type은 REVIEW로 같아서 title 문구로 구분)
+// 리뷰 알림 세부 종류별 아이콘
 const iconReviewPost = require('../../assets/image/alarm_post.png');
 const iconReviewEmoji = require('../../assets/image/alarm_emoji.png');
 const iconReviewComment = require('../../assets/image/alarm_comment.png');
 const iconReviewNew = require('../../assets/image/alarm_new.png');
 // 기기마다 화면 밀도 차이로 ui깨짐
-const ICON_SIZE = PixelRatio.roundToNearestPixel(40 / PixelRatio.get());
+const ICON_SIZE = PixelRatio.roundToNearestPixel(60 / PixelRatio.get());
 
-// 리뷰 알림 title로 세부 아이콘 판별 (새 리뷰 작성 / 반응 / 댓글 / 그 외)
-function getReviewIconSource(title: string) {
-    if (title.includes('반응')) return iconReviewEmoji;
-    if (title.includes('댓글')) return iconReviewComment;
-    if (title.includes('작성됐어요')) return iconReviewPost;
+// type으로 세부 아이콘 판별
+function getReviewIconSource(type: Notification['type']) {
+    if (type === 'REACTION') return iconReviewEmoji;
+    if (type === 'COMMENT') return iconReviewComment;
+    if (type === 'REVIEW') return iconReviewPost;
     return iconReviewNew;
 }
 
@@ -43,7 +43,7 @@ export default function NotificationCard({item, onPress}: Props) {
                     <IconFriend size={ICON_SIZE} color={colors.icon.subtle} />
                 </View>
             ) : (
-                <Image source={getReviewIconSource(title)} style={[styles.icon, is_read && styles.iconRead]} />
+                <Image source={getReviewIconSource(type)} style={[styles.icon, is_read && styles.iconRead]} />
             )}
             <View style={styles.content}>
                 <View style={styles.titleRow}>
@@ -63,8 +63,8 @@ export default function NotificationCard({item, onPress}: Props) {
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: spacing.md,
+        alignItems: 'center',
+        gap: spacing.lg,
         paddingHorizontal: spacing.xl,
         paddingVertical: spacing.lg,
         backgroundColor: colors.surface.white,

@@ -126,15 +126,16 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
             if (deleteToastTimerRef.current) clearTimeout(deleteToastTimerRef.current);
         };
     }, []);
+    // 답글엔 아직 ⋮ 메뉴가 없어서 항상 최상위 댓글만 삭제됨
     const handleDeleteComment = useCallback((commentId: number) => {
         if (!reviewId) return;
-        setComments(prev => prev.map(c => {
-            if (c.id === commentId) return {...c, is_deleted: true};
-            if (c.replies.some(r => r.id === commentId)) {
-                return {...c, replies: c.replies.map(r => r.id === commentId ? {...r, is_deleted: true} : r)};
-            }
-            return c;
-        }));
+        setComments(prev => {
+            const target = prev.find(c => c.id === commentId);
+            // 답글이 없으면 목록에서 바로 제거, 있으면 "삭제된 댓글입니다"로 표시
+            return target && target.replies.length === 0
+                ? prev.filter(c => c.id !== commentId)
+                : prev.map(c => c.id === commentId ? {...c, is_deleted: true} : c);
+        });
         deleteComment(reviewId, commentId)
             .catch(err => console.warn('댓글 삭제 실패:', err?.message));
 

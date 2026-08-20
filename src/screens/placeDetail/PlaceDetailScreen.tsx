@@ -31,7 +31,7 @@ import QuickReviewButton from '../../components/home/QuickReviewButton';
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
 export default function PlaceDetailScreen({route, navigation}: Props) {
-    const {placeId, placeName, initialTab} = route.params;
+    const {placeId, placeName, initialTab, reviewId, notificationAction} = route.params;
 
     // 투명 상태바때문에 ui 올라오는 거 방지
     const insets = useSafeAreaInsets();
@@ -92,6 +92,28 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             .then(data => setArchivedReviews(data.reviews))
             .catch(error => console.error('리뷰 조회 실패:', error));
     }, [placeId]);
+
+    // 알림에서 특정 리뷰로 들어온 경우, 리뷰 상세 페이지가 아닌 해당 리뷰로
+    const openedFromNotificationRef = useRef(false);
+    useEffect(() => {
+        // openedFromNotificationRef.current조건 없으면, 사용자가 리뷰 사진창을 닫아도 실시간이나 과거 리뷰 수정이나 삭제 후 자동으로 열림
+        if (!reviewId || openedFromNotificationRef.current) return;
+
+        const currentIdx = currentReviews.findIndex(r => r.id === reviewId);
+        if (currentIdx >= 0) {
+            openedFromNotificationRef.current = true;
+            setActiveTab('current');
+            setImageIndex(currentIdx);
+            return;
+        }
+
+        const archivedIdx = archivedReviews.findIndex(r => r.id === reviewId);
+        if (archivedIdx >= 0) {
+            openedFromNotificationRef.current = true;
+            setActiveTab('archived');
+            setImageIndex(archivedIdx);
+        }
+    }, [reviewId, currentReviews, archivedReviews]);
 
     // 거리 텍스트 (계산된 경우만)
     const distanceText =
@@ -241,12 +263,13 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 }
             />
 
-            {/* 사진 풀스크린 뷰어 (자체 어두운 배경 + 좌우 탭 네비) */}
+            {/* 리뷰 사진 풀스크린 뷰어  */}
             <ReviewPhoto
                 reviews={reviews}
                 startIndex={imageIndex ?? 0}
                 visible={imageIndex !== null}
                 placeName={placeDetail.name}
+                autoOpenChat={notificationAction === 'chat'}
 
                 onClose={() => setImageIndex(null)}
                 onDelete={async () => {
