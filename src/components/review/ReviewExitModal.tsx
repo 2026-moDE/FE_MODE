@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  Dimensions,
-  Image,
-} from 'react-native';
+import {Modal, View, Text, StyleSheet, Pressable, Image} from 'react-native';
 
 import {
   fontFamily,
@@ -21,17 +13,11 @@ import {radius} from '../../constants/radius';
 
 const cautionIcon = require('../../assets/image/caution_yellow.png');
 
-
 type ReviewExitModalProps = {
   visible: boolean;
   onClose: () => void;
   onExit: () => void;
 };
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 const ReviewExitModal = ({
   visible,
@@ -93,42 +79,42 @@ const styles = StyleSheet.create({
 
   // 흰색 컨테이너
   modalBox: {
-    width: px(320),
+    width: 320,
     backgroundColor: colors.surface.white,
-    borderRadius: px(radius['2xl']),
-    paddingTop: px(spacing.xl),
-    paddingBottom: px(spacing.xl),
-    paddingHorizontal: px(spacing.xl),
+    borderRadius: radius['2xl'],
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
 
   // 아이콘 박스
   cautionIcon: {
-    width: px(60),
-    height: px(60),
-    marginBottom: px(spacing.s),
+    width: 60,
+    height: 60,
+    marginBottom: spacing.s,
   },
 
   title: {
-    fontSize: px(fontSize.h2),
+    fontSize: fontSize.h2,
     fontFamily: fontFamily.bold,
     color: colors.text.basic,
-    lineHeight: px(26),
+    lineHeight: 26,
     letterSpacing: -0.3,
     includeFontPadding: false,
-    marginBottom: px(spacing.s),
+    marginBottom: spacing.s,
   },
 
   description: {
-    width: px(280),
-    fontSize: px(fontSize.b6),
+    width: 280,
+    fontSize: fontSize.b6,
     fontFamily: fontFamily.medium,
     color: colors.text.subtle,
     textAlign: 'center',
-    lineHeight: px(lineHeight.b6),
+    lineHeight: lineHeight.b6,
     letterSpacing: letterSpacing.b6,
     includeFontPadding: false,
-    marginBottom: px(spacing.xl),
+    marginBottom: spacing.xl,
   },
 
   // 하단 버튼
@@ -136,14 +122,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: px(280),
-    gap: px(spacing.md),
+    width: 280,
+    gap: spacing.md,
   },
 
   keepButton: {
     flex: 1,
-    height: px(42),
-    borderRadius: px(radius.lg),
+    height: 42,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border.default,
     backgroundColor: colors.button.tertiaryFill,
@@ -152,28 +138,28 @@ const styles = StyleSheet.create({
   },
 
   keepButtonText: {
-    fontSize: px(fontSize.b5),
+    fontSize: fontSize.b5,
     fontFamily: fontFamily.bold,
     color: colors.text.basic,
-    lineHeight: px(lineHeight.b5),
+    lineHeight: lineHeight.b5,
     letterSpacing: letterSpacing.b5,
     includeFontPadding: false,
   },
 
   exitButton: {
-    width: px(101),
-    height: px(42),
-    borderRadius: px(radius.lg),
+    width: 101,
+    height: 42,
+    borderRadius: radius.lg,
     backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   exitButtonText: {
-    fontSize: px(fontSize.b5),
+    fontSize: fontSize.b5,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
-    lineHeight: px(lineHeight.b5),
+    lineHeight: lineHeight.b5,
     letterSpacing: letterSpacing.b5,
     includeFontPadding: false,
   },

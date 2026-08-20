@@ -1,18 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Image,
-  Pressable,
-  TextInput,
-  KeyboardAvoidingView,
-  ScrollView,
-  Platform,
-  Dimensions,
-  Alert,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, Image, Pressable, TextInput, KeyboardAvoidingView, ScrollView, Platform, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
@@ -53,12 +40,6 @@ const getCongestionLevel = (
   }
 };
 type CongestionType = (typeof CONGESTION_OPTIONS)[number];
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 const MAX_REVIEW_LENGTH = 100;
 
@@ -169,7 +150,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             style={styles.backButton}
             onPress={() => setExitModalVisible(true)}
             hitSlop={10}>
-            <IconArrowLeft size={px(24)} color="#1F2933" />
+            <IconArrowLeft size={24} color="#1F2933" />
           </Pressable>
 
           <Text style={styles.headerTitle}>후기 작성</Text>
@@ -244,7 +225,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
               })}
             </View>
           </View>
-
 
           <View style={styles.reviewSection}>
             <Text style={styles.sectionTitle}>이용 후기를 작성해주세요.</Text>
@@ -336,80 +316,80 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: px(52),
-    paddingVertical: px(spacing.sm),
+    height: 52,
+    paddingVertical: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   backButton: {
     position: 'absolute',
-    left: px(spacing.lg),
-    width: px(32),
-    height: px(32),
+    left: spacing.lg,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   headerTitle: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.bold,
     color: '#111827',
-    lineHeight: px(21),
+    lineHeight: 21,
   },
 
   content: {
     flex: 1,
-    paddingHorizontal: px(spacing.lg),
+    paddingHorizontal: spacing.lg,
   },
 
   contentInner: {
-    paddingTop: px(spacing.lg),
-    paddingBottom: px(90),
+    paddingTop: spacing.lg,
+    paddingBottom: 90,
   },
 
   placeSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: px(spacing['3xl']),
+    marginBottom: spacing['3xl'],
   },
 
   photoWrapper: {
-    width: px(105),
-    height: px(105),
-    borderRadius: px(radius.lg),
+    width: 105,
+    height: 105,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     position: 'relative',
   },
 
   photo: {
-    width: px(105),
-    height: px(105),
-    borderRadius: px(radius.lg),
+    width: 105,
+    height: 105,
+    borderRadius: radius.lg,
   },
 
   retakeButton: {
     position: 'absolute',
-    left: px(spacing.md),
-    top: px(spacing['4xl']),
-    width: px(81),
-    height: px(24),
-    borderRadius: px(radius.md),
+    left: spacing.md,
+    top: spacing['4xl'],
+    width: 81,
+    height: 24,
+    borderRadius: radius.md,
     backgroundColor: colors.background.dimDarker,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: px(spacing.xs),
+    gap: spacing.xs,
   },
 
   retakeIcon: {
-    width: px(12),
-    height: px(12),
+    width: 12,
+    height: 12,
     resizeMode: 'contain',
   },
 
   retakeText: {
-    fontSize: px(12),
+    fontSize: 12,
     fontFamily: fontFamily.medium,
     color: colors.text.inverse,
   },
@@ -422,10 +402,10 @@ const styles = StyleSheet.create({
 
   placeTitle: {
     fontFamily: fontFamily.bold,
-    fontSize: px(20),
+    fontSize: 20,
     color: colors.text.basic,
-    lineHeight: px(24),
-    marginRight: px(spacing.xs),
+    lineHeight: 24,
+    marginRight: spacing.xs,
     flexShrink: 1,
   },
 
@@ -440,22 +420,22 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: px(9.5),
+    marginTop: 9.5,
   },
 
   timerIcon: {
-    width: px(14),
-    height: px(14),
-    marginRight: px(spacing.s),
+    width: 14,
+    height: 14,
+    marginRight: spacing.s,
     resizeMode: 'contain',
-    transform: [{translateY: px(1)}],
+    transform: [{translateY: 1}],
   },
 
   dateText: {
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.bold,
     color: '#374151',
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   section: {
@@ -463,10 +443,10 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: px(22),
+    fontSize: 22,
     fontFamily: fontFamily.bold,
     color: '#111827',
-    lineHeight: px(26),
+    lineHeight: 26,
   },
 
   chipRow: {
@@ -522,27 +502,27 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 0,
     margin: 0,
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.medium,
     color: '#111827',
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   countText: {
     alignSelf: 'flex-end',
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.medium,
     color: '#6B7280',
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   submitButton: {
     position: 'absolute',
-    left: px(spacing.lg),
-    right: px(spacing.lg),
-    bottom: px(33),
-    height: px(48),
-    borderRadius: px(radius.md),
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 33,
+    height: 48,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -556,9 +536,9 @@ const styles = StyleSheet.create({
   },
 
   submitText: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.bold,
-    lineHeight: px(21),
+    lineHeight: 21,
   },
 
   submitTextDisabled: {
@@ -578,21 +558,21 @@ const styles = StyleSheet.create({
   editPlaceButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: px(6),
-    gap: px(3),
+    marginLeft: 6,
+    gap: 3,
   },
 
   editPlaceIcon: {
-    width: px(12),
-    height: px(12),
+    width: 12,
+    height: 12,
     resizeMode: 'contain',
     tintColor: '#8A919E',
   },
 
   editPlaceText: {
     fontFamily: fontFamily.medium,
-    fontSize: px(12),
-    lineHeight: px(14),
+    fontSize: 12,
+    lineHeight: 14,
     color: '#8A919E',
     includeFontPadding: false,
   },

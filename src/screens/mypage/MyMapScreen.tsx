@@ -33,10 +33,7 @@ import type {NearbyPlace, CongestionLevel, CurrentReview} from '../../types/plac
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
 import {deleteReview} from '../../api/review';
 
-const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MyMap'>;
 
@@ -341,7 +338,7 @@ export default function MyMapScreen({navigation}: Props) {
         <SafeAreaView edges={['top']} style={styles.headerSafeArea} pointerEvents="box-none">
           <View style={styles.header}>
             <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={10}>
-              <IconArrowLeft size={px(20)} color={colors.icon.inverse} />
+              <IconArrowLeft size={20} color={colors.icon.inverse} />
             </Pressable>
             <Text style={styles.headerTitle}>마이맵</Text>
             <View style={styles.headerButton} />
@@ -446,7 +443,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: px(100),
+    height: 100,
   },
   headerGradient: {
     flex: 1,
@@ -462,17 +459,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
-    paddingVertical: px(spacing.md),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   headerButton: {
-    width: px(34),
-    height: px(34),
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
   },
@@ -527,7 +524,7 @@ const styles = StyleSheet.create({
     height: (SCREEN_WIDTH - 40 - 32) / 5,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.muted,
-    borderWidth: px(2),
+    borderWidth: 2,
     borderColor: colors.border.inverse,
   },
 });

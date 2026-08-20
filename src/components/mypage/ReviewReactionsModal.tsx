@@ -1,5 +1,5 @@
 import React, {forwardRef, useCallback, useMemo} from 'react';
-import {View, Text, StyleSheet, Dimensions, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import {BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, BottomSheetBackdropProps} from '@gorhom/bottom-sheet';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -8,11 +8,6 @@ import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import {EmojiReaction} from '../../api/review';
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type Props = {
   reactions: EmojiReaction[];
@@ -78,47 +73,47 @@ export default ReviewReactionsModal;
 const styles = StyleSheet.create({
   sheetBackground: {
     backgroundColor: colors.background.dimDarkest,
-    borderTopLeftRadius: px(radius.xl),
-    borderTopRightRadius: px(radius.xl),
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
   },
   handle: {
     backgroundColor: colors.gray[600],
-    width: px(40),
+    width: 40,
   },
   loadingIndicator: {
-    marginTop: px(spacing['2xl']),
+    marginTop: spacing['2xl'],
   },
   content: {
-    paddingHorizontal: px(spacing.xl),
-    paddingBottom: px(spacing['2xl']),
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing['2xl'],
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: px(spacing.md),
+    paddingVertical: spacing.md,
   },
   avatar: {
-    width: px(28),
-    height: px(28),
-    borderRadius: px(radius.md),
+    width: 28,
+    height: 28,
+    borderRadius: radius.md,
     backgroundColor: colors.surface.muted,
-    marginRight: px(spacing.md),
+    marginRight: spacing.md,
   },
   nickname: {
     flex: 1,
     fontFamily: fontFamily.bold,
-    fontSize: px(fontSize.c1),
+    fontSize: fontSize.c1,
     color: colors.text.inverse,
   },
   emoji: {
-    fontSize: px(24),
-    marginLeft: px(spacing.md),
+    fontSize: 24,
+    marginLeft: spacing.md,
   },
   emptyText: {
     fontFamily: fontFamily.medium,
-    fontSize: px(fontSize.b5),
+    fontSize: fontSize.b5,
     color: colors.text.disabled,
     textAlign: 'center',
-    paddingTop: px(spacing['2xl']),
+    paddingTop: spacing['2xl'],
   },
 });

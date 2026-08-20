@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Dimensions,
   Image,
 } from 'react-native';
 
@@ -26,11 +25,6 @@ type WithdrawModalProps = {
   onClose: () => void;
   onWithdraw: () => void;
 };
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 export default function WithdrawModal({
   visible,
@@ -87,54 +81,54 @@ const styles = StyleSheet.create({
   },
 
   modalBox: {
-    width: px(320),
+    width: 320,
     backgroundColor: colors.surface.white,
-    borderRadius: px(radius['2xl']),
-    paddingVertical: px(spacing.xl),
-    paddingHorizontal: px(spacing.xl),
+    borderRadius: radius['2xl'],
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
 
   cautionIcon: {
-    width: px(60),
-    height: px(60),
-    marginBottom: px(spacing.s),
+    width: 60,
+    height: 60,
+    marginBottom: spacing.s,
   },
 
   title: {
-    fontSize: px(fontSize.h2),
+    fontSize: fontSize.h2,
     fontFamily: fontFamily.bold,
     color: colors.text.basic,
-    lineHeight: px(26),
+    lineHeight: 26,
     letterSpacing: -0.3,
     includeFontPadding: false,
-    marginBottom: px(spacing.s),
+    marginBottom: spacing.s,
   },
 
   description: {
-    width: px(280),
-    fontSize: px(fontSize.b6),
+    width: 280,
+    fontSize: fontSize.b6,
     fontFamily: fontFamily.medium,
     color: colors.text.subtle,
     textAlign: 'center',
-    lineHeight: px(lineHeight.b6),
+    lineHeight: lineHeight.b6,
     letterSpacing: letterSpacing.b6,
     includeFontPadding: false,
-    marginBottom: px(spacing.lg),
+    marginBottom: spacing.lg,
   },
 
   buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: px(280),
-    gap: px(spacing.md),
+    width: 280,
+    gap: spacing.md,
   },
 
   cancelButton: {
     flex: 1,
-    height: px(42),
-    borderRadius: px(radius.lg),
+    height: 42,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border.default,
     backgroundColor: colors.button.tertiaryFill,
@@ -143,30 +137,30 @@ const styles = StyleSheet.create({
   },
 
   cancelButtonText: {
-    fontSize: px(fontSize.b5),
+    fontSize: fontSize.b5,
     fontFamily: fontFamily.bold,
     color: colors.text.basic,
-    lineHeight: px(lineHeight.b5),
+    lineHeight: lineHeight.b5,
     letterSpacing: letterSpacing.b5,
     includeFontPadding: false,
   },
 
   withdrawButton: {
-    width: px(101),
-    height: px(42),
-    borderRadius: px(radius.lg),
-    paddingVertical: px(spacing.sm),
-    paddingHorizontal: px(spacing['3xl']),
+    width: 101,
+    height: 42,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing['3xl'],
     backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   withdrawButtonText: {
-    fontSize: px(fontSize.b5),
+    fontSize: fontSize.b5,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
-    lineHeight: px(lineHeight.b5),
+    lineHeight: lineHeight.b5,
     letterSpacing: letterSpacing.b5,
     includeFontPadding: false,
   },

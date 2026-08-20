@@ -1,17 +1,5 @@
 import React, {useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  TouchableOpacity,
-  Dimensions,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Image} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -27,11 +15,6 @@ import ProfileImageEditor from '../../components/mypage/ProfileImageEditor';
 import {useProfileImageUpload, PickedProfileImage} from '../../hooks/useProfileImageUpload';
 
 const checkYellowIcon = require('../../assets/image/check_yellow.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 export default function ProfileEditScreen() {
   const navigation = useNavigation<any>();
@@ -137,7 +120,7 @@ if (previewImage) {
           style={styles.previewBackButton}
           activeOpacity={0.8}
           onPress={handleCancelProfileImagePreview}>
-          <IconArrowLeft size={px(24)} color={colors.icon.inverse} />
+          <IconArrowLeft size={24} color={colors.icon.inverse} />
         </TouchableOpacity>
 
         <Text style={styles.previewTitle}>프로필 수정</Text>
@@ -181,7 +164,7 @@ if (previewImage) {
             activeOpacity={0.7}
             style={styles.headerButton}
             onPress={() => navigation.goBack()}>
-            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
+            <IconArrowLeft size={20} color={colors.icon.basic} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>프로필 수정</Text>
@@ -254,47 +237,47 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: px(54),
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
+    paddingHorizontal: spacing.lg,
   },
 
   headerButton: {
-    width: px(34),
-    height: px(34),
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   headerTitle: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
+    fontSize: 18,
     color: colors.text.basic,
   },
 
   profileArea: {
     alignItems: 'center',
-    paddingTop: px(15),
+    paddingTop: 15,
   },
 
   inputArea: {
-    marginTop: px(25),
-    paddingHorizontal: px(23),
+    marginTop: 25,
+    paddingHorizontal: 23,
   },
 
   nicknameInput: {
-    height: px(44),
+    height: 44,
     borderWidth: 1,
     borderColor: colors.border.default,
-    borderRadius: px(radius.lg),
-    paddingHorizontal: px(spacing.xl),
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.xl,
     paddingVertical: 0,
     textAlignVertical: 'center',
     includeFontPadding: false,
-    lineHeight: px(18),
-    fontSize: px(18),
+    lineHeight: 18,
+    fontSize: 18,
     fontFamily: fontFamily.bold,
     color: colors.text.basic,
   },
@@ -304,14 +287,14 @@ const styles = StyleSheet.create({
   },
 
   inputInfoRow: {
-    marginTop: px(spacing.md),
+    marginTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
 
   nicknameGuide: {
-    fontSize: px(12),
+    fontSize: 12,
     fontFamily: fontFamily.medium,
     color: colors.text.brand,
   },
@@ -322,11 +305,11 @@ const styles = StyleSheet.create({
 
   submitButton: {
     position: 'absolute',
-    left: px(spacing['2xl']),
-    right: px(spacing['2xl']),
-    bottom: px(spacing['3xl']),
-    height: px(48),
-    borderRadius: px(radius.lg),
+    left: spacing['2xl'],
+    right: spacing['2xl'],
+    bottom: spacing['3xl'],
+    height: 48,
+    borderRadius: radius.lg,
     backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -337,7 +320,7 @@ const styles = StyleSheet.create({
   },
 
   submitText: {
-    fontSize: px(15),
+    fontSize: 15,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
   },
@@ -348,17 +331,17 @@ const styles = StyleSheet.create({
   },
 
   previewHeader: {
-    height: px(64),
+    height: 64,
     backgroundColor: '#050509',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.xl),
+    paddingHorizontal: spacing.xl,
   },
 
   previewBackButton: {
-    width: px(40),
-    height: px(40),
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
     zIndex: 2,
@@ -369,29 +352,29 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     textAlign: 'center',
-    fontSize: px(17),
+    fontSize: 17,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
   },
 
   previewConfirmButton: {
-    width: px(125),
-    height: px(37),
+    width: 125,
+    height: 37,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: px(spacing.s),
+    gap: spacing.s,
     zIndex: 2,
   },
 
   previewCheckIcon: {
-    width: px(18),
-    height: px(18),
+    width: 18,
+    height: 18,
     resizeMode: 'contain',
   },
 
   previewConfirmText: {
-    fontSize: px(16),
+    fontSize: 16,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
   },
@@ -401,8 +384,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#050509',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingHorizontal: px(spacing.xl),
-    paddingTop: px(5),
+    paddingHorizontal: spacing.xl,
+    paddingTop: 5,
   },
 
   previewImage: {

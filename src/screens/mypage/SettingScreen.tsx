@@ -5,7 +5,6 @@ import {
   StyleSheet,
   StatusBar,
   TouchableOpacity,
-  Dimensions,
   Pressable,
   Animated,
   Alert,
@@ -21,15 +20,10 @@ import {logoutApi, withdrawApi} from '../../api/auth';
 import {useAuth} from '../../context/AuthContext';
 import WithdrawModal from '../../components/mypage/WithdrawModal';
 
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
-
-const TOGGLE_TRACK_WIDTH = px(44);
-const TOGGLE_TRACK_HEIGHT = px(24);
-const TOGGLE_PADDING = px(3);
-const TOGGLE_THUMB_SIZE = px(18);
+const TOGGLE_TRACK_WIDTH = 44;
+const TOGGLE_TRACK_HEIGHT = 24;
+const TOGGLE_PADDING = 3;
+const TOGGLE_THUMB_SIZE = 18;
 const TOGGLE_TRAVEL = TOGGLE_TRACK_WIDTH - TOGGLE_PADDING * 2 - TOGGLE_THUMB_SIZE;
 
 type ToggleSwitchProps = {
@@ -127,7 +121,7 @@ export default function SettingScreen() {
             activeOpacity={0.7}
             style={styles.headerButton}
             onPress={() => navigation.goBack()}>
-            <IconArrowLeft size={px(20)} color={colors.icon.basic} />
+            <IconArrowLeft size={20} color={colors.icon.basic} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>설정</Text>
@@ -205,35 +199,35 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: px(54),
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
+    paddingHorizontal: spacing.lg,
   },
 
   headerButton: {
-    width: px(34),
-    height: px(34),
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   headerTitle: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
+    fontSize: 18,
     color: colors.text.basic,
   },
 
   card: {
     backgroundColor: colors.background.white,
-    paddingVertical: px(spacing.lg),
-    paddingHorizontal: px(spacing['2xl']),
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing['2xl'],
   },
 
   sectionLabel: {
-    marginBottom: px(spacing.md),
-    fontSize: px(12),
+    marginBottom: spacing.md,
+    fontSize: 12,
     fontFamily: fontFamily.medium,
     color: colors.text.tertiary,
   },
@@ -248,31 +242,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: px(spacing.lg),
-    paddingHorizontal: px(spacing['2xl']),
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing['2xl'],
     borderTopWidth: 1,
     borderTopColor: colors.border.subtle,
   },
 
   rowText: {
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.medium,
     color: colors.text.basic,
   },
 
   chevron: {
-    fontSize: px(18),
+    fontSize: 18,
     color: colors.icon.tertiary,
   },
 
   withdrawText: {
-    fontSize: px(15),
+    fontSize: 15,
     fontFamily: fontFamily.medium,
     color: '#FF0000',
   },
 
   sectionGap: {
-    height: px(spacing.md),
+    height: spacing.md,
     backgroundColor: colors.border.subtle,
   },
 

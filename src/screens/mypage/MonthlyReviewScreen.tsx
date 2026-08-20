@@ -15,10 +15,7 @@ import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
 import type {CurrentReview} from '../../types/place';
 import {deleteReview, changeReview} from '../../api/review';
 
-const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MonthlyReview'>;
 
@@ -147,7 +144,7 @@ export default function MonthlyReviewScreen({navigation}: Props) {
       <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={10}>
-            <IconArrowLeft size={px(20)} color={colors.icon.inverse} />
+            <IconArrowLeft size={20} color={colors.icon.inverse} />
           </Pressable>
           <Text style={styles.headerTitle}>캘린더</Text>
           <View style={styles.headerButton} />
@@ -229,7 +226,7 @@ export default function MonthlyReviewScreen({navigation}: Props) {
   );
 }
 
-const CELL_SIZE = (SCREEN_WIDTH - px(spacing.xl) * 2) / 7;
+const CELL_SIZE = (SCREEN_WIDTH - spacing.xl * 2) / 7;
 
 const styles = StyleSheet.create({
   container: {
@@ -243,35 +240,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: px(spacing.lg),
-    paddingVertical: px(spacing.md),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   headerButton: {
-    width: px(34),
-    height: px(34),
+    width: 34,
+    height: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: px(16),
+    fontSize: 16,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
   },
 
   scrollContent: {
-    paddingHorizontal: px(spacing.xl),
-    paddingBottom: px(spacing['4xl']),
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing['4xl'],
   },
 
   monthBlock: {
-    marginTop: px(spacing['2xl']),
+    marginTop: spacing['2xl'],
   },
 
   monthLabel: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
-    marginBottom: px(spacing.md),
+    marginBottom: spacing.md,
   },
 
   weekRow: {
@@ -283,34 +280,34 @@ const styles = StyleSheet.create({
     height: CELL_SIZE * 1.2,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: px(spacing.sm),
+    marginBottom: spacing.sm,
   },
 
   dayText: {
-    fontSize: px(13),
+    fontSize: 13,
     fontFamily: fontFamily.medium,
     color: colors.text.inverse,
   },
 
   todayCircle: {
-    width: px(26),
-    height: px(26),
-    borderRadius: px(radius.full),
+    width: 26,
+    height: 26,
+    borderRadius: radius.full,
     backgroundColor: colors.surface.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   todayText: {
-    fontSize: px(13),
+    fontSize: 13,
     fontFamily: fontFamily.bold,
     color: colors.text.basic,
   },
 
   dayPhoto: {
-    width: CELL_SIZE - px(10),
-    height: CELL_SIZE * 1.2 - px(6),
-    borderRadius: px(radius.md),
+    width: CELL_SIZE - 10,
+    height: CELL_SIZE * 1.2 - 6,
+    borderRadius: radius.md,
     backgroundColor: colors.surface.muted,
   },
 });

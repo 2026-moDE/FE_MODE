@@ -7,20 +7,18 @@ type Props = {
     onPress: () => void;
     disabled?: boolean;
     style?: StyleProp<ViewStyle>;
-    scale?: number;
 };
 
-export default function AppleLoginButton({onPress, disabled, style, scale = 1}: Props) {
+export default function AppleLoginButton({onPress, disabled, style}: Props) {
     return (
         <SocialLoginButton
             label="Apple로 로그인"
-            icon={<IconAppleLogo size={16 * scale} color="#FFFFFF" />}
+            icon={<IconAppleLogo size={16} color="#FFFFFF" />}
             onPress={onPress}
             disabled={disabled}
             backgroundColor="#000000"
             textColor="#FFFFFF"
             style={style}
-            scale={scale}
         />
     );
 }

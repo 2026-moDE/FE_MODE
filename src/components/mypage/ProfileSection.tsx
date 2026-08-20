@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import {View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
 import {useNavigation} from '@react-navigation/native';
@@ -18,11 +10,6 @@ import {radius} from '../../constants/radius';
 import type {MyProfile} from '../../api/mypage';
 
 const pencilIcon = require('../../assets/image/pencil.png');
-
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
 
 type Props = {
   profile: MyProfile | null;
@@ -94,16 +81,8 @@ export default function ProfileSection({
           activeOpacity={0.7}
           style={styles.followItem}
           onPress={() => navigation.navigate('FollowList')}>
-          <Text style={styles.followLabel}>팔로워</Text>
-          <Text style={styles.followCount}>{profile?.follower_count ?? 0}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={styles.followItem}
-          onPress={() => navigation.navigate('FollowList')}>
-          <Text style={styles.followLabel}>팔로잉</Text>
-          <Text style={styles.followCount}>{profile?.following_count ?? 0}</Text>
+          <Text style={styles.followLabel}>친구</Text>
+          <Text style={styles.followCount}>{profile?.friend_count ?? 0}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -113,14 +92,14 @@ export default function ProfileSection({
 const styles = StyleSheet.create({
   profileArea: {
     alignItems: 'center',
-    paddingTop: px(15),
-    paddingBottom: px(18),
+    paddingTop: 15,
+    paddingBottom: 18,
   },
 
   profileImageBox: {
-    width: px(88),
-    height: px(88),
-    borderRadius: px(radius.lg),
+    width: 88,
+    height: 88,
+    borderRadius: radius.lg,
     backgroundColor: '#F3F3F3',
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -135,11 +114,11 @@ const styles = StyleSheet.create({
   },
 
   loading: {
-    marginTop: px(spacing.md),
+    marginTop: spacing.md,
   },
 
   nicknameRow: {
-    marginTop: px(spacing.md),
+    marginTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -147,31 +126,31 @@ const styles = StyleSheet.create({
 
   nickname: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(22),
+    fontSize: 18,
+    lineHeight: 22,
     color: '#000000',
   },
 
   editButton: {
-    marginLeft: px(spacing.sm),
-    width: px(16),
-    height: px(16),
+    marginLeft: spacing.sm,
+    width: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   pencilImage: {
-    width: px(16),
-    height: px(16),
+    width: 16,
+    height: 16,
     tintColor: '#9A9A9A',
   },
 
   followRow: {
     width: '100%',
-    marginTop: px(spacing.lg),
+    marginTop: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: px(123),
+    paddingHorizontal: 123,
   },
 
   followItem: {
@@ -180,14 +159,14 @@ const styles = StyleSheet.create({
 
   followLabel: {
     fontFamily: fontFamily.medium,
-    fontSize: px(14),
+    fontSize: 14,
     color: colors.text.tertiary,
   },
 
   followCount: {
-    marginTop: px(spacing.xs),
+    marginTop: spacing.xs,
     fontFamily: fontFamily.bold,
-    fontSize: px(24),
+    fontSize: 24,
     color: colors.text.basic,
   },
 });
