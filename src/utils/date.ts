@@ -48,3 +48,14 @@ export function formatAbsoluteDate(isoString: string): string {
     const d = date.getDate();
     return `${y}년 ${m}월 ${d}일`;
 }
+
+// 댓글 작성일시 (예: 2026.08.11 17:28)
+export function formatCommentDate(isoString: string): string {
+    const date = new Date(isoString);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${y}.${m}.${d} ${hh}:${mm}`;
+}

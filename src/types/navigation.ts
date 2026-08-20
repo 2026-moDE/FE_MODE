@@ -47,6 +47,7 @@ export type AppStackParamList = {
 
   ReviewReport: {
     reviewId: number;
+    commentId?: number;   // 있으면 댓글 신고, 없으면 리뷰 신고
   };
 
   MyMap: undefined;

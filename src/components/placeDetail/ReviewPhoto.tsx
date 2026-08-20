@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {View, Text, Image, Pressable, StyleSheet, Animated, PanResponder, ScrollView, Dimensions, Keyboard} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import {CurrentReview, ArchivedReview} from '../../types/place';
 import {colors} from '../../constants/colors';
@@ -7,7 +8,7 @@ import {radius} from '../../constants/radius';
 import { spacing } from '../../constants/spacing';
 import {fontFamily, fontSize} from '../../constants/typography';
 import ReviewMenuModal from './ReviewMenuModal';
-import {BottomSheetModal, BottomSheetModalProvider} from '@gorhom/bottom-sheet';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import ReviewChatModal from './ReviewChatModal';
 import {useReviewPhotoReactions, ReviewPhotoReactionButtons, ReviewPhotoEmojiPicker} from './ReviewPhotoReactions';
 import ReviewPhotoComment, {ReviewPhotoCommentHandle} from './ReviewPhotoComment';
@@ -27,6 +28,8 @@ type Props = {
     useAbsoluteDate?: boolean;
     // 내 리뷰일 때 이모지 버튼 누르면 피커 대신 반응 목록을 보여줘야 함 (다른 화면, 별도 구현)
     onOpenReactionList?: (reviewId: number) => void;
+    // 마이페이지 등에서는 댓글을 조회만 하고 작성은 안 함 - 입력창 자체를 안 보여줌
+    readOnlyComments?: boolean;
 };
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
@@ -38,7 +41,8 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList, readOnlyComments}: Props) {
+    const insets = useSafeAreaInsets();
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const isOwner = reviews[currentIndex]?.is_mine ?? false;
@@ -200,7 +204,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
             {/* 검은 배경 - 코멘트 입력 중 여기(텍스트 아닌 곳) 누르면 키보드 내려가며 저장됨 */}
             <Pressable style={styles.backdrop} onPress={() => Keyboard.dismiss()}>
                 <Animated.View
-                    style={{transform: [{translateY}]}}
+                    style={{transform: [{translateY}], paddingTop: insets.top}}
                     {...panResponder.panHandlers}>
 
                     {/* ── 상단: 사용자(아바타+닉네임+시간) + ⋮ + X (이미지 바깥, 검은 배경 위) ── */}
@@ -341,10 +345,8 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
             onEdit={() => commentRef.current?.focusEnd()}
         />
 
-        {/* 댓글 채팅 시트 (독립) */}
-        <BottomSheetModalProvider>
-            <ReviewChatModal ref={modalRef} reviewId={review.id} />
-        </BottomSheetModalProvider>
+        {/* 댓글 채팅 시트 (독립) - Provider는 App.tsx 최상단 것 하나만 사용 */}
+        <ReviewChatModal ref={modalRef} reviewId={review.id} reviewVisibility={review.visibility} readOnly={readOnlyComments} />
         </>
     );
 }
