@@ -1,6 +1,6 @@
-import React, {forwardRef, useMemo} from 'react';
+import React, {forwardRef, useCallback} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
-import {BottomSheetModal, BottomSheetView} from '@gorhom/bottom-sheet';
+import {BottomSheetModal, BottomSheetView, BottomSheetBackdrop, BottomSheetBackdropProps} from '@gorhom/bottom-sheet';
 
 import {fontFamily, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
@@ -29,13 +29,18 @@ const ProfileShareModal = forwardRef<BottomSheetModal, Props>(function ProfileSh
   {onSelectShare},
   ref,
 ) {
-  const snapPoints = useMemo(() => ['32%'], []);
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} pressBehavior="close" />
+    ),
+    [],
+  );
 
   return (
     <BottomSheetModal
       ref={ref}
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
+      enableDynamicSizing
+      backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.handle}>
       <BottomSheetView style={styles.content}>
@@ -57,7 +62,7 @@ export default ProfileShareModal;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: colors.background.dark,
+    backgroundColor: colors.background.dimDarkest,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
   },
@@ -66,9 +71,9 @@ const styles = StyleSheet.create({
     width: 40,
   },
   content: {
-    flex: 1,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
+    paddingBottom: spacing['3xl'],
   },
   title: {
     ...typography.b1,
@@ -78,7 +83,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: spacing['2xl'],
+    justifyContent: 'space-between',
   },
   icon: {
     width: 52,

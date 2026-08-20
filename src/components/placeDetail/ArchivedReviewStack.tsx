@@ -27,46 +27,52 @@ export default function ArchivedReviewStack({reviews, onPress, label = '과거 �
         <Pressable style={[styles.card, style]} onPress={onPress}>
             <View style={styles.stack}>
                 {/* 맨 뒤(왼쪽): 3번째로 최신 리뷰 */}
-                <View
-                    style={[
-                        styles.stackCard,
-                        styles.back2,
-                        !back2 && {backgroundColor: back1 ? colors.gray[400] : colors.surface.inverse},
-                    ]}>
-                    {back2 && (
-                        <FastImage
-                            source={{uri: back2.thumbnail_small_url ?? back2.thumbnail_url ?? back2.image_url}}
-                            style={styles.stackImage}
-                            resizeMode={FastImage.resizeMode.cover}
-                        />
-                    )}
+                {/* transform과 overflow:hidden을 같은 View에 같이 주면 안드로이드에서 자식(이미지)이 클리핑되어 안 보이는 경우가 있어서 회전/이동은 바깥 래퍼가, 라운드 클리핑은 안쪽 카드가 나눠서 맡음 */}
+                <View style={styles.back2Wrapper} renderToHardwareTextureAndroid collapsable={false}>
+                    <View
+                        style={[
+                            styles.stackCard,
+                            !back2 && {backgroundColor: back1 ? colors.gray[400] : colors.surface.inverse},
+                        ]}>
+                        {back2 && (
+                            <FastImage
+                                source={{uri: back2.thumbnail_small_url ?? back2.thumbnail_url ?? back2.image_url}}
+                                style={styles.stackImage}
+                                resizeMode={FastImage.resizeMode.cover}
+                            />
+                        )}
+                    </View>
                 </View>
 
                 {/* 뒤(오른쪽): 2번째로 최신 리뷰 */}
-                <View style={[styles.stackCard, styles.back1, !back1 && {backgroundColor: colors.surface.inverse}]}>
-                    {back1 && (
-                        <FastImage
-                            source={{uri: back1.thumbnail_small_url ?? back1.thumbnail_url ?? back1.image_url}}
-                            style={styles.stackImage}
-                            resizeMode={FastImage.resizeMode.cover}
-                        />
-                    )}
+                <View style={styles.back1Wrapper} renderToHardwareTextureAndroid collapsable={false}>
+                    <View style={[styles.stackCard, !back1 && {backgroundColor: colors.surface.inverse}]}>
+                        {back1 && (
+                            <FastImage
+                                source={{uri: back1.thumbnail_small_url ?? back1.thumbnail_url ?? back1.image_url}}
+                                style={styles.stackImage}
+                                resizeMode={FastImage.resizeMode.cover}
+                            />
+                        )}
+                    </View>
                 </View>
 
                 {/* 맨 앞 리뷰 */}
-                <View
-                    style={[
-                        styles.stackCard,
-                        styles.front,
-                        !front && {backgroundColor: colors.surface.inverse, borderColor: colors.border.inverse},
-                    ]}>
-                    {front && (
-                        <FastImage
-                            source={{uri: front.thumbnail_small_url ?? front.thumbnail_url ?? front.image_url}}
-                            style={styles.stackImage}
-                            resizeMode={FastImage.resizeMode.cover}
-                        />
-                    )}
+                <View style={styles.frontWrapper}>
+                    <View
+                        style={[
+                            styles.stackCard,
+                            styles.front,
+                            !front && {backgroundColor: colors.surface.inverse, borderColor: colors.border.inverse},
+                        ]}>
+                        {front && (
+                            <FastImage
+                                source={{uri: front.thumbnail_small_url ?? front.thumbnail_url ?? front.image_url}}
+                                style={styles.stackImage}
+                                resizeMode={FastImage.resizeMode.cover}
+                            />
+                        )}
+                    </View>
                 </View>
             </View>
             <Text style={styles.label}>{label}</Text>
@@ -88,10 +94,28 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    stackCard: {
+    // 회전/이동(transform) 담당 — 클리핑(overflow)과 분리해야 안드로이드에서 자식 이미지가 사라지지 않음
+    back2Wrapper: {
         position: 'absolute',
         width: 70,
         height: 92,
+        transform: [{rotate: '-10deg'}, {translateX: -20}, {translateY: -30}],
+    },
+    back1Wrapper: {
+        position: 'absolute',
+        width: 70,
+        height: 92,
+        transform: [{rotate: '10deg'}, {translateX: 20}, {translateY: -20}],
+    },
+    frontWrapper: {
+        position: 'absolute',
+        width: 70,
+        height: 92,
+    },
+    // 라운드 클리핑 담당
+    stackCard: {
+        width: '100%',
+        height: '100%',
         borderRadius: radius.md,
         overflow: 'hidden',
         borderWidth: 1.5,
@@ -100,12 +124,6 @@ const styles = StyleSheet.create({
     stackImage: {
         width: '100%',
         height: '100%',
-    },
-    back2: {
-        transform: [{rotate: '-10deg'}, {translateX: -20}, {translateY: -30}],
-    },
-    back1: {
-        transform: [{rotate: '10deg'}, {translateX: 20}, {translateY: -20}],
     },
     front: {
         backgroundColor: colors.surface.muted,

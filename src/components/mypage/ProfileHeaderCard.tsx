@@ -76,7 +76,7 @@ export default function ProfileHeaderCard({
           onPress={onPressFriends}>
           <View style={styles.friendCountTextRow}>
             <Text style={styles.profileFriendLabel}>친구</Text>
-            <Text style={styles.profileFriendCount}>{profile?.follower_count ?? 0}</Text>
+            <Text style={styles.profileFriendCount}>{profile?.friend_count ?? 0}</Text>
           </View>
           <IconChevronDown
             size={16}

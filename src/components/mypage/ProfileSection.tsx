@@ -81,16 +81,8 @@ export default function ProfileSection({
           activeOpacity={0.7}
           style={styles.followItem}
           onPress={() => navigation.navigate('FollowList')}>
-          <Text style={styles.followLabel}>팔로워</Text>
-          <Text style={styles.followCount}>{profile?.follower_count ?? 0}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={styles.followItem}
-          onPress={() => navigation.navigate('FollowList')}>
-          <Text style={styles.followLabel}>팔로잉</Text>
-          <Text style={styles.followCount}>{profile?.following_count ?? 0}</Text>
+          <Text style={styles.followLabel}>친구</Text>
+          <Text style={styles.followCount}>{profile?.friend_count ?? 0}</Text>
         </TouchableOpacity>
       </View>
     </View>
