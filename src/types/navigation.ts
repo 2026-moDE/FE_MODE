@@ -32,6 +32,8 @@ export type AppStackParamList = {
     placeId: number;
     placeName: string;
     initialTab?: 'current' | 'archived';
+    reviewId?: number;   // 있으면 리뷰 상세 페이지가 아닌 해당 리뷰로
+    notificationAction?: 'chat' | 'reactions';   // 댓글 알림 → 댓글 모달, 반응 알림 → 반응 목록 자동으로 열기
   };
 
   ReviewStack:
@@ -60,7 +62,7 @@ export type AppStackParamList = {
 
   TermsAgreement: {viewOnly?: boolean} | undefined;
 
-  FollowList: undefined;
+  FollowList: {initialTab?: 'friends' | 'requests'} | undefined;
 
   FriendSearch: undefined;
 };

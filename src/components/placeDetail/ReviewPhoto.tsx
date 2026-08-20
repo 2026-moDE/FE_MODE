@@ -26,10 +26,12 @@ type Props = {
     onReport: () => void;
     onChangeComment?: (reviewId: number, comment: string) => void;
     useAbsoluteDate?: boolean;
-    // 내 리뷰일 때 이모지 버튼 누르면 피커 대신 반응 목록을 보여줘야 함 (다른 화면, 별도 구현)
+    // 내 리뷰일 때 이모지 버튼 누르면 반응 목록을 보여줘야 함
     onOpenReactionList?: (reviewId: number) => void;
     // 마이페이지 등에서는 댓글을 조회만 하고 작성은 안 함 - 입력창 자체를 안 보여줌
     readOnlyComments?: boolean;
+    // 댓글 알림 눌러서 들어온 경우, 댓글 모달도 자동으로 염
+    autoOpenChat?: boolean;
 };
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
@@ -41,7 +43,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList, readOnlyComments}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat}: Props) {
     const insets = useSafeAreaInsets();
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -76,6 +78,19 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
             setMenuOpen(false);
         }
     }, [visible, startIndex, translateY]);
+
+    // 댓글 알림으로 들어온 경우, 댓글 모달도 자동으로 염 (닫히면 다시 열 수 있게 리셋)
+    const autoOpenChatDoneRef = useRef(false);
+    useEffect(() => {
+        if (!visible) {
+            autoOpenChatDoneRef.current = false;
+            return;
+        }
+        if (autoOpenChat && !autoOpenChatDoneRef.current) {
+            autoOpenChatDoneRef.current = true;
+            modalRef.current?.present();
+        }
+    }, [visible, autoOpenChat]);
 
     // 썸네일 스크롤 끝났을 때 가운데 있는 것을 currentIndex로
     const handleThumbnailScrollEnd = (e: any) => {

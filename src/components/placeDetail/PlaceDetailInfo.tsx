@@ -2,8 +2,6 @@ import React from 'react';
 import {View, Text, Image, Pressable, TouchableOpacity, StyleSheet} from 'react-native';
 import {CATEGORY_LABEL, CongestionLevel, PlaceDetail} from '../../types/place';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
-import IconBellOff from '../../assets/icons/IconBellOff';
-import IconBellOn from '../../assets/icons/IconBellOn';
 import IconClock from '../../assets/icons/IconClock';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import {colors} from '../../constants/colors';
@@ -11,6 +9,8 @@ import {gap, padding} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 
 const crowdIcon = require('../../assets/image/crowd.png');
+const notificationOnIcon = require('../../assets/image/notification_on.png');
+const notificationOffIcon = require('../../assets/image/notification_off.png');
 
 // 혼잡도 레벨 → 한글 레이블
 const CONGESTION_LABEL: Record<CongestionLevel, string> = {
@@ -58,9 +58,9 @@ export default function PlaceDetailInfo({
                     hitSlop={8}
                     style={styles.bellWrapper}>
                     {is_subscribed ? (
-                        <IconBellOn size={24} color={colors.icon.inverse} />
+                        <Image source={notificationOnIcon} style={styles.bellIcon} resizeMode="contain" />
                     ) : (
-                        <IconBellOff size={24} color={colors.icon.tertiary} />
+                        <Image source={notificationOffIcon} style={styles.bellIcon} resizeMode="contain" />
                     )}
                 </Pressable>
             </View>
@@ -117,6 +117,10 @@ const styles = StyleSheet.create({
         height: 32,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    bellIcon: {
+        width: 24,
+        height: 24,
     },
     infoRow: {
         flexDirection: 'row',

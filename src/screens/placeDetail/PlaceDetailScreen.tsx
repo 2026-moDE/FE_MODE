@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {View, Text, FlatList, StyleSheet, Pressable} from 'react-native';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {AppStackParamList} from '../../types/navigation';
@@ -16,6 +17,7 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {typography} from '../../constants/typography';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
+import ReviewReactionsModal from '../../components/mypage/ReviewReactionsModal';
 import {
     fetchPlaceDetail,
     fetchLocationVerify,
@@ -24,14 +26,14 @@ import {
     subscribe,
     unsubscribe,
 } from '../../api/place';
-import { deleteReview, changeReview } from '../../api/review';
+import { deleteReview, changeReview, fetchEmojis, EmojiReaction } from '../../api/review';
 import QuickReviewButton from '../../components/home/QuickReviewButton';
 
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
 export default function PlaceDetailScreen({route, navigation}: Props) {
-    const {placeId, placeName, initialTab} = route.params;
+    const {placeId, placeName, initialTab, reviewId, notificationAction} = route.params;
 
     // 투명 상태바때문에 ui 올라오는 거 방지
     const insets = useSafeAreaInsets();
@@ -67,6 +69,24 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     // 리뷰 사진 index
     const [imageIndex, setImageIndex] = useState< number | null>(null);
 
+    // 내 리뷰 이모지 반응 목록 (마이페이지 ReviewReactionsModal 재사용)
+    const reactionsSheetRef = useRef<BottomSheetModal>(null);
+    const [reactions, setReactions] = useState<EmojiReaction[]>([]);
+    const [isReactionsLoading, setIsReactionsLoading] = useState(false);
+    const openReactions = useCallback(async (reviewId: number) => {
+        reactionsSheetRef.current?.present();
+        setIsReactionsLoading(true);
+        try {
+            const res = await fetchEmojis(reviewId);
+            setReactions(res.reactions);
+        } catch (error) {
+            console.error('이모지 반응 조회 실패:', error);
+            setReactions([]);
+        } finally {
+            setIsReactionsLoading(false);
+        }
+    }, []);
+
     // 화면 진입 시 상세 정보 가져오기
     useEffect(() => {
         fetchPlaceDetail(placeId)
@@ -92,6 +112,30 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             .then(data => setArchivedReviews(data.reviews))
             .catch(error => console.error('리뷰 조회 실패:', error));
     }, [placeId]);
+
+    // 알림에서 특정 리뷰로 들어온 경우, 리뷰 상세 페이지가 아닌 해당 리뷰로
+    const openedFromNotificationRef = useRef(false);
+    useEffect(() => {
+        // openedFromNotificationRef.current조건 없으면, 사용자가 리뷰 사진창을 닫아도 실시간이나 과거 리뷰 수정이나 삭제 후 자동으로 열림
+        if (!reviewId || openedFromNotificationRef.current) return;
+
+        const currentIdx = currentReviews.findIndex(r => r.id === reviewId);
+        if (currentIdx >= 0) {
+            openedFromNotificationRef.current = true;
+            setActiveTab('current');
+            setImageIndex(currentIdx);
+            if (notificationAction === 'reactions') openReactions(reviewId);
+            return;
+        }
+
+        const archivedIdx = archivedReviews.findIndex(r => r.id === reviewId);
+        if (archivedIdx >= 0) {
+            openedFromNotificationRef.current = true;
+            setActiveTab('archived');
+            setImageIndex(archivedIdx);
+            if (notificationAction === 'reactions') openReactions(reviewId);
+        }
+    }, [reviewId, currentReviews, archivedReviews, notificationAction, openReactions]);
 
     // 거리 텍스트 (계산된 경우만)
     const distanceText =
@@ -241,13 +285,14 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 }
             />
 
-            {/* 사진 풀스크린 뷰어 (자체 어두운 배경 + 좌우 탭 네비) */}
+            {/* 리뷰 사진 풀스크린 뷰어  */}
             <ReviewPhoto
                 reviews={reviews}
                 startIndex={imageIndex ?? 0}
                 visible={imageIndex !== null}
                 placeName={placeDetail.name}
-
+                autoOpenChat={notificationAction === 'chat'}
+                onOpenReactionList={openReactions}
                 onClose={() => setImageIndex(null)}
                 onDelete={async () => {
                     if (imageIndex === null) return;
@@ -283,6 +328,9 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                     <QuickReviewButton onPress={handleQuickReview} />
                 </View>
             )}
+
+            {/* 내 리뷰 이모지 반응 목록 */}
+            <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
 
         </View>
     );

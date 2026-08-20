@@ -1,13 +1,14 @@
 // ─────────────────── 알림 목록 api (GET /api/users/me/notifications) ─────────────────── 
 export type Notification = {
     id: number;
-    type : 'REVIEW' | 'FRIEND_REQUEST' | 'FRIEND_ACCEPT';
+    type : 'REVIEW' | 'REACTION' | 'COMMENT' | 'FRIEND_REQUEST' | 'FRIEND_ACCEPT' | 'FRIEND_REVIEW';
     title: string;
     body: string;
     place: {
         id: number;
         name: string;
     };
+    review_id?: number;   // 리뷰로 이동하는 알림에만 있음 (REVIEW/REACTION/COMMENT)
     is_read: boolean;
     created_at: string;
 };

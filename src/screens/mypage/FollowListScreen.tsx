@@ -1,7 +1,8 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {View, Text, StyleSheet, StatusBar, TouchableOpacity, Pressable, TextInput, FlatList, Image} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation, useRoute, RouteProp} from '@react-navigation/native';
+import {AppStackParamList} from '../../types/navigation';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Reanimated, {
   useSharedValue,
@@ -178,7 +179,8 @@ function FriendRequestItem({
 
 export default function FollowListScreen() {
   const navigation = useNavigation<any>();
-  const [activeTab, setActiveTab] = useState<FriendTab>('friends');
+  const route = useRoute<RouteProp<AppStackParamList, 'FollowList'>>();
+  const [activeTab, setActiveTab] = useState<FriendTab>(route.params?.initialTab ?? 'friends');
 
   const [friends, setFriends] = useState<FriendUser[]>([]);
   const [requests, setRequests] = useState<FriendUser[]>([]);
