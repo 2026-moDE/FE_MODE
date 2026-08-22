@@ -31,7 +31,11 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
                 {user.nickname}
             </Text>
             {/* 친구가 남긴 리뷰 표시 */}
-            {is_friend && <IconFriend size={14} color={colors.brand.primary} />}
+            {is_friend && (
+                <View style={styles.friendIconWrapper}>
+                    <IconFriend size={14} color={colors.brand.primary} />
+                </View>
+            )}
         </View>
     );
 
@@ -102,7 +106,6 @@ const styles = StyleSheet.create({
     userGroup: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: gap.sm,                                    
         flexShrink: 1,
     },
     avatar: {
@@ -110,6 +113,7 @@ const styles = StyleSheet.create({
         height: 18,
         borderRadius: radius.full,
         backgroundColor: colors.surface.muted,
+        marginRight: gap.sm,   // 아바타 ↔ 닉네임
     },
     nickname: {
         ...typography.c3,
@@ -118,6 +122,9 @@ const styles = StyleSheet.create({
         textShadowOffset: {width: 0, height: 1},
         textShadowRadius: 2,
         flexShrink: 1,
+    },
+    friendIconWrapper: {
+        marginLeft: gap.xs,   // 닉네임 ↔ 별 아이콘
     },
     timeBadgeWrapper: {
         position: 'absolute',

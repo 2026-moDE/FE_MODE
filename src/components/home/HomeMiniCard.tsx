@@ -1,14 +1,15 @@
 import React from 'react';
-import {View, Text, ImageBackground, StyleSheet, ScrollView, Pressable} from 'react-native';
+import {View, Text, Image, ImageBackground, StyleSheet, ScrollView, Pressable} from 'react-native';
 import {CATEGORY_LABEL, PlaceDetail} from '../../types/place';
-import IconBellOff from '../../assets/icons/IconBellOff';
-import IconBellOn from '../../assets/icons/IconBellOn';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import IconClock from '../../assets/icons/IconClock';
 import {colors} from '../../constants/colors';
 import {spacing, gap} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {typography} from '../../constants/typography';
+
+const notificationOnIcon = require('../../assets/image/notification_on.png');
+const notificationOffIcon = require('../../assets/image/notification_off.png');
 
 // 컴포넌트 Props 타입
 type HomeMiniCardProps = {
@@ -48,9 +49,9 @@ export default function HomeMiniCard({
                         onPress={e => { e.stopPropagation(); onToggleSubscribe?.(); }}
                         hitSlop={8}>
                         {is_subscribed ? (
-                            <IconBellOn size={24} color={colors.icon.basic} />
+                            <Image source={notificationOnIcon} style={styles.bellIcon} resizeMode="contain" />
                         ) : (
-                            <IconBellOff size={24} color={colors.icon.tertiary} />
+                            <Image source={notificationOffIcon} style={styles.bellIcon} resizeMode="contain" />
                         )}
                     </Pressable>
                 </View>
@@ -140,10 +141,15 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     bellWrapper: {
-        width: spacing['2xl'],              
-        height: spacing['2xl'],           
+        width: spacing['2xl'],
+        height: spacing['2xl'],
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    bellIcon: {
+        width: 24,
+        height: 24,
+        tintColor: colors.icon.tertiary,
     },
     infoGroup: {
         gap: spacing.xs,                  

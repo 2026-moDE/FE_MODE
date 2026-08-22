@@ -33,6 +33,7 @@ export default function NotificationScreen({navigation}: Props) {
     const [activeTab, setActiveTab] = useState<Tab>('notification');
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [places, setPlaces] = useState<Subscription[]>([]);
+    const [openPlaceId, setOpenPlaceId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchNotifications()
@@ -49,22 +50,37 @@ export default function NotificationScreen({navigation}: Props) {
             .catch(err => console.warn('구독 장소 조회 실패:', err?.message));
     }, []));
 
+    // 알림 누를 때 화면 이동
     const handleNotificationPress = useCallback((id: number) => {
         setNotifications(prev => prev.map(n => n.id === id ? {...n, is_read: true} : n));
         readNotification(id).catch(err => console.warn('알림 읽음 처리 실패:', err?.message));
         const target = notifications.find(n => n.id === id);
-        if (target) {
-            navigation.navigate('PlaceDetail', {placeId: target.place.id, placeName: target.place.name});
+        if (!target) return;
+
+        // 친구 요청/수락 알림
+        if (target.type === 'FRIEND_REQUEST' || target.type === 'FRIEND_ACCEPT') {
+            navigation.navigate('FollowList', {
+                initialTab: target.type === 'FRIEND_REQUEST' ? 'requests' : 'friends',
+            });
+            return;
         }
+
+        // 리뷰 관련 알림 - 댓글 알림이면 댓글 모달, 반응 알림이면 반응 목록 자동으로
+        navigation.navigate('PlaceDetail', {
+            placeId: target.place.id,
+            placeName: target.place.name,
+            reviewId: target.review_id,
+            notificationAction:
+                target.type === 'COMMENT' ? 'chat' :
+                target.type === 'REACTION' ? 'reactions' :
+                undefined,
+        });
     }, [notifications, navigation]);
 
-    const handleSubscriptions = useCallback((id: number, current: boolean) => {
-        setPlaces(prev => prev.map(p => p.place.id === id ? {...p, is_active: !current} : p));
-        if (current) {
-            unsubscribe(id).catch(err => console.warn('구독 취소 실패:', err?.message));
-        } else {
-            subscribe(id).catch(err => console.warn('구독 설정 실패:', err?.message));
-        }
+    // 장소 설정 카드 스와이프 후 "삭제" - 목록에서 바로 제거하고 구독도 취소
+    const handleDeleteSubscription = useCallback((placeId: number) => {
+        setPlaces(prev => prev.filter(p => p.place.id !== placeId));
+        unsubscribe(placeId).catch(err => console.warn('구독 취소 실패:', err?.message));
     }, []);
 
     const today = notifications.filter(n => getDateLabel(n.created_at) === '오늘');
@@ -111,8 +127,10 @@ export default function NotificationScreen({navigation}: Props) {
                         <SubscriptionCard
                             key={place.id}
                             place={place}
-                            onToggle={handleSubscriptions}
+                            isOpen={openPlaceId === place.id}
+                            onOpenChange={isOpen => setOpenPlaceId(isOpen ? place.id : null)}
                             onPress={(placeId, placeName) => navigation.navigate('PlaceDetail', {placeId, placeName})}
+                            onDelete={handleDeleteSubscription}
                         />
                     ))}
                 </ScrollView>
