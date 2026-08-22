@@ -12,6 +12,7 @@ import {spacing} from '../../constants/spacing';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import {formatRelativeTime} from '../../utils/date';
 import ReviewMenuModal from '../placeDetail/ReviewMenuModal';
+import ReviewChatModal from '../placeDetail/ReviewChatModal';
 import ReviewReactionsModal from './ReviewReactionsModal';
 import QuickReviewButton from '../home/QuickReviewButton';
 import {MyProfile, MyReview} from '../../api/mypage';
@@ -22,20 +23,27 @@ const chatIcon = require('../../assets/image/comment.png');
 const emojiIcon = require('../../assets/image/emoji.png');
 const menuIcon = require('../../assets/image/vertical_ellipis.png');
 
+// 다른 유저 프로필(UserProfile)도 그대로 넘길 수 있도록 실제 사용하는 필드만 뽑아서 타입 지정
+type ReviewAuthorInfo = Pick<MyProfile, 'nickname' | 'profile_image_url' | 'profile_url'>;
+
 type Props = {
-  profile: MyProfile | null;
+  profile: ReviewAuthorInfo | null;
   recentReviews: MyReview[];
   isReviewsLoading: boolean;
-  onDeleteReview: (reviewId: number) => void;
-  onEditComment: (reviewId: number, comment: string) => void;
+  isOwner?: boolean;
+  onDeleteReview?: (reviewId: number) => void;
+  onEditComment?: (reviewId: number, comment: string) => void;
+  onReportReview?: (reviewId: number) => void;
 };
 
 export default function RecentReviewSection({
   profile,
   recentReviews,
   isReviewsLoading,
+  isOwner = true,
   onDeleteReview,
   onEditComment,
+  onReportReview,
 }: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const menuTargetRef = useRef<number | null>(null);
@@ -46,10 +54,17 @@ export default function RecentReviewSection({
   const reactionsSheetRef = useRef<BottomSheetModal>(null);
   const [reactions, setReactions] = useState<EmojiReaction[]>([]);
   const [isReactionsLoading, setIsReactionsLoading] = useState(false);
+  const chatSheetRef = useRef<BottomSheetModal>(null);
+  const [activeChatReviewId, setActiveChatReviewId] = useState<number | null>(null);
 
   const openMenu = (reviewId: number) => {
     menuTargetRef.current = reviewId;
     setMenuVisible(true);
+  };
+
+  const openChat = (reviewId: number) => {
+    setActiveChatReviewId(reviewId);
+    chatSheetRef.current?.present();
   };
 
   const openReactions = async (reviewId: number) => {
@@ -142,7 +157,7 @@ export default function RecentReviewSection({
                         const comment = draftComments[review.id] ?? '';
                         setEditingId(null);
                         if (comment !== (review.comment ?? '')) {
-                          onEditComment(review.id, comment);
+                          onEditComment?.(review.id, comment);
                         }
                       }}
                     />
@@ -163,13 +178,17 @@ export default function RecentReviewSection({
                 <Text style={styles.cardPlaceName} numberOfLines={1}>
                   {review.place.name}
                 </Text>
-                <Image
-                  source={chatIcon}
-                  style={[styles.cardReactionIcon, styles.cardReactionIconFirst]}
-                  resizeMode="contain"
-                />
-                <TouchableOpacity hitSlop={10} onPress={() => openReactions(review.id)}>
-                  <Image source={emojiIcon} style={styles.cardReactionIcon} resizeMode="contain" />
+                <TouchableOpacity
+                  hitSlop={10}
+                  style={styles.cardReactionIconFirst}
+                  onPress={() => openChat(review.id)}>
+                  <Image source={chatIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  hitSlop={10}
+                  style={styles.cardReactionIconSpacing}
+                  onPress={() => openReactions(review.id)}>
+                  <Image source={emojiIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -179,13 +198,16 @@ export default function RecentReviewSection({
 
       <ReviewMenuModal
         visible={menuVisible}
-        isOwner
+        isOwner={isOwner}
         onClose={() => setMenuVisible(false)}
         onDelete={() => {
           const id = menuTargetRef.current;
-          if (id != null) onDeleteReview(id);
+          if (id != null) onDeleteReview?.(id);
         }}
-        onReport={() => {}}
+        onReport={() => {
+          const id = menuTargetRef.current;
+          if (id != null) onReportReview?.(id);
+        }}
         onEdit={() => {
           const id = menuTargetRef.current;
           if (id == null) return;
@@ -195,6 +217,9 @@ export default function RecentReviewSection({
       />
 
       <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
+
+      {/* MyReview엔 visibility가 없어서 비밀 댓글 체크박스는 못 띄움 */}
+      <ReviewChatModal ref={chatSheetRef} reviewId={activeChatReviewId ?? undefined} />
     </View>
   );
 }
@@ -345,14 +370,17 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
 
-  cardReactionIcon: {
+  cardReactionIconImage: {
     width: 32,
     height: 32,
     tintColor: colors.icon.inverse,
-    marginLeft: spacing.lg,
   },
 
   cardReactionIconFirst: {
     marginLeft: 'auto',
+  },
+
+  cardReactionIconSpacing: {
+    marginLeft: spacing.lg,
   },
 });

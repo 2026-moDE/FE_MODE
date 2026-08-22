@@ -92,6 +92,7 @@ export type ReviewComment = {
   is_mine: boolean;
   is_deleted: boolean;
   user: {
+    user_id?: number;
     nickname: string;
     profile_image_url: string;
     profile_url: string;

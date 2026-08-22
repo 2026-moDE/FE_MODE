@@ -12,12 +12,28 @@ import IconFriend from '../../assets/icons/IconFriend';
 type Props = {
     review: CurrentReview | ArchivedReview;
     onPress?: () => void;
+    onPressUser?: (userId: number) => void;
     isArchived?: boolean;
 };
 
-export default function ReviewCard({review, onPress, isArchived}: Props) {
+export default function ReviewCard({review, onPress, onPressUser, isArchived}: Props) {
     const {thumbnail_url, image_url, comment, user, created_at, is_friend} = review;
     const timeAgo = formatReviewTime(created_at, isArchived ?? false);
+
+    const userGroup = (
+        <View style={styles.userGroup}>
+            <FastImage
+                source={{uri: user.profile_url ?? user.profile_image_url}}
+                style={styles.avatar}
+                resizeMode={FastImage.resizeMode.cover}
+            />
+            <Text style={styles.nickname} numberOfLines={1}>
+                {user.nickname}
+            </Text>
+            {/* 친구가 남긴 리뷰 표시 */}
+            {is_friend && <IconFriend size={14} color={colors.brand.primary} />}
+        </View>
+    );
 
     return (
         <Pressable onPress={onPress} style={[styles.container, is_friend && styles.containerFriend]}>
@@ -28,19 +44,14 @@ export default function ReviewCard({review, onPress, isArchived}: Props) {
             />
             {/* 상단: 사용자 정보 */}
             <View style={styles.topRow}>
-                {/* 사용자 (아바타 + 닉네임) */}
-                <View style={styles.userGroup}>
-                    <FastImage
-                        source={{uri: user.profile_url ?? user.profile_image_url}}
-                        style={styles.avatar}
-                        resizeMode={FastImage.resizeMode.cover}
-                    />
-                    <Text style={styles.nickname} numberOfLines={1}>
-                        {user.nickname}
-                    </Text>
-                    {/* 친구가 남긴 리뷰 표시 */}
-                    {is_friend && <IconFriend size={14} color={colors.brand.primary} />}
-                </View>
+                {/* 사용자 (아바타 + 닉네임), user_id가 있을 때만 다른 유저 마이페이지로 이동 */}
+                {user.user_id != null && onPressUser ? (
+                    <Pressable onPress={() => onPressUser(user.user_id!)} hitSlop={6}>
+                        {userGroup}
+                    </Pressable>
+                ) : (
+                    userGroup
+                )}
             </View>
 
             {/* 중앙: 코멘트 */}

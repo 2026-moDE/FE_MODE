@@ -13,12 +13,19 @@ import {MyProfile} from '../../api/mypage';
 
 const settingIcon = require('../../assets/image/setting.png');
 
+// 다른 유저 프로필(UserProfile)도 이 카드에 그대로 넘길 수 있도록 실제 사용하는 필드만 뽑아서 타입 지정
+type ProfileHeaderInfo = Pick<
+  MyProfile,
+  'nickname' | 'profile_image_url' | 'profile_url' | 'friend_count'
+>;
+
 type Props = {
-  profile: MyProfile | null;
+  profile: ProfileHeaderInfo | null;
   isProfileLoading: boolean;
   onPressBack: () => void;
-  onPressSettings: () => void;
+  onPressSettings?: () => void;
   onPressFriends: () => void;
+  showSettings?: boolean;
 };
 
 export default function ProfileHeaderCard({
@@ -27,6 +34,7 @@ export default function ProfileHeaderCard({
   onPressBack,
   onPressSettings,
   onPressFriends,
+  showSettings = true,
 }: Props) {
   return (
     <View style={styles.profileCard}>
@@ -53,15 +61,17 @@ export default function ProfileHeaderCard({
         activeOpacity={0.7}
         style={[styles.profileIconButton, styles.profileBackButton]}
         onPress={onPressBack}>
-        <IconArrowLeft size={25} color={colors.icon.inverse} />
+        <IconArrowLeft size={20} color={colors.icon.inverse} />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        activeOpacity={0.7}
-        style={[styles.profileIconButton, styles.profileSettingButton]}
-        onPress={onPressSettings}>
-        <Image source={settingIcon} style={styles.settingImage} resizeMode="contain" />
-      </TouchableOpacity>
+      {showSettings && (
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={[styles.profileIconButton, styles.profileSettingButton]}
+          onPress={onPressSettings}>
+          <Image source={settingIcon} style={styles.settingImage} resizeMode="contain" />
+        </TouchableOpacity>
+      )}
 
       <View style={styles.profileBottomRow}>
         {isProfileLoading && !profile ? (
@@ -134,16 +144,16 @@ const styles = StyleSheet.create({
   },
 
   profileBackButton: {
-    left: spacing.xl,
+    left: spacing.lg,
   },
 
   profileSettingButton: {
-    right: spacing.xl,
+    right: spacing.lg,
   },
 
   settingImage: {
-    width: 28,
-    height: 28,
+    width: 20,
+    height: 20,
     tintColor: colors.icon.inverse,
   },
 

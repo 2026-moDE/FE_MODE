@@ -150,6 +150,11 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         navigation.navigate('ReviewReport', {reviewId, commentId});
     }, [reviewId, navigation]);
 
+    // 댓글/답글 작성자 프로필 사진·닉네임 탭 - 다른 유저 마이페이지로 이동
+    const handlePressUser = useCallback((userId: number) => {
+        navigation.navigate('UserMyPage', {userId});
+    }, [navigation]);
+
     // 입력창을 시트 전용 footer로 렌더링
     const renderFooter = useCallback(
         (props: BottomSheetFooterProps) => (
@@ -205,6 +210,7 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                         onReplyFocusChange={setIsReplyFocused}
                         onDeleteComment={() => handleDeleteComment(item.id)}
                         onReportComment={() => handleReportComment(item.id)}
+                        onPressUser={handlePressUser}
                         readOnly={readOnly}
                     />
                 )}

@@ -58,6 +58,7 @@ export type LocationVerifyResponse = {
 
 // 리뷰 작성자 (현재/과거 api 공용)
 export type ReviewUser = {
+    user_id?: number;
     nickname: string;
     profile_image_url: string;
     profile_url?: string | null;

@@ -63,6 +63,8 @@ export type AppStackParamList = {
   FollowList: undefined;
 
   FriendSearch: undefined;
+
+  UserMyPage: {userId: number};
 };
 
 // 리뷰 작성 전용 스택

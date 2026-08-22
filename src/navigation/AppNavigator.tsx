@@ -18,6 +18,7 @@ import TermsOfServiceScreen from '../screens/mypage/TermsOfServiceScreen';
 import TermsScreen from '../screens/auth/TermsScreen';
 import FollowListScreen from '../screens/mypage/FollowListScreen';
 import FriendSearchScreen from '../screens/mypage/FriendSearchScreen';
+import UserMyPageScreen from '../screens/mypage/UserMyPageScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -55,6 +56,7 @@ export default function AppNavigator() {
       <Stack.Screen name='TermsAgreement' component={TermsScreen} />
       <Stack.Screen name='FollowList' component={FollowListScreen} />
       <Stack.Screen name='FriendSearch' component={FriendSearchScreen} />
+      <Stack.Screen name='UserMyPage' component={UserMyPageScreen} />
     </Stack.Navigator>
   );
 }
