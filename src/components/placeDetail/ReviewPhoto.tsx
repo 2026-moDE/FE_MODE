@@ -25,6 +25,8 @@ type Props = {
     onDelete: () => void;
     onReport: () => void;
     onChangeComment?: (reviewId: number, comment: string) => void;
+    // 상단 프로필 사진/닉네임 탭 시 다른 유저 마이페이지로 이동 (user_id 없으면 무시됨)
+    onPressUser?: (userId: number) => void;
     useAbsoluteDate?: boolean;
     // 내 리뷰일 때 이모지 버튼 누르면 반응 목록을 보여줘야 함
     onOpenReactionList?: (reviewId: number) => void;
@@ -43,7 +45,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, onPressUser, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat}: Props) {
     const insets = useSafeAreaInsets();
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -225,7 +227,10 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                     {/* ── 상단: 사용자(아바타+닉네임+시간) + ⋮ + X (이미지 바깥, 검은 배경 위) ── */}
                     <View style={styles.topRow}>
                         <View style={styles.leftGroup}>
-                            <View style={styles.userGroup}>
+                            <Pressable
+                                style={styles.userGroup}
+                                disabled={review.user.user_id == null || !onPressUser}
+                                onPress={() => review.user.user_id != null && onPressUser?.(review.user.user_id)}>
                                 <FastImage
                                     source={{uri: review.user.profile_url ?? review.user.profile_image_url}}
                                     style={styles.avatar}
@@ -234,7 +239,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                                 <Text style={styles.nickname} numberOfLines={1}>
                                     {review.user.nickname}
                                 </Text>
-                            </View>
+                            </Pressable>
                             <Text style={styles.timeText} numberOfLines={1}>
                                 {useAbsoluteDate ? formatAbsoluteDate(review.created_at) : formatRelativeTime(review.created_at)}
                             </Text>

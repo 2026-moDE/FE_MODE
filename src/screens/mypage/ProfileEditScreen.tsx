@@ -4,7 +4,7 @@ import FastImage from '@d11/react-native-fast-image';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -276,9 +276,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     textAlignVertical: 'center',
     includeFontPadding: false,
-    lineHeight: 18,
-    fontSize: 18,
-    fontFamily: fontFamily.bold,
+    ...typography.b1,
     color: colors.text.basic,
   },
 
@@ -294,9 +292,10 @@ const styles = StyleSheet.create({
   },
 
   nicknameGuide: {
+    marginLeft: spacing.md,
     fontSize: 12,
     fontFamily: fontFamily.medium,
-    color: colors.text.brand,
+    color: colors.text.subtle,
   },
 
   errorText: {

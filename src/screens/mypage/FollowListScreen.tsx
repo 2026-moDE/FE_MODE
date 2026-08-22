@@ -44,11 +44,13 @@ function FriendListItem({
   isOpen,
   onOpenChange,
   onDelete,
+  onPress,
 }: {
   item: FriendUser;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onDelete: (id: number) => void;
+  onPress: (id: number) => void;
 }) {
   const translateX = useSharedValue(0);
   const startX = useSharedValue(0);
@@ -80,6 +82,8 @@ function FriendListItem({
   const tapGesture = Gesture.Tap().onEnd(() => {
     if (isOpen) {
       runOnJS(onOpenChange)(false);
+    } else {
+      runOnJS(onPress)(item.id);
     }
   });
 
@@ -341,6 +345,7 @@ export default function FollowListScreen() {
                 isOpen={item.id === openFriendId}
                 onOpenChange={isOpen => setOpenFriendId(isOpen ? item.id : null)}
                 onDelete={handleDelete}
+                onPress={id => navigation.navigate('UserMyPage', {userId: id})}
               />
             ) : (
               <FriendRequestItem

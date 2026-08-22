@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingTop: spacing.sm,
-    backgroundColor: colors.background.dark,
+    backgroundColor: colors.background.dimDarkest,
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
     overflow: 'hidden',

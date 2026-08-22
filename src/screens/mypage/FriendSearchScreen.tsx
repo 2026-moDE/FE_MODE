@@ -111,7 +111,10 @@ export default function FriendSearchScreen() {
         contentContainerStyle={styles.listContent}
         renderItem={({item}: {item: SearchResultUser}) => (
           <View style={styles.userRow}>
-            <View style={styles.profileGroup}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.profileGroup}
+              onPress={() => navigation.navigate('UserMyPage', {userId: item.id})}>
               <View style={styles.profile}>
                 <Image
                   source={item.profileImageUrl ? {uri: item.profileImageUrl} : emptyProfileIcon}
@@ -121,7 +124,7 @@ export default function FriendSearchScreen() {
               </View>
 
               <Text style={styles.userName}>{item.nickname}</Text>
-            </View>
+            </TouchableOpacity>
 
             {item.friendStatus === 'NONE' && (
               <TouchableOpacity
