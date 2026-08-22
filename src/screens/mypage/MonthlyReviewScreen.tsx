@@ -89,6 +89,16 @@ export default function MonthlyReviewScreen({navigation}: Props) {
     getMyProfile().then(setProfile).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (reviews.length === 0) return;
+
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({animated: false});
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [reviews]);
+
   const reviewsByDate = useMemo(() => {
     const map = new Map<string, MyReview>();
     reviews
@@ -154,8 +164,7 @@ export default function MonthlyReviewScreen({navigation}: Props) {
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => scrollRef.current?.scrollToEnd({animated: false})}>
+        showsVerticalScrollIndicator={false}>
         {monthGroups.map(({year, month}) => (
           <View key={`${year}-${month}`} style={styles.monthBlock}>
             <Text style={styles.monthLabel}>
