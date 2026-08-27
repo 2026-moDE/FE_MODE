@@ -3,7 +3,7 @@ import {getPresignedUrl} from './imageUpload';
 
 type ApiResponse<T> = {success: boolean; message: string | null; data: T};
 
-export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
 
 // 리뷰 상세 조회 응답
 export type ReviewDetail = {

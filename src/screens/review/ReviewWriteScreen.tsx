@@ -26,20 +26,36 @@ const refreshCameraIcon = require('../../assets/image/refresh_camera.png');
 const timerIcon = require('../../assets/image/timer.png');
 const pencilIcon = require('../../assets/image/pencil.png');
 
-const CONGESTION_OPTIONS = ['여유', '보통', '혼잡'] as const;
+const CONGESTION_OPTIONS = ['한산해요', '적당해요', '붐벼요', '매우 붐벼요'] as const;
 const getCongestionLevel = (
   congestion: CongestionType,
 ): CongestionLevel => {
   switch (congestion) {
-    case '여유':
+    case '한산해요':
       return 'LOW';
-    case '보통':
+    case '적당해요':
       return 'MEDIUM';
-    case '혼잡':
+    case '붐벼요':
       return 'HIGH';
+    case '매우 붐벼요':
+      return 'VERY_HIGH';
   }
 };
 type CongestionType = (typeof CONGESTION_OPTIONS)[number];
+
+const CHIP_WIDTHS: Record<CongestionType, number> = {
+  한산해요: 73,
+  적당해요: 73,
+  붐벼요: 61,
+  '매우 붐벼요': 88,
+};
+
+const CONGESTION_DESCRIPTIONS: Record<CongestionType, string> = {
+  한산해요: '대기 없이 바로 이용했어요',
+  적당해요: '조금 붐볐지만 괜찮아요',
+  붐벼요: '대기가 있었어요',
+  '매우 붐벼요': '오래 기다렸다가 이용했어요',
+};
 
 const MAX_REVIEW_LENGTH = 100;
 
@@ -199,7 +215,15 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>혼잡도 상태</Text>
+            <View style={styles.congestionTitleRow}>
+              <Text style={styles.sectionTitle}>혼잡도 상태</Text>
+
+              {selectedCongestion && (
+                <Text style={styles.congestionDescription} numberOfLines={1}>
+                  {CONGESTION_DESCRIPTIONS[selectedCongestion]}
+                </Text>
+              )}
+            </View>
 
             <View style={styles.chipRow}>
               {CONGESTION_OPTIONS.map(option => {
@@ -210,6 +234,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
                     key={option}
                     style={[
                       styles.chip,
+                      {width: CHIP_WIDTHS[option]},
                       isSelected && styles.chipSelected,
                     ]}
                     onPress={() => setSelectedCongestion(option)}>
@@ -449,16 +474,29 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
 
+  congestionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  congestionDescription: {
+    marginLeft: spacing.md, 
+    flexShrink: 1,
+    fontSize: 12,
+    fontFamily: fontFamily.medium,
+    color: colors.text.brandDarker
+  },
+
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s,
+    gap: spacing.xs,
     marginTop: spacing.s,
   },
 
   chip: {
-    height: 33,
-    paddingHorizontal: spacing.md,
+    minHeight: 33,
+    paddingHorizontal: spacing.s,
     paddingVertical: spacing.s,
     borderRadius: radius.md,
     backgroundColor: colors.navy[50],
@@ -467,14 +505,16 @@ const styles = StyleSheet.create({
   },
 
   chipSelected: {
-    backgroundColor: colors.surface.brand,
+    backgroundColor: colors.brand.primary,
+    borderWidth: 1.5,
+    borderColor: colors.border.brand,
   },
 
   chipText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: fontFamily.medium,
     color: '#4B5563',
-    lineHeight: 17,
+    lineHeight: 18,
     textAlign: 'center',
   },
 

@@ -14,7 +14,7 @@ import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RouteProp} from '@react-navigation/native';
 import type {ReviewStackParamList} from '../../types/navigation';
-import {fontFamily, typography} from '../../constants/typography';
+import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -53,23 +53,29 @@ const mdiBlurIcon = require('../../assets/image/mdi_blur.png');
 const eraserIcon = require('../../assets/image/eraser.png');
 const blurRefreshIcon = require('../../assets/image/blur_refresh.png');
 
+const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const scale = SCREEN_WIDTH / DESIGN_WIDTH;
+const px = (value: number) => value * scale;
 
 const STATUS_BAR_HEIGHT =
   Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0;
 
+const figmaY = (value: number) => px(value);
+
 // 사진 영역과 헤더 위치 치수
-const SIDE_MARGIN = spacing['3xl'];
+const SIDE_MARGIN = px(spacing['3xl']);
 const MAX_PHOTO_WIDTH = SCREEN_WIDTH - SIDE_MARGIN * 2;
-const MAX_PHOTO_HEIGHT = 570;
-const TOP_SECTION_HEIGHT = 129;
-const LOGO_TOP = 77;
-const TOOL_AREA_HEIGHT = 120;
-const BRUSH_RADIUS = 18;
-const ERASE_RADIUS = 28;
+const MAX_PHOTO_HEIGHT = px(570);
+const TOP_SECTION_HEIGHT = figmaY(129);
+const LOGO_TOP = figmaY(77);
+const TOOL_AREA_HEIGHT = px(120);
+const BRUSH_RADIUS = px(18);
+const ERASE_RADIUS = px(28);
+const AI_BUBBLE_HEIGHT = px(40);
 //const BLUR_SIGMA = 12;
 const MOSAIC_BLOCK_SIZE = 14;
-const MIN_BRUSH_DISTANCE = 10;
+const MIN_BRUSH_DISTANCE = px(10);
 
 const mosaicRuntimeEffect = Skia.RuntimeEffect.Make(`
 uniform shader image;
@@ -87,6 +93,7 @@ export default function ReviewPhotoConfirmScreen() {
 
   const [showBlurToast, setShowBlurToast] = useState(true);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [aiBubbleWidth, setAiBubbleWidth] = useState(0);
 
   const [exitModalVisible, setExitModalVisible] = useState(false);
 
@@ -154,6 +161,7 @@ export default function ReviewPhotoConfirmScreen() {
       </Group>
     );
   };
+
 
   const showToastForThreeSeconds = () => {
     setShowBlurToast(true);
@@ -336,7 +344,7 @@ const handleConfirm = async () => {
           style={styles.backButton}
           activeOpacity={0.8}
           onPress={handleBack}>
-          <IconArrowLeft size={20} />
+          <IconArrowLeft size={px(20)} />
         </TouchableOpacity>
 
         {/* 블러 모드일 때만 제목 노출 */}
@@ -398,21 +406,30 @@ const handleConfirm = async () => {
               </View>
             )}
           </View>
-        
-          {showBlurToast && !isBlurMode && (
-            <View style={styles.aiBubble}>
-              <Text style={styles.aiBubbleText}>
-                블러 기능으로 가리고 싶은 부분을 가릴 수 있어요
-              </Text>
-              <View style={styles.aiBubbleTail} />
-            </View>
-          )}
         </View>
       </View>
 
-      {/* 하단 툴바 */}
+      {/* 하단 툴바: 블러 버튼 + 안내 말풍선(버튼 위 12px) */}
       {!isBlurMode ? (
         <View style={styles.toolSection}>
+          {showBlurToast && (
+            <View
+              style={styles.aiBubble}
+              onLayout={event => setAiBubbleWidth(event.nativeEvent.layout.width)}>
+              <Text style={styles.aiBubbleText}>
+                블러 기능으로 가리고 싶은 부분을 가릴 수 있어요
+              </Text>
+              {aiBubbleWidth > 0 && (
+                <View
+                  style={[
+                    styles.aiBubbleTail,
+                    {left: aiBubbleWidth / 2 - px(8)},
+                  ]}
+                />
+              )}
+            </View>
+          )}
+
           <TouchableOpacity
             style={styles.toolButton}
             activeOpacity={0.8}
@@ -498,15 +515,15 @@ const styles = StyleSheet.create({
     height: TOP_SECTION_HEIGHT,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: spacing.lg,
+    paddingBottom: px(spacing.lg),
   },
   // 왼쪽 뒤로가기 화살표 버튼
   backButton: {
     position: 'absolute',
     top: LOGO_TOP,
-    left: spacing.lg,
-    width: 32,
-    height: 32,
+    left: px(spacing.lg),
+    width: px(32),
+    height: px(32),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -514,28 +531,28 @@ const styles = StyleSheet.create({
   // 블러 모드일 때 가운데에 보이는 제목
   headerTitle: {
     position: 'absolute',
-    top: LOGO_TOP + 3,
+    top: LOGO_TOP + px(3),
     alignSelf: 'center',
     color: colors.text.inverse,
-    fontSize: 17,
+    fontSize: px(17),
     fontFamily: fontFamily.bold,
   },
   confirmButton: {
     position: 'absolute',
     top: LOGO_TOP,
-    right: spacing.lg,
+    right: px(spacing.lg),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s,
+    gap: px(spacing.s),
   },
   checkIcon: {
-    width: 24,
-    height: 24,
+    width: px(24),
+    height: px(24),
     resizeMode: 'contain',
   },
   confirmText: {
     color: colors.text.inverse,
-    fontSize: 16,
+    fontSize: px(16),
     fontFamily: fontFamily.bold,
   },
 
@@ -554,7 +571,7 @@ const styles = StyleSheet.create({
   },
 
   photoBox: {
-    borderRadius: 20,
+    borderRadius: px(20),
     overflow: 'hidden',
     backgroundColor: '#111111',
   },
@@ -564,64 +581,63 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  // 사진 위에 뜨는 AI 안내 말풍선
+  // 블러 안내 AI 말풍선 (hug: width 245 / height 40), 버튼과 12px 간격
   aiBubble: {
-    position: 'absolute',
-    left: 61,
-    bottom: (-14),
-    minWidth: 207,
-    height: 28,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
+    height: AI_BUBBLE_HEIGHT,
+    marginBottom: px(12),
+    paddingHorizontal: px(spacing.md),
+    borderRadius: px(radius.md),
     backgroundColor: colors.surface.brand,
     justifyContent: 'center',
     alignItems: 'center',
   },
   aiBubbleText: {
-    ...typography.c1,
+    fontFamily: fontFamily.bold,
+    fontSize: px(12),
+    lineHeight: px(16),
+    letterSpacing: px(-0.24),
+    textAlign: 'center',
     color: colors.text.basic,
   },
   aiBubbleTail: {
     position: 'absolute',
-    bottom: (-6),
-    left: '50%',
-    marginLeft: -8,
+    bottom: px(-6),
     width: 0,
     height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 10,
+    borderLeftWidth: px(8),
+    borderRightWidth: px(8),
+    borderTopWidth: px(10),
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: colors.surface.brand,
   },
 
-  // 기본 모드에서 보이는 하단 도구 영역
+  // 기본 모드에서 보이는 하단 도구 영역 (말풍선 + 블러 버튼을 세로로 쌓음)
   toolSection: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: spacing['4xl'],
-    flexDirection: 'row',
+    bottom: px(spacing['4xl']),
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
   },
   toolButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s,
+    gap: px(spacing.s),
   },
   // 기본 모드의 블러 아이콘
   toolIcon: {
-    width: 32,
-    height: 32,
+    width: px(32),
+    height: px(32),
     resizeMode: 'contain',
     tintColor: colors.icon.inverse,
   },
   // 기본 모드의 도구 텍스트
   toolText: {
     color: colors.text.inverse,
-    fontSize: 16,
+    fontSize: px(16),
     fontFamily: fontFamily.bold,
   },
 
@@ -630,7 +646,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: spacing['4xl'],
+    bottom: px(spacing['4xl']),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -644,46 +660,46 @@ const styles = StyleSheet.create({
   leftToolGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing['3xl'],
+    gap: px(spacing['3xl']),
   },
   // 현재 선택된 도구 버튼
   selectedCircleButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius['2xl'],
+    width: px(40),
+    height: px(40),
+    borderRadius: px(radius['2xl']),
     backgroundColor: colors.button.tertiaryFill,
     justifyContent: 'center',
     alignItems: 'center',
   },
   // 선택된 블러 아이콘
   selectedBlurIcon: {
-    width: 28,
-    height: 28,
+    width: px(28),
+    height: px(28),
     resizeMode: 'contain',
     tintColor: colors.text.basic,
   },
   // 선택되지 않은 원형 버튼
   outlineCircleButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius['2xl'],
-    borderWidth: 1,
+    width: px(40),
+    height: px(40),
+    borderRadius: px(radius['2xl']),
+    borderWidth: px(1),
     borderColor: colors.border.inverse,
     justifyContent: 'center',
     alignItems: 'center',
   },
   // 선택되지 않은 도구 아이콘
   outlineToolIcon: {
-    width: 23,
-    height: 23,
+    width: px(23),
+    height: px(23),
     resizeMode: 'contain',
     tintColor: colors.icon.inverse,
   },
   // 블러 초기화 아이콘 텍스트
   resetIcon: {
     color: colors.text.inverse,
-    fontSize: 26,
-    lineHeight: 30,
+    fontSize: px(26),
+    lineHeight: px(30),
     fontFamily: fontFamily.regular,
   },
   photoLoadingBox: {
@@ -693,7 +709,7 @@ const styles = StyleSheet.create({
   },
 
   photoLoadingText: {
-    fontSize: 14,
+    fontSize: px(14),
     color: '#6B7280',
     fontFamily: fontFamily.regular,
   },
