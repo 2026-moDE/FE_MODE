@@ -2,7 +2,7 @@ import React, {useState, useEffect, useRef} from 'react';
 import {View, Text, Image, Pressable, StyleSheet, Animated, PanResponder, ScrollView, Dimensions, Keyboard} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
-import {CurrentReview, ArchivedReview} from '../../types/place';
+import {CurrentReview, ArchivedReview, ReviewUser} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import { spacing } from '../../constants/spacing';
@@ -26,7 +26,7 @@ type Props = {
     onReport: () => void;
     onChangeComment?: (reviewId: number, comment: string) => void;
     // 상단 프로필 사진/닉네임 탭 시 다른 유저 마이페이지로 이동 (user_id 없으면 무시됨)
-    onPressUser?: (userId: number) => void;
+    onPressUser?: (user: ReviewUser) => void;
     useAbsoluteDate?: boolean;
     // 내 리뷰일 때 이모지 버튼 누르면 반응 목록을 보여줘야 함
     onOpenReactionList?: (reviewId: number) => void;
@@ -229,8 +229,8 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                         <View style={styles.leftGroup}>
                             <Pressable
                                 style={styles.userGroup}
-                                disabled={review.user.user_id == null || !onPressUser}
-                                onPress={() => review.user.user_id != null && onPressUser?.(review.user.user_id)}>
+                                disabled={!onPressUser}
+                                onPress={() => onPressUser?.(review.user)}>
                                 <FastImage
                                     source={{uri: review.user.profile_url ?? review.user.profile_image_url}}
                                     style={styles.avatar}

@@ -5,7 +5,7 @@ import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
-import {fontFamily, fontSize} from '../../constants/typography';
+import {fontFamily, fontSize, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
@@ -86,12 +86,18 @@ export default function RecentReviewSection({
       {isReviewsLoading ? (
         <ActivityIndicator size="small" color={colors.icon.basic} style={styles.loadingIndicator} />
       ) : recentReviews.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>아직 작성한 리뷰가 없어요</Text>
-          <QuickReviewButton
-            onPress={() => navigation.navigate('ReviewStack', {screen: 'ReviewCamera'})}
-          />
-        </View>
+        isOwner ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyText}>아직 작성한 리뷰가 없어요</Text>
+            <QuickReviewButton
+              onPress={() => navigation.navigate('ReviewStack', {screen: 'ReviewCamera'})}
+            />
+          </View>
+        ) : (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTextOther}>아직 작성한 리뷰가 없어요</Text>
+          </View>
+        )
       ) : (
         <View style={styles.list}>
           {recentReviews.map(review => (
@@ -245,6 +251,12 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
     fontSize: 16,
     color: colors.text.inverse,
+  },
+
+  emptyTextOther: {
+    ...typography.b5,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
 
   header: {

@@ -24,8 +24,9 @@ export default function FriendActionButton({friendStatus, isSubmitting, onPressR
 
   if (friendStatus === 'PENDING') {
     return (
-      <View style={styles.labelRow}>
-        <Text style={styles.labelText}>요청됨</Text>
+      <View style={styles.requestButton}>
+        <IconFriendAdd size={16} color={colors.text.disabled} />
+        <Text style={[styles.requestButtonText, styles.pendingButtonText]}>친구 요청 중</Text>
       </View>
     );
   }
@@ -64,6 +65,10 @@ const styles = StyleSheet.create({
   requestButtonText: {
     ...typography.b5,
     color: colors.text.inverse,
+  },
+
+  pendingButtonText: {
+    color: colors.text.disabled,
   },
 
   labelRow: {

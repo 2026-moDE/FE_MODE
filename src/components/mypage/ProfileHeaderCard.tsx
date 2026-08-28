@@ -9,6 +9,7 @@ import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconChevronDown from '../../assets/icons/IconChevronDown';
+import IconFriend from '../../assets/icons/IconFriend';
 import {MyProfile} from '../../api/mypage';
 
 const settingIcon = require('../../assets/image/setting.png');
@@ -26,6 +27,8 @@ type Props = {
   onPressSettings?: () => void;
   onPressFriends: () => void;
   showSettings?: boolean;
+  // 이미 친구인 다른 유저 마이페이지에서 닉네임 앞에 별 배지 표시
+  isFriend?: boolean;
 };
 
 export default function ProfileHeaderCard({
@@ -35,6 +38,7 @@ export default function ProfileHeaderCard({
   onPressSettings,
   onPressFriends,
   showSettings = true,
+  isFriend = false,
 }: Props) {
   return (
     <View style={styles.profileCard}>
@@ -77,7 +81,12 @@ export default function ProfileHeaderCard({
         {isProfileLoading && !profile ? (
           <ActivityIndicator size="small" color={colors.icon.inverse} />
         ) : (
-          <Text style={styles.profileNickname}>{profile?.nickname ?? '닉네임'}</Text>
+          <View style={styles.nicknameRow}>
+            {isFriend && <IconFriend size={18} color={colors.icon.brand} />}
+            <Text style={[styles.profileNickname, isFriend && styles.profileNicknameFriend]}>
+              {profile?.nickname ?? '닉네임'}
+            </Text>
+          </View>
         )}
 
         <TouchableOpacity
@@ -167,11 +176,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
+  nicknameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
   profileNickname: {
     fontFamily: fontFamily.bold,
     fontSize: fontSize.h1,
     lineHeight: lineHeight.h1,
     color: colors.text.inverse,
+  },
+
+  profileNicknameFriend: {
+    color: colors.icon.brand,
   },
 
   friendCountRow: {
