@@ -1,13 +1,16 @@
-import React, {forwardRef, useCallback, useMemo} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import React, {forwardRef, useCallback, useImperativeHandle, useMemo, useRef} from 'react';
+import {View, Text, StyleSheet, ActivityIndicator, Pressable} from 'react-native';
 import {BottomSheetModal, BottomSheetFlatList, BottomSheetBackdrop, BottomSheetBackdropProps} from '@gorhom/bottom-sheet';
 import FastImage from '@d11/react-native-fast-image';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import {fontFamily, fontSize} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import {EmojiReaction} from '../../api/review';
+import {AppStackParamList} from '../../types/navigation';
 
 type Props = {
   reactions: EmojiReaction[];
@@ -18,6 +21,9 @@ const ReviewReactionsModal = forwardRef<BottomSheetModal, Props>(function Review
   {reactions, isLoading},
   ref,
 ) {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const sheetRef = useRef<BottomSheetModal>(null);
+  useImperativeHandle(ref, () => sheetRef.current as BottomSheetModal);
   const snapPoints = useMemo(() => ['45%', '75%'], []);
 
   const renderBackdrop = useCallback(
@@ -29,7 +35,7 @@ const ReviewReactionsModal = forwardRef<BottomSheetModal, Props>(function Review
 
   return (
     <BottomSheetModal
-      ref={ref}
+      ref={sheetRef}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
       backdropComponent={renderBackdrop}
@@ -44,7 +50,14 @@ const ReviewReactionsModal = forwardRef<BottomSheetModal, Props>(function Review
           contentContainerStyle={styles.content}
           ListEmptyComponent={<Text style={styles.emptyText}>아직 반응이 없어요</Text>}
           renderItem={({item}) => (
-            <View style={styles.row}>
+            <Pressable
+              style={styles.row}
+              onPress={() => {
+                if (item.user.user_id == null) return;
+                // 시트는 네비게이션 스택과 별개 레이어(포탈)라 화면 이동 전에 직접 닫아줘야 함
+                sheetRef.current?.dismiss();
+                navigation.navigate('UserMyPage', {userId: item.user.user_id});
+              }}>
               {item.user.profile_url ?? item.user.profile_image_url ? (
                 <FastImage
                   source={{uri: item.user.profile_url ?? item.user.profile_image_url ?? undefined}}
@@ -60,7 +73,7 @@ const ReviewReactionsModal = forwardRef<BottomSheetModal, Props>(function Review
               </Text>
 
               <Text style={styles.emoji}>{item.emoji}</Text>
-            </View>
+            </Pressable>
           )}
         />
       )}

@@ -63,6 +63,7 @@ export type EmojiReaction = {
   emoji : string;
   is_mine : boolean;
   user: {
+    user_id: number;
     nickname: string;
     profile_image_url: string | null;
     profile_url: string | null;
