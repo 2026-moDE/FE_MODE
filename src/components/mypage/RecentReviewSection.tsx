@@ -1,22 +1,25 @@
-import React, {useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
-import {fontFamily, fontSize} from '../../constants/typography';
+import {fontFamily, fontSize, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
+import IconFriend from '../../assets/icons/IconFriend';
 import {formatRelativeTime} from '../../utils/date';
 import ReviewMenuModal from '../placeDetail/ReviewMenuModal';
 import ReviewChatModal from '../placeDetail/ReviewChatModal';
 import ReviewReactionsModal from './ReviewReactionsModal';
+import {ReviewPhotoEmojiPicker} from '../placeDetail/ReviewPhotoReactions';
 import QuickReviewButton from '../home/QuickReviewButton';
 import {MyProfile, MyReview} from '../../api/mypage';
-import {fetchEmojis, EmojiReaction} from '../../api/review';
+import {UserReview} from '../../api/user';
+import {fetchEmojis, addEmoji, removeEmoji, EmojiReaction} from '../../api/review';
 import {AppStackParamList} from '../../types/navigation';
 
 const chatIcon = require('../../assets/image/comment.png');
@@ -26,11 +29,18 @@ const menuIcon = require('../../assets/image/vertical_ellipis.png');
 // 다른 유저 프로필(UserProfile)도 그대로 넘길 수 있도록 실제 사용하는 필드만 뽑아서 타입 지정
 type ReviewAuthorInfo = Pick<MyProfile, 'nickname' | 'profile_image_url' | 'profile_url'>;
 
+type ReviewItem = MyReview | UserReview;
+
 type Props = {
   profile: ReviewAuthorInfo | null;
-  recentReviews: MyReview[];
+  recentReviews: ReviewItem[];
   isReviewsLoading: boolean;
+  isLoadingMore?: boolean;
   isOwner?: boolean;
+  // 친구 마이페이지 피드에서만 시간 옆에 친구 공개 뱃지(별)를 보여줌
+  showFriendBadge?: boolean;
+  // 친구 아닌 다른 유저 마이페이지에서는 작성 시간 자체를 노출하지 않음
+  showTime?: boolean;
   onDeleteReview?: (reviewId: number) => void;
   onEditComment?: (reviewId: number, comment: string) => void;
   onReportReview?: (reviewId: number) => void;
@@ -40,7 +50,10 @@ export default function RecentReviewSection({
   profile,
   recentReviews,
   isReviewsLoading,
+  isLoadingMore = false,
   isOwner = true,
+  showFriendBadge = false,
+  showTime = true,
   onDeleteReview,
   onEditComment,
   onReportReview,
@@ -57,17 +70,28 @@ export default function RecentReviewSection({
   const chatSheetRef = useRef<BottomSheetModal>(null);
   const [activeChatReviewId, setActiveChatReviewId] = useState<number | null>(null);
 
-  const openMenu = (reviewId: number) => {
+  // 남의 리뷰(!isOwner)에서 내가 남긴 반응 - null이면 확인 결과 반응 없음, undefined면 아직 서버에서 확인 안 함(이모지 버튼 눌렀을 때 지연 조회)
+  const [myEmojiByReview, setMyEmojiByReview] = useState<Record<number, string | null>>({});
+  const myEmojiByReviewRef = useRef<Record<number, string | null>>({});
+  const [pickerReviewId, setPickerReviewId] = useState<number | null>(null);
+
+  // 카드 하나하나가 최신 콜백을 계속 참조하면서도 의존성 없이(=항상 같은 함수 참조로) 넘어가게 하기 위한 ref
+  const onEditCommentRef = useRef(onEditComment);
+  useEffect(() => {
+    onEditCommentRef.current = onEditComment;
+  });
+
+  const openMenu = useCallback((reviewId: number) => {
     menuTargetRef.current = reviewId;
     setMenuVisible(true);
-  };
+  }, []);
 
-  const openChat = (reviewId: number) => {
+  const openChat = useCallback((reviewId: number) => {
     setActiveChatReviewId(reviewId);
     chatSheetRef.current?.present();
-  };
+  }, []);
 
-  const openReactions = async (reviewId: number) => {
+  const openReactions = useCallback(async (reviewId: number) => {
     reactionsSheetRef.current?.present();
     setIsReactionsLoading(true);
     try {
@@ -79,121 +103,116 @@ export default function RecentReviewSection({
     } finally {
       setIsReactionsLoading(false);
     }
-  };
+  }, []);
+
+  // 남의 리뷰 이모지 버튼: 처음 누를 때만 내 반응 여부를 조회해서 캐싱, 이미 반응했으면 취소 / 아니면 피커 열기
+  const handlePressEmojiButton = useCallback(async (reviewId: number) => {
+    let mine = myEmojiByReviewRef.current[reviewId];
+    if (mine === undefined) {
+      try {
+        const res = await fetchEmojis(reviewId);
+        mine = res.reactions.find(r => r.is_mine)?.emoji ?? null;
+      } catch (error) {
+        console.log('[내 이모지 반응 조회 실패]', error);
+        mine = null;
+      }
+      myEmojiByReviewRef.current = {...myEmojiByReviewRef.current, [reviewId]: mine};
+      setMyEmojiByReview(myEmojiByReviewRef.current);
+    }
+
+    if (mine) {
+      myEmojiByReviewRef.current = {...myEmojiByReviewRef.current, [reviewId]: null};
+      setMyEmojiByReview(myEmojiByReviewRef.current);
+      removeEmoji(reviewId, mine).catch(err => console.log('[이모지 삭제 실패]', err?.message));
+    } else {
+      setPickerReviewId(reviewId);
+    }
+  }, []);
+
+  const onPressEmojiButton = useCallback((reviewId: number) => {
+    if (isOwner) {
+      openReactions(reviewId);
+    } else {
+      handlePressEmojiButton(reviewId);
+    }
+  }, [isOwner, openReactions, handlePressEmojiButton]);
+
+  const handleSelectEmoji = useCallback((reviewId: number, emoji: string) => {
+    myEmojiByReviewRef.current = {...myEmojiByReviewRef.current, [reviewId]: emoji};
+    setMyEmojiByReview(myEmojiByReviewRef.current);
+    setPickerReviewId(null);
+    addEmoji(reviewId, emoji).catch(err => console.log('[이모지 추가 실패]', err?.message));
+  }, []);
+
+  const closePicker = useCallback(() => setPickerReviewId(null), []);
+
+  const onChangeDraftComment = useCallback((reviewId: number, text: string) => {
+    setDraftComments(prev => ({...prev, [reviewId]: text}));
+  }, []);
+
+  const onRegisterInputRef = useCallback((reviewId: number, ref: TextInput | null) => {
+    inputRefs.current[reviewId] = ref;
+  }, []);
+
+  // comment/originalComment는 카드가 자기 props로 이미 들고 있는 값을 그대로 넘겨줌 - draftComments를 의존성으로 안 잡아도 되게
+  const onBlurComment = useCallback((reviewId: number, comment: string, originalComment: string) => {
+    setEditingId(null);
+    if (comment !== originalComment) {
+      onEditCommentRef.current?.(reviewId, comment);
+    }
+  }, []);
+
+  const openEditor = useCallback((reviewId: number) => {
+    setEditingId(reviewId);
+    setTimeout(() => inputRefs.current[reviewId]?.focus(), 50);
+  }, []);
 
   return (
     <View style={styles.section}>
       {isReviewsLoading ? (
         <ActivityIndicator size="small" color={colors.icon.basic} style={styles.loadingIndicator} />
       ) : recentReviews.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>아직 작성한 리뷰가 없어요</Text>
-          <QuickReviewButton
-            onPress={() => navigation.navigate('ReviewStack', {screen: 'ReviewCamera'})}
-          />
-        </View>
+        isOwner ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyText}>아직 작성한 리뷰가 없어요</Text>
+            <QuickReviewButton
+              onPress={() => navigation.navigate('ReviewStack', {screen: 'ReviewCamera'})}
+            />
+          </View>
+        ) : (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTextOther}>아직 작성한 리뷰가 없어요</Text>
+          </View>
+        )
       ) : (
         <View style={styles.list}>
           {recentReviews.map(review => (
-            <View key={review.id} style={styles.card}>
-              <View style={styles.header}>
-                {profile?.profile_image_url ? (
-                  <FastImage
-                    source={{uri: profile.profile_url ?? profile.profile_image_url}}
-                    style={styles.headerAvatar}
-                    resizeMode={FastImage.resizeMode.cover}
-                  />
-                ) : (
-                  <View style={styles.headerAvatar} />
-                )}
-
-                <Text style={styles.headerNickname} numberOfLines={1}>
-                  {profile?.nickname ?? '닉네임'}
-                </Text>
-
-                <Text style={styles.headerTime}>
-                  {formatRelativeTime(review.created_at)}
-                </Text>
-
-                <View style={styles.headerActions}>
-                  <TouchableOpacity
-                    style={styles.headerActionButton}
-                    hitSlop={10}
-                    onPress={() => openMenu(review.id)}>
-                    <Image source={menuIcon} style={styles.headerActionIcon} resizeMode="contain" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={styles.cardPhoto}>
-                {review.image_url ? (
-                  <FastImage
-                    source={{
-                      uri:
-                        review.thumbnail_url ??
-                        review.thumbnail_small_url ??
-                        review.image_url,
-                    }}
-                    style={styles.cardPhotoImage}
-                    resizeMode={FastImage.resizeMode.cover}
-                  />
-                ) : (
-                  <View style={styles.cardPhotoPlaceholder} />
-                )}
-
-                {editingId === review.id ? (
-                  <View style={styles.cardCommentOverlay}>
-                    <TextInput
-                      ref={ref => {
-                        inputRefs.current[review.id] = ref;
-                      }}
-                      style={[styles.cardCommentText, styles.cardCommentInput]}
-                      value={draftComments[review.id] ?? review.comment ?? ''}
-                      onChangeText={text =>
-                        setDraftComments(prev => ({...prev, [review.id]: text}))
-                      }
-                      multiline
-                      onBlur={() => {
-                        const comment = draftComments[review.id] ?? '';
-                        setEditingId(null);
-                        if (comment !== (review.comment ?? '')) {
-                          onEditComment?.(review.id, comment);
-                        }
-                      }}
-                    />
-                  </View>
-                ) : (
-                  !!review.comment && (
-                    <View style={styles.cardCommentOverlay} pointerEvents="none">
-                      <Text style={styles.cardCommentText} numberOfLines={2}>
-                        {review.comment}
-                      </Text>
-                    </View>
-                  )
-                )}
-              </View>
-
-              <View style={styles.cardFooter}>
-                <IconPlaceLocation size={24} color={colors.icon.inverse} />
-                <Text style={styles.cardPlaceName} numberOfLines={1}>
-                  {review.place.name}
-                </Text>
-                <TouchableOpacity
-                  hitSlop={10}
-                  style={styles.cardReactionIconFirst}
-                  onPress={() => openChat(review.id)}>
-                  <Image source={chatIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  hitSlop={10}
-                  style={styles.cardReactionIconSpacing}
-                  onPress={() => openReactions(review.id)}>
-                  <Image source={emojiIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
-                </TouchableOpacity>
-              </View>
-            </View>
+            <ReviewFeedCard
+              key={review.id}
+              review={review}
+              profile={profile}
+              isOwner={isOwner}
+              showFriendBadge={showFriendBadge}
+              showTime={showTime}
+              isEditing={editingId === review.id}
+              draftComment={draftComments[review.id]}
+              myEmoji={isOwner ? undefined : myEmojiByReview[review.id]}
+              showPicker={pickerReviewId === review.id}
+              onPressMenu={openMenu}
+              onPressChat={openChat}
+              onPressEmojiButton={onPressEmojiButton}
+              onChangeDraftComment={onChangeDraftComment}
+              onBlurComment={onBlurComment}
+              onRegisterInputRef={onRegisterInputRef}
+              onClosePicker={closePicker}
+              onSelectEmoji={handleSelectEmoji}
+            />
           ))}
         </View>
+      )}
+
+      {isLoadingMore && (
+        <ActivityIndicator size="small" color={colors.icon.basic} style={styles.loadingMoreIndicator} />
       )}
 
       <ReviewMenuModal
@@ -210,9 +229,7 @@ export default function RecentReviewSection({
         }}
         onEdit={() => {
           const id = menuTargetRef.current;
-          if (id == null) return;
-          setEditingId(id);
-          setTimeout(() => inputRefs.current[id]?.focus(), 50);
+          if (id != null) openEditor(id);
         }}
       />
 
@@ -224,6 +241,163 @@ export default function RecentReviewSection({
   );
 }
 
+type ReviewFeedCardProps = {
+  review: ReviewItem;
+  profile: ReviewAuthorInfo | null;
+  isOwner: boolean;
+  showFriendBadge: boolean;
+  showTime: boolean;
+  isEditing: boolean;
+  draftComment: string | undefined;
+  myEmoji: string | null | undefined;
+  showPicker: boolean;
+  onPressMenu: (reviewId: number) => void;
+  onPressChat: (reviewId: number) => void;
+  onPressEmojiButton: (reviewId: number) => void;
+  onChangeDraftComment: (reviewId: number, text: string) => void;
+  onBlurComment: (reviewId: number, comment: string, originalComment: string) => void;
+  onRegisterInputRef: (reviewId: number, ref: TextInput | null) => void;
+  onClosePicker: () => void;
+  onSelectEmoji: (reviewId: number, emoji: string) => void;
+};
+
+// 리스트 안 카드 하나 - React.memo로 감싸서, 이 카드와 무관한 상태(반응 목록 로딩 등)가 바뀌어도
+// 다른 카드들까지 전부 리렌더링되지 않게 함 (리뷰가 많을 때 이모지/댓글 시트를 열 때 버벅이던 원인)
+const ReviewFeedCard = React.memo(function ReviewFeedCard({
+  review,
+  profile,
+  isOwner,
+  showFriendBadge,
+  showTime,
+  isEditing,
+  draftComment,
+  myEmoji,
+  showPicker,
+  onPressMenu,
+  onPressChat,
+  onPressEmojiButton,
+  onChangeDraftComment,
+  onBlurComment,
+  onRegisterInputRef,
+  onClosePicker,
+  onSelectEmoji,
+}: ReviewFeedCardProps) {
+  const originalComment = review.comment ?? '';
+  const currentDraft = draftComment ?? originalComment;
+  // 친구 마이페이지 피드 전체가 아니라, 그중 친구공개(FRIENDS)로 쓴 리뷰에만 별 배지/노란 테두리 표시
+  const isFriendOnlyPost = showFriendBadge && review.visibility === 'FRIENDS';
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        {profile?.profile_image_url ? (
+          <FastImage
+            source={{uri: profile.profile_url ?? profile.profile_image_url}}
+            style={styles.headerAvatar}
+            resizeMode={FastImage.resizeMode.cover}
+          />
+        ) : (
+          <View style={styles.headerAvatar} />
+        )}
+
+        <Text style={styles.headerNickname} numberOfLines={1}>
+          {profile?.nickname ?? '닉네임'}
+        </Text>
+
+        {showTime && !!review.created_at && (
+          <Text style={styles.headerTime}>
+            {formatRelativeTime(review.created_at)}
+          </Text>
+        )}
+
+        {isFriendOnlyPost && (
+          <View style={styles.friendBadge}>
+            <IconFriend size={12} color={colors.brand.primary} />
+          </View>
+        )}
+
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.headerActionButton}
+            hitSlop={10}
+            onPress={() => onPressMenu(review.id)}>
+            <Image source={menuIcon} style={styles.headerActionIcon} resizeMode="contain" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={[styles.cardPhoto, isFriendOnlyPost && styles.cardPhotoFriendBorder]}>
+        {review.image_url ? (
+          <FastImage
+            source={{
+              uri:
+                review.thumbnail_url ??
+                review.thumbnail_small_url ??
+                review.image_url,
+            }}
+            style={styles.cardPhotoImage}
+            resizeMode={FastImage.resizeMode.cover}
+          />
+        ) : (
+          <View style={styles.cardPhotoPlaceholder} />
+        )}
+
+        {isEditing ? (
+          <View style={styles.cardCommentOverlay}>
+            <TextInput
+              ref={ref => onRegisterInputRef(review.id, ref)}
+              style={[styles.cardCommentText, styles.cardCommentInput]}
+              value={currentDraft}
+              onChangeText={text => onChangeDraftComment(review.id, text)}
+              multiline
+              onBlur={() => onBlurComment(review.id, currentDraft, originalComment)}
+            />
+          </View>
+        ) : (
+          !!review.comment && (
+            <View style={styles.cardCommentOverlay} pointerEvents="none">
+              <Text style={styles.cardCommentText} numberOfLines={2}>
+                {review.comment}
+              </Text>
+            </View>
+          )
+        )}
+
+        {!isOwner && (
+          <ReviewPhotoEmojiPicker
+            visible={showPicker}
+            onClose={onClosePicker}
+            onSelect={emoji => onSelectEmoji(review.id, emoji)}
+          />
+        )}
+      </View>
+
+      <View style={styles.cardFooter}>
+        <IconPlaceLocation size={24} color={colors.icon.inverse} />
+        <Text style={styles.cardPlaceName} numberOfLines={1}>
+          {review.place.name}
+        </Text>
+        <TouchableOpacity
+          hitSlop={10}
+          style={styles.cardReactionIconFirst}
+          onPress={() => onPressChat(review.id)}>
+          <Image source={chatIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          hitSlop={10}
+          style={styles.cardReactionIconSpacing}
+          onPress={() => onPressEmojiButton(review.id)}>
+          {!isOwner && myEmoji ? (
+            <Text style={styles.selectedEmojiText}>{myEmoji}</Text>
+          ) : (
+            <Image source={emojiIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+});
+
 const styles = StyleSheet.create({
   section: {
     marginTop: 24,
@@ -232,6 +406,10 @@ const styles = StyleSheet.create({
 
   loadingIndicator: {
     marginTop: 8,
+  },
+
+  loadingMoreIndicator: {
+    marginTop: spacing['2xl'],
   },
 
   emptyBox: {
@@ -245,6 +423,12 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
     fontSize: 16,
     color: colors.text.inverse,
+  },
+
+  emptyTextOther: {
+    ...typography.b5,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
 
   header: {
@@ -271,9 +455,12 @@ const styles = StyleSheet.create({
   },
 
   headerTime: {
-    fontFamily: fontFamily.medium,
-    fontSize: fontSize.c2,
+    ...typography.c2,
     color: colors.text.inverse,
+    marginLeft: spacing.md,
+  },
+
+  friendBadge: {
     marginLeft: spacing.md,
   },
 
@@ -311,6 +498,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     overflow: 'hidden',
     backgroundColor: colors.surface.subtleDarker,
+  },
+
+  cardPhotoFriendBorder: {
+    borderWidth: 2,
+    borderColor: colors.brand.primary,
   },
 
   cardPhotoImage: {
@@ -374,6 +566,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     tintColor: colors.icon.inverse,
+  },
+
+  selectedEmojiText: {
+    fontSize: 26,
+    width: 32,
+    height: 32,
+    textAlign: 'center',
+    lineHeight: 32,
   },
 
   cardReactionIconFirst: {

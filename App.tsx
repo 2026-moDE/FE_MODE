@@ -4,7 +4,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {GoogleSignin} from '@react-native-google-signin/google-signin';
 import RootNavigation from './src/navigation/RootNavigation';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import {GOOGLE_WEB_CLIENT_ID} from './src/constants/google';
+import {GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID} from './src/constants/google';
 
 LogBox.ignoreLogs(['[gps]', 'new NativeEventEmitter']);
 LogBox.ignoreAllLogs();
@@ -13,6 +13,7 @@ function App() {
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_WEB_CLIENT_ID,
+      iosClientId: GOOGLE_IOS_CLIENT_ID,
       offlineAccess: false,
     });
   }, []);

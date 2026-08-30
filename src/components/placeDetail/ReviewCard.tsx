@@ -1,7 +1,7 @@
 import React from 'react';
 import {View, Text, Image, Pressable, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-import {CurrentReview, ArchivedReview} from '../../types/place';
+import {CurrentReview, ArchivedReview, ReviewUser} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing, gap, padding} from '../../constants/spacing';
@@ -12,7 +12,7 @@ import IconFriend from '../../assets/icons/IconFriend';
 type Props = {
     review: CurrentReview | ArchivedReview;
     onPress?: () => void;
-    onPressUser?: (userId: number) => void;
+    onPressUser?: (user: ReviewUser) => void;
     isArchived?: boolean;
 };
 
@@ -48,9 +48,9 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
             />
             {/* 상단: 사용자 정보 */}
             <View style={styles.topRow}>
-                {/* 사용자 (아바타 + 닉네임), user_id가 있을 때만 다른 유저 마이페이지로 이동 */}
-                {user.user_id != null && onPressUser ? (
-                    <Pressable onPress={() => onPressUser(user.user_id!)} hitSlop={6}>
+                {/* user_id가 없는 응답(목록 api 일부)이면 다른 유저 마이페이지로 이동할 수 없어 탭 비활성화 */}
+                {onPressUser && user.user_id != null ? (
+                    <Pressable onPress={() => onPressUser(user)} hitSlop={6}>
                         {userGroup}
                     </Pressable>
                 ) : (
