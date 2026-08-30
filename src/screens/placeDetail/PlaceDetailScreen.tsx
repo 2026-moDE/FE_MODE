@@ -274,16 +274,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                         <ReviewCard
                             review={item}
                             onPress={() => setImageIndex(reviewIndex)}
-                            onPressUser={user =>
-                                navigation.navigate('UserMyPage', {
-                                    userId: user.user_id ?? -1, // user_id 미제공 응답 대비 - 목데이터라 실제 조회엔 안 씀
-                                    mockUser: {
-                                        nickname: user.nickname,
-                                        profileImageUrl: user.profile_image_url,
-                                        profileUrl: user.profile_url,
-                                    },
-                                })
-                            }
+                            onPressUser={user => {
+                                if (user.user_id == null) return;
+                                navigation.navigate('UserMyPage', {userId: user.user_id});
+                            }}
                             isArchived={activeTab === 'archived'}
                         />
                     );
@@ -304,16 +298,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 autoOpenChat={notificationAction === 'chat'}
                 onOpenReactionList={openReactions}
                 onClose={() => setImageIndex(null)}
-                onPressUser={user =>
-                    navigation.navigate('UserMyPage', {
-                        userId: user.user_id!,
-                        mockUser: {
-                            nickname: user.nickname,
-                            profileImageUrl: user.profile_image_url,
-                            profileUrl: user.profile_url,
-                        },
-                    })
-                }
+                onPressUser={user => {
+                    if (user.user_id == null) return;
+                    navigation.navigate('UserMyPage', {userId: user.user_id});
+                }}
                 onDelete={async () => {
                     if (imageIndex === null) return;
                     try {

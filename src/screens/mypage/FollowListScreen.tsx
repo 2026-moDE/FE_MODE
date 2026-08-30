@@ -348,11 +348,6 @@ export default function FollowListScreen() {
                 onPress={friend =>
                   navigation.navigate('UserMyPage', {
                     userId: friend.id,
-                    mockUser: {
-                      nickname: friend.nickname,
-                      profileImageUrl: friend.profileImageUrl,
-                      friendStatus: 'ACCEPTED',
-                    },
                   })
                 }
               />

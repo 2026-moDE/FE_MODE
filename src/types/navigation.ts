@@ -66,17 +66,8 @@ export type AppStackParamList = {
 
   FriendSearch: undefined;
 
-  // mockUser: 타인 프로필 조회 api 아직 없어서, 진입 시점에 이미 갖고 있는 유저 정보로
-  // UserMyPageScreen이 목데이터를 채울 수 있게 임시로 함께 넘김
   UserMyPage: {
     userId: number;
-    mockUser?: {
-      nickname: string;
-      profileImageUrl: string | null;
-      profileUrl?: string | null;
-      // 친구 목록에서 진입하는 경우처럼 친구 상태를 이미 알고 있을 때 강제 지정 (기본값 NONE)
-      friendStatus?: 'NONE' | 'PENDING' | 'ACCEPTED';
-    };
   };
 };
 

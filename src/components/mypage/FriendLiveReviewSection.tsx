@@ -1,5 +1,14 @@
 import React, {useRef, useState} from 'react';
-import {View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
@@ -9,6 +18,7 @@ import {spacing} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 import {formatRelativeTime} from '../../utils/date';
 import {MyReview} from '../../api/mypage';
+import {UserReview} from '../../api/user';
 import ReviewChatModal from '../placeDetail/ReviewChatModal';
 
 type FriendInfo = {
@@ -19,18 +29,37 @@ type FriendInfo = {
 
 type Props = {
   friend: FriendInfo;
-  reviews: MyReview[];
+  reviews: (MyReview | UserReview)[];
   isLoading: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
 };
 
+const SCROLL_END_THRESHOLD = 200;
+
 // 친구 상태(ACCEPTED)일 때 다른유저 마이페이지에 보여주는 실시간 리뷰 캐러셀
-export default function FriendLiveReviewSection({friend, reviews, isLoading}: Props) {
+export default function FriendLiveReviewSection({
+  friend,
+  reviews,
+  isLoading,
+  isLoadingMore = false,
+  onLoadMore,
+}: Props) {
   const chatSheetRef = useRef<BottomSheetModal>(null);
   const [activeChatReviewId, setActiveChatReviewId] = useState<number | null>(null);
 
   const openChat = (reviewId: number) => {
     setActiveChatReviewId(reviewId);
     chatSheetRef.current?.present();
+  };
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
+    const distanceFromEnd = contentSize.width - (layoutMeasurement.width + contentOffset.x);
+
+    if (distanceFromEnd < SCROLL_END_THRESHOLD) {
+      onLoadMore?.();
+    }
   };
 
   return (
@@ -47,7 +76,9 @@ export default function FriendLiveReviewSection({friend, reviews, isLoading}: Pr
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.list}>
+          contentContainerStyle={styles.list}
+          onScroll={handleScroll}
+          scrollEventThrottle={200}>
           {reviews.map(review => (
             <View key={review.id} style={styles.card}>
               <View style={styles.thumbnail}>
@@ -74,7 +105,9 @@ export default function FriendLiveReviewSection({friend, reviews, isLoading}: Pr
                   <Text style={styles.nickname} numberOfLines={1}>
                     {friend.nickname}
                   </Text>
-                  <Text style={styles.time}>{formatRelativeTime(review.created_at)}</Text>
+                  {!!review.created_at && (
+                    <Text style={styles.time}>{formatRelativeTime(review.created_at)}</Text>
+                  )}
                 </View>
 
                 <Text style={styles.comment} numberOfLines={2}>
@@ -87,6 +120,12 @@ export default function FriendLiveReviewSection({friend, reviews, isLoading}: Pr
               </View>
             </View>
           ))}
+
+          {isLoadingMore && (
+            <View style={[styles.card, styles.loadingMoreCard]}>
+              <ActivityIndicator size="small" color={colors.icon.basic} />
+            </View>
+          )}
         </ScrollView>
       )}
 
@@ -135,6 +174,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.default,
     borderRadius: radius.lg,
     overflow: 'hidden',
+  },
+
+  loadingMoreCard: {
+    width: 104,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   thumbnail: {

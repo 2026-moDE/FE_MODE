@@ -16,6 +16,7 @@ import ReviewChatModal from '../placeDetail/ReviewChatModal';
 import ReviewReactionsModal from './ReviewReactionsModal';
 import QuickReviewButton from '../home/QuickReviewButton';
 import {MyProfile, MyReview} from '../../api/mypage';
+import {UserReview} from '../../api/user';
 import {fetchEmojis, EmojiReaction} from '../../api/review';
 import {AppStackParamList} from '../../types/navigation';
 
@@ -28,8 +29,9 @@ type ReviewAuthorInfo = Pick<MyProfile, 'nickname' | 'profile_image_url' | 'prof
 
 type Props = {
   profile: ReviewAuthorInfo | null;
-  recentReviews: MyReview[];
+  recentReviews: (MyReview | UserReview)[];
   isReviewsLoading: boolean;
+  isLoadingMore?: boolean;
   isOwner?: boolean;
   onDeleteReview?: (reviewId: number) => void;
   onEditComment?: (reviewId: number, comment: string) => void;
@@ -40,6 +42,7 @@ export default function RecentReviewSection({
   profile,
   recentReviews,
   isReviewsLoading,
+  isLoadingMore = false,
   isOwner = true,
   onDeleteReview,
   onEditComment,
@@ -117,9 +120,11 @@ export default function RecentReviewSection({
                   {profile?.nickname ?? '닉네임'}
                 </Text>
 
-                <Text style={styles.headerTime}>
-                  {formatRelativeTime(review.created_at)}
-                </Text>
+                {!!review.created_at && (
+                  <Text style={styles.headerTime}>
+                    {formatRelativeTime(review.created_at)}
+                  </Text>
+                )}
 
                 <View style={styles.headerActions}>
                   <TouchableOpacity
@@ -202,6 +207,10 @@ export default function RecentReviewSection({
         </View>
       )}
 
+      {isLoadingMore && (
+        <ActivityIndicator size="small" color={colors.icon.basic} style={styles.loadingMoreIndicator} />
+      )}
+
       <ReviewMenuModal
         visible={menuVisible}
         isOwner={isOwner}
@@ -238,6 +247,10 @@ const styles = StyleSheet.create({
 
   loadingIndicator: {
     marginTop: 8,
+  },
+
+  loadingMoreIndicator: {
+    marginTop: spacing['2xl'],
   },
 
   emptyBox: {

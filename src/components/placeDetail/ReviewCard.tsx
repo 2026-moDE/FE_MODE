@@ -48,8 +48,8 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
             />
             {/* 상단: 사용자 정보 */}
             <View style={styles.topRow}>
-                {/* 사용자 (아바타 + 닉네임) - user_id 없어도 목데이터로 다른 유저 마이페이지 확인 가능하게 항상 이동 */}
-                {onPressUser ? (
+                {/* user_id가 없는 응답(목록 api 일부)이면 다른 유저 마이페이지로 이동할 수 없어 탭 비활성화 */}
+                {onPressUser && user.user_id != null ? (
                     <Pressable onPress={() => onPressUser(user)} hitSlop={6}>
                         {userGroup}
                     </Pressable>

@@ -1,5 +1,5 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {StyleSheet, StatusBar, ScrollView} from 'react-native';
+import {StyleSheet, StatusBar, ScrollView, NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute, useFocusEffect} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -10,12 +10,12 @@ import ProfileHeaderCard from '../../components/mypage/ProfileHeaderCard';
 import FriendActionButton from '../../components/mypage/FriendActionButton';
 import RecentReviewSection from '../../components/mypage/RecentReviewSection';
 import FriendLiveReviewSection from '../../components/mypage/FriendLiveReviewSection';
-import {getUserProfile, getUserReviews, UserProfile} from '../../api/user';
+import {getUserProfile, getUserReviews, UserProfile, UserReview} from '../../api/user';
 import {sendFriendRequest} from '../../api/friend';
-import {MyReview} from '../../api/mypage';
 import {AppStackParamList} from '../../types/navigation';
 
-const RECENT_REVIEW_LIMIT = 100;
+const REVIEW_PAGE_LIMIT = 20;
+const SCROLL_END_THRESHOLD = 120;
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 type UserMyPageRouteProp = RouteProp<AppStackParamList, 'UserMyPage'>;
@@ -23,12 +23,15 @@ type UserMyPageRouteProp = RouteProp<AppStackParamList, 'UserMyPage'>;
 export default function UserMyPageScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<UserMyPageRouteProp>();
-  const {userId, mockUser} = route.params;
+  const {userId} = route.params;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
-  const [recentReviews, setRecentReviews] = useState<MyReview[]>([]);
+  const [recentReviews, setRecentReviews] = useState<UserReview[]>([]);
   const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+  const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const isLoadingMoreRef = useRef(false);
   const [isRequestSubmitting, setIsRequestSubmitting] = useState(false);
 
   const loadProfile = useCallback(async () => {
@@ -39,29 +42,16 @@ export default function UserMyPageScreen() {
       setProfile(result);
     } catch (error) {
       console.log('[다른 유저 프로필 재조회 실패]', error);
-      // 타인 프로필 조회 api가 아직 없어서, 진입 시 넘겨받은 리뷰 작성자 정보로 임시 목데이터를 채워둠
-      if (mockUser) {
-        setProfile({
-          id: userId,
-          nickname: mockUser.nickname,
-          profile_image_url: mockUser.profileImageUrl,
-          profile_url: mockUser.profileUrl ?? null,
-          review_count: 0,
-          place_count: 0,
-          subscription_count: 0,
-          friend_count: 0,
-          friend_status: mockUser.friendStatus ?? 'NONE',
-        });
-      }
     } finally {
       setIsProfileLoading(false);
     }
-  }, [userId, mockUser]);
+  }, [userId]);
 
   const loadRecentReviews = useCallback(async () => {
     try {
-      const data = await getUserReviews(userId, {limit: RECENT_REVIEW_LIMIT});
+      const data = await getUserReviews(userId, {limit: REVIEW_PAGE_LIMIT});
       setRecentReviews(data.reviews);
+      setNextCursor(data.next_cursor);
     } catch (error) {
       console.log('[다른 유저 리뷰 조회 실패]', error);
     } finally {
@@ -69,12 +59,42 @@ export default function UserMyPageScreen() {
     }
   }, [userId]);
 
+  const loadMoreReviews = useCallback(async () => {
+    if (isLoadingMoreRef.current || nextCursor == null) return;
+
+    isLoadingMoreRef.current = true;
+    setIsLoadingMoreReviews(true);
+    try {
+      const data = await getUserReviews(userId, {cursor: nextCursor, limit: REVIEW_PAGE_LIMIT});
+      setRecentReviews(prev => [...prev, ...data.reviews]);
+      setNextCursor(data.next_cursor);
+    } catch (error) {
+      console.log('[다른 유저 리뷰 추가 조회 실패]', error);
+    } finally {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMoreReviews(false);
+    }
+  }, [userId, nextCursor]);
+
   useFocusEffect(
     useCallback(() => {
       loadProfile();
       loadRecentReviews();
     }, [loadProfile, loadRecentReviews]),
   );
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // 친구의 실시간 리뷰(가로 캐러셀)는 FriendLiveReviewSection이 자체적으로 처리
+    if (isFriend) return;
+
+    const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - (layoutMeasurement.height + contentOffset.y);
+
+    if (distanceFromBottom < SCROLL_END_THRESHOLD) {
+      loadMoreReviews();
+    }
+  };
 
   const handleSendFriendRequest = async () => {
     setIsRequestSubmitting(true);
@@ -97,7 +117,9 @@ export default function UserMyPageScreen() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={200}>
         <ProfileHeaderCard
           profile={profile}
           isProfileLoading={isProfileLoading}
@@ -113,6 +135,8 @@ export default function UserMyPageScreen() {
             friend={profile}
             reviews={recentReviews}
             isLoading={isReviewsLoading}
+            isLoadingMore={isLoadingMoreReviews}
+            onLoadMore={loadMoreReviews}
           />
         ) : (
           <>
@@ -128,6 +152,7 @@ export default function UserMyPageScreen() {
               profile={profile}
               recentReviews={recentReviews}
               isReviewsLoading={isReviewsLoading}
+              isLoadingMore={isLoadingMoreReviews}
               isOwner={false}
               onReportReview={reviewId => navigation.navigate('ReviewReport', {reviewId})}
             />

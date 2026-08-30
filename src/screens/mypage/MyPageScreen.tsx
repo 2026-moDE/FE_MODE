@@ -1,5 +1,12 @@
 import React, {useCallback, useRef, useState} from 'react';
-import {StyleSheet, StatusBar, ScrollView, Share} from 'react-native';
+import {
+  StyleSheet,
+  StatusBar,
+  ScrollView,
+  Share,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
@@ -14,7 +21,8 @@ import ProfileShareModal from '../../components/mypage/ProfileShareModal';
 import {getMyProfile, getMyReviews, MyProfile, MyReview} from '../../api/mypage';
 import {changeReview, deleteReview} from '../../api/review';
 
-const RECENT_REVIEW_LIMIT = 100;
+const REVIEW_PAGE_LIMIT = 20;
+const SCROLL_END_THRESHOLD = 120;
 
 export default function MypageScreen() {
   const navigation = useNavigation<any>();
@@ -24,6 +32,9 @@ export default function MypageScreen() {
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [recentReviews, setRecentReviews] = useState<MyReview[]>([]);
   const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+  const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const isLoadingMoreRef = useRef(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -40,8 +51,9 @@ export default function MypageScreen() {
 
   const loadRecentReviews = useCallback(async () => {
     try {
-      const data = await getMyReviews({limit: RECENT_REVIEW_LIMIT});
+      const data = await getMyReviews({limit: REVIEW_PAGE_LIMIT});
       setRecentReviews(data.reviews);
+      setNextCursor(data.next_cursor);
     } catch (error) {
       console.log('[최신 리뷰 조회 실패]', error);
     } finally {
@@ -49,12 +61,39 @@ export default function MypageScreen() {
     }
   }, []);
 
+  const loadMoreReviews = useCallback(async () => {
+    if (isLoadingMoreRef.current || nextCursor == null) return;
+
+    isLoadingMoreRef.current = true;
+    setIsLoadingMoreReviews(true);
+    try {
+      const data = await getMyReviews({cursor: nextCursor, limit: REVIEW_PAGE_LIMIT});
+      setRecentReviews(prev => [...prev, ...data.reviews]);
+      setNextCursor(data.next_cursor);
+    } catch (error) {
+      console.log('[리뷰 추가 조회 실패]', error);
+    } finally {
+      isLoadingMoreRef.current = false;
+      setIsLoadingMoreReviews(false);
+    }
+  }, [nextCursor]);
+
   useFocusEffect(
     useCallback(() => {
       loadProfile();
       loadRecentReviews();
     }, [loadProfile, loadRecentReviews]),
   );
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
+    const distanceFromBottom =
+      contentSize.height - (layoutMeasurement.height + contentOffset.y);
+
+    if (distanceFromBottom < SCROLL_END_THRESHOLD) {
+      loadMoreReviews();
+    }
+  };
 
   const handleDeleteReview = async (reviewId: number) => {
     try {
@@ -91,7 +130,9 @@ export default function MypageScreen() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={200}>
         <ProfileHeaderCard
           profile={profile}
           isProfileLoading={isProfileLoading}
@@ -116,6 +157,7 @@ export default function MypageScreen() {
           profile={profile}
           recentReviews={recentReviews}
           isReviewsLoading={isReviewsLoading}
+          isLoadingMore={isLoadingMoreReviews}
           onDeleteReview={handleDeleteReview}
           onEditComment={handleEditReviewComment}
         />
