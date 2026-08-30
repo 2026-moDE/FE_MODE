@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, ScrollView, Pressable, Dimensions} from 'react-n
 import FastImage from '@d11/react-native-fast-image';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
 import {AppStackParamList} from '../../types/navigation';
 import {getMyReviews, getMyProfile, MyReview, MyProfile} from '../../api/mypage';
@@ -12,8 +13,9 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
+import ReviewReactionsModal from '../../components/mypage/ReviewReactionsModal';
 import type {CurrentReview} from '../../types/place';
-import {deleteReview, changeReview} from '../../api/review';
+import {deleteReview, changeReview, fetchEmojis, EmojiReaction} from '../../api/review';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -84,6 +86,24 @@ export default function MonthlyReviewScreen({navigation}: Props) {
   const [imageIndex, setImageIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
+  // 내 리뷰 이모지 반응 목록 (마이페이지 ReviewReactionsModal 재사용)
+  const reactionsSheetRef = useRef<BottomSheetModal>(null);
+  const [reactions, setReactions] = useState<EmojiReaction[]>([]);
+  const [isReactionsLoading, setIsReactionsLoading] = useState(false);
+  const openReactions = useCallback(async (reviewId: number) => {
+    reactionsSheetRef.current?.present();
+    setIsReactionsLoading(true);
+    try {
+      const res = await fetchEmojis(reviewId);
+      setReactions(res.reactions);
+    } catch (error) {
+      console.error('이모지 반응 조회 실패:', error);
+      setReactions([]);
+    } finally {
+      setIsReactionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     getMyReviews({limit: 100}).then(data => setReviews(data.reviews)).catch(() => {});
     getMyProfile().then(setProfile).catch(() => {});
@@ -124,6 +144,7 @@ export default function MonthlyReviewScreen({navigation}: Props) {
           thumbnail_small_url: r.thumbnail_small_url ?? null,
           congestion_level: r.congestion_level as CurrentReview['congestion_level'],
           comment: r.comment ?? '',
+          place_name: r.place.name,
           helpful_count: r.helpful_count,
           is_helpful: false,
           is_mine: true,
@@ -209,6 +230,11 @@ export default function MonthlyReviewScreen({navigation}: Props) {
         startIndex={imageIndex ?? 0}
         visible={imageIndex !== null}
         readOnlyComments
+        onOpenReactionList={openReactions}
+        onPressUser={user => {
+          if (user.user_id == null) return;
+          navigation.navigate('UserMyPage', {userId: user.user_id});
+        }}
         onClose={() => setImageIndex(null)}
         onDelete={async () => {
           if (imageIndex === null) return;
@@ -231,6 +257,9 @@ export default function MonthlyReviewScreen({navigation}: Props) {
         }}
         useAbsoluteDate
       />
+
+      {/* 내 리뷰 이모지 반응 목록 */}
+      <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
     </View>
   );
 }

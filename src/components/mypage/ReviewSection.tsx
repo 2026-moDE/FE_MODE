@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {Shadow} from 'react-native-shadow-2';
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
 import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
@@ -17,8 +20,10 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {getMyReviews, MyReview, MyProfile} from '../../api/mypage';
 import {CurrentReview} from '../../types/place';
+import {AppStackParamList} from '../../types/navigation';
 import ReviewPhoto from '../placeDetail/ReviewPhoto';
-import {deleteReview} from '../../api/review';
+import ReviewReactionsModal from './ReviewReactionsModal';
+import {deleteReview, fetchEmojis, EmojiReaction} from '../../api/review';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -32,12 +37,31 @@ type Props = {
 };
 
 export default function ReviewSection({profile}: Props) {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const [reviews, setReviews] = useState<MyReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [imageIndex, setImageIndex] = useState<number | null>(null);
   // 풀스크린 뷰어에서 스와이프 가능한 범위를 같은 월로 제한하기 위한 키 (예: '2026년 7월')
   const [viewerMonthKey, setViewerMonthKey] = useState<string | null>(null);
+
+  // 내 리뷰 이모지 반응 목록 (ReviewReactionsModal 재사용)
+  const reactionsSheetRef = useRef<BottomSheetModal>(null);
+  const [reactions, setReactions] = useState<EmojiReaction[]>([]);
+  const [isReactionsLoading, setIsReactionsLoading] = useState(false);
+  const openReactions = useCallback(async (reviewId: number) => {
+    reactionsSheetRef.current?.present();
+    setIsReactionsLoading(true);
+    try {
+      const res = await fetchEmojis(reviewId);
+      setReactions(res.reactions);
+    } catch (error) {
+      console.error('이모지 반응 조회 실패:', error);
+      setReactions([]);
+    } finally {
+      setIsReactionsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchReviews();
@@ -73,6 +97,7 @@ export default function ReviewSection({profile}: Props) {
         thumbnail_small_url: r.thumbnail_small_url ?? null,
         congestion_level: r.congestion_level as CurrentReview['congestion_level'],
         comment: r.comment ?? '',
+        place_name: r.place.name,
         helpful_count: r.helpful_count,
         is_helpful: false,
         is_mine: true,
@@ -183,6 +208,11 @@ export default function ReviewSection({profile}: Props) {
       startIndex={imageIndex ?? 0}
       visible={imageIndex !== null}
       readOnlyComments
+      onOpenReactionList={openReactions}
+      onPressUser={user => {
+        if (user.user_id == null) return;
+        navigation.navigate('UserMyPage', {userId: user.user_id});
+      }}
       onClose={() => {
         setImageIndex(null);
         setViewerMonthKey(null);
@@ -200,6 +230,9 @@ export default function ReviewSection({profile}: Props) {
       onReport={() => setImageIndex(null)}
       useAbsoluteDate
     />
+
+    {/* 내 리뷰 이모지 반응 목록 */}
+    <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
     </>
   );
 }
