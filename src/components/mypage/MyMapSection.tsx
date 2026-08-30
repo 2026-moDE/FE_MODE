@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
-  Text,
   TouchableOpacity,
 } from 'react-native';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
@@ -11,8 +10,7 @@ import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
 import MapView from '../map/MapView';
-import {getMyReviews, MyReview} from '../../api/mypage';
-import {fontFamily} from '../../constants/typography';
+import {MyReview} from '../../api/mypage';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {searchPlaces} from '../../api/search';
@@ -27,6 +25,8 @@ import {AppStackParamList} from '../../types/navigation';
 
 type Props = {
   mapRef: React.RefObject<NaverMapViewRef | null>;
+  reviews: MyReview[];
+  isLoading?: boolean;
 };
 
 type PlaceReviewGroup = {
@@ -42,11 +42,8 @@ type LocatedPlaceReviewGroup = PlaceReviewGroup & {
   longitude: number;
 };
 
-export default function MyMapSection({mapRef}: Props) {
+export default function MyMapSection({mapRef, reviews, isLoading = false}: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
-  const [reviews, setReviews] = useState<MyReview[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
   const [locatedGroups, setLocatedGroups] = useState<
     LocatedPlaceReviewGroup[]
   >([]);
@@ -210,34 +207,6 @@ export default function MyMapSection({mapRef}: Props) {
     };
     }, [groupedReviews]);
 
-  useEffect(() => {
-    loadMyReviews();
-  }, []);
-
-
-  const loadMyReviews = async () => {
-    try {
-      setLoading(true);
-      setErrorMessage('');
-
-      const data = await getMyReviews({
-        limit: 100,
-      });
-
-      setReviews(data.reviews);
-
-      console.log(
-        '[마이맵 내 리뷰 목록]',
-        JSON.stringify(data.reviews, null, 2),
-      );
-    } catch (error) {
-      console.log('[마이맵 내 리뷰 조회 실패]', error);
-      setErrorMessage('리뷰 정보를 불러오지 못했어요');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <MapView
@@ -290,17 +259,11 @@ export default function MyMapSection({mapRef}: Props) {
         onPress={() => navigation.navigate('MyMap')}
       />
 
-      {loading && (
+      {isLoading && (
         <View style={styles.statusBox}>
           <ActivityIndicator size="small" color={colors.icon.basic} />
         </View>
       )}
-
-      {!loading && errorMessage ? (
-        <View style={styles.statusBox}>
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -318,11 +281,4 @@ const styles = StyleSheet.create({
     right: spacing.xl,
     alignItems: 'center',
   },
-
-  errorText: {
-    fontSize: 13,
-    fontFamily: fontFamily.medium,
-    color: '#999999',
-  },
-  
 });

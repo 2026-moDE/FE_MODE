@@ -151,7 +151,7 @@ export default function MypageScreen() {
           onPressShare={() => shareModalRef.current?.present()}
         />
 
-        <MyMapRow mapRef={mapRef} reviews={recentReviews} />
+        <MyMapRow mapRef={mapRef} reviews={recentReviews} isReviewsLoading={isReviewsLoading} />
 
         <RecentReviewSection
           profile={profile}
