@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator} from 'react-native';
+import React, {useRef} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Dimensions} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -13,6 +13,7 @@ import IconFriend from '../../assets/icons/IconFriend';
 import {MyProfile} from '../../api/mypage';
 
 const settingIcon = require('../../assets/image/setting.png');
+const menuIcon = require('../../assets/image/vertical_ellipis.png');
 
 // 다른 유저 프로필(UserProfile)도 이 카드에 그대로 넘길 수 있도록 실제 사용하는 필드만 뽑아서 타입 지정
 type ProfileHeaderInfo = Pick<
@@ -29,6 +30,9 @@ type Props = {
   showSettings?: boolean;
   // 이미 친구인 다른 유저 마이페이지에서 닉네임 앞에 별 배지 표시
   isFriend?: boolean;
+  // 친구 마이페이지에서만 넘겨줌 - 있으면 설정 톱니 대신 ⋮ 메뉴(신고하기/친구 끊기) 버튼을 보여줌
+  // 버튼의 실제 화면 좌표(measureInWindow)를 같이 넘겨서, 드롭다운이 세이프에어리어 계산 없이 버튼 바로 밑에 붙게 함
+  onPressMenu?: (anchor: {top: number; right: number}) => void;
 };
 
 export default function ProfileHeaderCard({
@@ -39,7 +43,19 @@ export default function ProfileHeaderCard({
   onPressFriends,
   showSettings = true,
   isFriend = false,
+  onPressMenu,
 }: Props) {
+  const menuButtonRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+
+  const handlePressMenu = () => {
+    menuButtonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      onPressMenu?.({
+        top: y + height,
+        right: Dimensions.get('window').width - (x + width),
+      });
+    });
+  };
+
   return (
     <View style={styles.profileCard}>
       {profile?.profile_image_url ? (
@@ -68,13 +84,23 @@ export default function ProfileHeaderCard({
         <IconArrowLeft size={20} color={colors.icon.inverse} />
       </TouchableOpacity>
 
-      {showSettings && (
+      {onPressMenu ? (
         <TouchableOpacity
+          ref={menuButtonRef}
           activeOpacity={0.7}
-          style={[styles.profileIconButton, styles.profileSettingButton]}
-          onPress={onPressSettings}>
-          <Image source={settingIcon} style={styles.settingImage} resizeMode="contain" />
+          style={[styles.profileIconButton, styles.profileMenuButton]}
+          onPress={handlePressMenu}>
+          <Image source={menuIcon} style={styles.settingImage} resizeMode="contain" />
         </TouchableOpacity>
+      ) : (
+        showSettings && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.profileIconButton, styles.profileSettingButton]}
+            onPress={onPressSettings}>
+            <Image source={settingIcon} style={styles.settingImage} resizeMode="contain" />
+          </TouchableOpacity>
+        )
       )}
 
       <View style={styles.profileBottomRow}>
@@ -82,7 +108,7 @@ export default function ProfileHeaderCard({
           <ActivityIndicator size="small" color={colors.icon.inverse} />
         ) : (
           <View style={styles.nicknameRow}>
-            {isFriend && <IconFriend size={18} color={colors.icon.brand} />}
+            {isFriend && <IconFriend size={24} color={colors.icon.brand} />}
             <Text style={[styles.profileNickname, isFriend && styles.profileNicknameFriend]}>
               {profile?.nickname ?? '닉네임'}
             </Text>
@@ -158,6 +184,12 @@ const styles = StyleSheet.create({
 
   profileSettingButton: {
     right: spacing.lg,
+  },
+
+  profileMenuButton: {
+    width: 32,
+    height: 32,
+    right: 15,
   },
 
   settingImage: {

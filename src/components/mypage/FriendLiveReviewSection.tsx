@@ -17,7 +17,6 @@ import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 import {formatRelativeTime} from '../../utils/date';
-import {MyReview} from '../../api/mypage';
 import {UserReview} from '../../api/user';
 import ReviewChatModal from '../placeDetail/ReviewChatModal';
 
@@ -29,13 +28,15 @@ type FriendInfo = {
 
 type Props = {
   friend: FriendInfo;
-  reviews: (MyReview | UserReview)[];
+  reviews: UserReview[];
   isLoading: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
 };
 
 const SCROLL_END_THRESHOLD = 200;
+const CARD_WIDTH = 320;
+const CARD_GAP = spacing.md;
 
 // 친구 상태(ACCEPTED)일 때 다른유저 마이페이지에 보여주는 실시간 리뷰 캐러셀
 export default function FriendLiveReviewSection({
@@ -53,6 +54,9 @@ export default function FriendLiveReviewSection({
     chatSheetRef.current?.present();
   };
 
+  // 72시간 이내(is_recent) 리뷰만 노출 - 없으면 섹션 자체를 안 띄움
+  const recentReviews = reviews.filter(review => review.is_recent);
+
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
     const distanceFromEnd = contentSize.width - (layoutMeasurement.width + contentOffset.x);
@@ -62,24 +66,25 @@ export default function FriendLiveReviewSection({
     }
   };
 
+  if (!isLoading && recentReviews.length === 0) return null;
+
   return (
     <View style={styles.section}>
       <Text style={styles.title}>친구의 실시간 리뷰</Text>
 
       {isLoading ? (
         <ActivityIndicator size="small" color={colors.icon.basic} style={styles.loadingIndicator} />
-      ) : reviews.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>아직 작성한 리뷰가 없어요</Text>
-        </View>
       ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.list}
           onScroll={handleScroll}
-          scrollEventThrottle={200}>
-          {reviews.map(review => (
+          scrollEventThrottle={200}
+          snapToInterval={CARD_WIDTH + CARD_GAP}
+          snapToAlignment="start"
+          decelerationRate="fast">
+          {recentReviews.map(review => (
             <View key={review.id} style={styles.card}>
               <View style={styles.thumbnail}>
                 {review.image_url && (
@@ -140,52 +145,44 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    ...typography.h4,
+    ...typography.b1,
     color: colors.text.inverse,
     paddingHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
 
   loadingIndicator: {
     marginTop: 8,
   },
 
-  emptyBox: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 160,
-    gap: spacing.md,
-  },
-
-  emptyText: {
-    ...typography.b5,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-  },
-
   list: {
     paddingHorizontal: spacing.xl,
-    gap: spacing.md,
+    gap: CARD_GAP,
   },
 
   card: {
-    width: 320,
+    width: CARD_WIDTH,
+    height: 161,
     flexDirection: 'row',
-    backgroundColor: colors.surface.default,
+    backgroundColor: colors.surface.subtleDarker,
     borderRadius: radius.lg,
-    overflow: 'hidden',
+    padding: spacing.lg,
+    gap: spacing.lg,
   },
 
   loadingMoreCard: {
     width: 104,
+    height: 161,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   thumbnail: {
-    width: 104,
-    height: 104,
+    width: 73,
+    height: 129,
+    borderRadius: radius.md,
     backgroundColor: colors.surface.subtleDarker,
+    overflow: 'hidden',
   },
 
   thumbnailImage: {
@@ -195,50 +192,50 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
-    padding: spacing.md,
-    justifyContent: 'space-between',
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
   },
 
   avatar: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
     borderRadius: radius.full,
     backgroundColor: colors.surface.muted,
   },
 
   nickname: {
-    ...typography.c1,
+    ...typography.b5,
     color: colors.text.inverse,
     flexShrink: 1,
+    marginLeft: spacing.sm,
   },
 
   time: {
-    ...typography.c2,
+    ...typography.c3,
     color: colors.text.tertiary,
-    marginLeft: 'auto',
+    marginLeft: spacing.md,
   },
 
   comment: {
-    ...typography.c1,
+    ...typography.c2,
     color: colors.text.inverse,
+    marginTop: spacing.md,
   },
 
   ctaButton: {
     alignSelf: 'flex-end',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface.subtleDarker,
+    marginTop: 'auto',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface.subtle,
   },
 
   ctaText: {
-    ...typography.c2,
+    ...typography.c1,
     color: colors.text.inverse,
   },
 });
