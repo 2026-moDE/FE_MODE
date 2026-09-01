@@ -129,7 +129,7 @@ export default function NotificationScreen({navigation}: Props) {
                             place={place}
                             isOpen={openPlaceId === place.id}
                             onOpenChange={isOpen => setOpenPlaceId(isOpen ? place.id : null)}
-                            onPress={(placeId, placeName) => navigation.navigate('PlaceDetail', {placeId, placeName})}
+                            onPress={(placeId, placeName) => navigation.navigate('PlaceDetail', {placeId, placeName, reviewId: undefined, notificationAction: undefined})}
                             onDelete={handleDeleteSubscription}
                         />
                     ))}

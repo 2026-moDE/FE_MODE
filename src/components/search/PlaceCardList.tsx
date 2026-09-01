@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Place } from '../../types/search';
 import { Location } from '../../types/location';
 import { colors } from '../../constants/colors';
-import { spacing } from '../../constants/spacing';
+import { spacing, gap } from '../../constants/spacing';
 import { typography } from '../../constants/typography';
 import { getDistance, formatDistance } from '../../utils/distance';
 
@@ -66,13 +66,14 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         paddingHorizontal: spacing.lg,   // 16
         paddingVertical: spacing.md,     // 12
-        gap: spacing.sm,
+        gap: gap.sm,                     // 8
         borderBottomWidth: 1,
         borderBottomColor: colors.border.default,
     },
     pinIcon: {
-        width: 28,
-        height: 34,
+        width: 18,
+        height: 18,
+        marginTop: 4,   // 장소명 텍스트의 cap-height 시작점과 아이콘 상단을 맞춤
     },
     info: {
         flex: 1,

@@ -11,6 +11,8 @@ type Props = {
     longitude: number;
     count: number;
     thumbnailUrl?: string;
+    // 썸네일이 디코딩까지 끝나서 안전하게 그릴 수 있는 상태인지 (프리로더 완료 여부)
+    isReady?: boolean;
     onPress?: () => void;
 };
 
@@ -19,7 +21,12 @@ const TAIL_HEIGHT = 16;
 const TAIL_WIDTH = 12;
 const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
-const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, count, thumbnailUrl, onPress}: Props) {
+const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, count, thumbnailUrl, isReady = true, onPress}: Props) {
+    // 보여줄 썸네일이 있는데 아직 준비 안 됐으면, 빈 버블을 먼저 띄우지 않고 준비될 때까지 통째로 대기
+    if (thumbnailUrl && !isReady) {
+        return null;
+    }
+
     return (
         <NaverMapMarkerOverlay
             latitude={latitude}
@@ -28,9 +35,10 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
             height={TOTAL_HEIGHT}
             anchor={{x: 0.5, y: 1}}
             onTap={onPress}>
-            <View collapsable={false} style={styles.container}>
+            {/* 마커 생김새가 바뀌면(사진 준비 여부/개수) key도 바뀌어야 네이티브 쪽이 새 마커로 인식함 - 라이브러리 문서 권장사항 */}
+            <View key={`${thumbnailUrl ?? 'none'}-${isReady}-${count}`} collapsable={false} style={styles.container}>
                 <View collapsable={false} style={styles.bubble}>
-                    {thumbnailUrl ? (
+                    {thumbnailUrl && isReady ? (
                         <FastImage
                             source={{uri: thumbnailUrl, priority: FastImage.priority.high}}
                             style={styles.thumbnail}

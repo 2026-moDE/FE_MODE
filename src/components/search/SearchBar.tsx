@@ -81,8 +81,10 @@ export default function SearchBar({
                 </TouchableOpacity>
             )}
 
-            {/* 돋보기는 항상 표시 */}
-            <IconSearch size={16} color={colors.icon.tertiary} />
+            {/* 돋보기는 항상 표시, 누르면 엔터 친 것처럼 검색 실행 */}
+            <TouchableOpacity onPress={onSubmit} style={styles.iconButton} hitSlop={8}>
+                <IconSearch size={16} color={colors.icon.tertiary} />
+            </TouchableOpacity>
 
         </View>
     );

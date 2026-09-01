@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {View, Text, FlatList, StyleSheet, Pressable} from 'react-native';
+import {View, Text, FlatList, StyleSheet, Pressable, ActivityIndicator} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -31,6 +32,10 @@ import QuickReviewButton from '../../components/home/QuickReviewButton';
 
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
+
+// "사진 클릭 시 자세한 후기 확인이 가능해요" 안내 말풍선 — 설치 이후 장소 상관없이 총 5번까지만
+const PHOTO_HINT_STORAGE_KEY = '@place_detail_photo_hint_shown_count';
+const PHOTO_HINT_MAX_COUNT = 5;
 
 export default function PlaceDetailScreen({route, navigation}: Props) {
     const {placeId, placeName, initialTab, reviewId, notificationAction} = route.params;
@@ -71,6 +76,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
 
     // 내 리뷰 이모지 반응 목록 (마이페이지 ReviewReactionsModal 재사용)
     const reactionsSheetRef = useRef<BottomSheetModal>(null);
+    // 뒤로가기 제스처/하드웨어 버튼처럼 handleBack을 안 거치는 경로도 있어서 언마운트 시에도 한 번 더 닫아줌
+    useEffect(() => {
+        return () => reactionsSheetRef.current?.dismiss();
+    }, []);
     const [reactions, setReactions] = useState<EmojiReaction[]>([]);
     const [isReactionsLoading, setIsReactionsLoading] = useState(false);
     const openReactions = useCallback(async (reviewId: number) => {
@@ -103,18 +112,32 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             .catch(error => console.error('위치 인증 실패:', error));
     }, [placeId, location]);
 
-    // 실시간 / 과거 리뷰 가져옴
+    // 실시간 / 과거 리뷰 가져옴 - 알림에서 특정 리뷰로 들어온 경우, 그리드가 잠깐 보였다가 모달이 뜨는 걸 막기 위해 둘 다 끝났는지 추적
+    const [reviewsLoaded, setReviewsLoaded] = useState(false);
     useEffect(() => {
-        fetchCurrentReviews(placeId, {limit: 20})
-            .then(data => setCurrentReviews(data.reviews))
-            .catch(error => console.error('리뷰 조회 실패:', error));
-        fetchArchivedReviews(placeId, {limit: 20})
-            .then(data => setArchivedReviews(data.reviews))
-            .catch(error => console.error('리뷰 조회 실패:', error));
+        setReviewsLoaded(false);
+        Promise.all([
+            fetchCurrentReviews(placeId, {limit: 20})
+                .then(data => setCurrentReviews(data.reviews))
+                .catch(error => console.error('리뷰 조회 실패:', error)),
+            fetchArchivedReviews(placeId, {limit: 20})
+                .then(data => setArchivedReviews(data.reviews))
+                .catch(error => console.error('리뷰 조회 실패:', error)),
+        ]).then(() => setReviewsLoaded(true));
     }, [placeId]);
 
     // 알림에서 특정 리뷰로 들어온 경우, 리뷰 상세 페이지가 아닌 해당 리뷰로
     const openedFromNotificationRef = useRef(false);
+    // "찾아서 열었다" 또는 "다 뒤졌는데 없어서 포기했다" 중 하나로 결론 났는지 - 그리드를 계속 숨길지 말지 이 값 하나로만 판단
+    // (reviewsLoaded만 보면, reviewsLoaded=true 되는 시점과 실제 imageIndex가 세팅되는 시점이 한 프레임 어긋나서 그 사이에 그리드가 잠깐 보이는 문제가 있었음)
+    const [notificationHandled, setNotificationHandled] = useState(false);
+
+    // 같은 화면 인스턴스가 재사용되면서 다른 알림을 또 눌러 reviewId가 바뀐 경우, 위 상태들을 초기화
+    useEffect(() => {
+        openedFromNotificationRef.current = false;
+        setNotificationHandled(!reviewId);
+    }, [reviewId]);
+
     useEffect(() => {
         // openedFromNotificationRef.current조건 없으면, 사용자가 리뷰 사진창을 닫아도 실시간이나 과거 리뷰 수정이나 삭제 후 자동으로 열림
         if (!reviewId || openedFromNotificationRef.current) return;
@@ -125,6 +148,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             setActiveTab('current');
             setImageIndex(currentIdx);
             if (notificationAction === 'reactions') openReactions(reviewId);
+            setNotificationHandled(true);
             return;
         }
 
@@ -134,26 +158,53 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             setActiveTab('archived');
             setImageIndex(archivedIdx);
             if (notificationAction === 'reactions') openReactions(reviewId);
+            setNotificationHandled(true);
+            return;
         }
-    }, [reviewId, currentReviews, archivedReviews, notificationAction, openReactions]);
+
+        // 둘 다 로딩 끝났는데도 못 찾았으면 포기하고 그리드를 보여줌
+        if (reviewsLoaded) setNotificationHandled(true);
+    }, [reviewId, currentReviews, archivedReviews, reviewsLoaded, notificationAction, openReactions]);
 
     // 거리 텍스트 (계산된 경우만)
     const distanceText =
         distance !== null ? `내 위치에서 ${formatDistance(distance)}` : undefined;
 
-    // 실시간 탭 + 과거 리뷰가 있을 때만 그리드 첫 칸에 "과거 리뷰 확인하기" 타일 노출
+    // 실시간 탭 + 과거 리뷰가 있을 때만 "과거 리뷰 확인하기" ui
     const hasArchiveTile = activeTab === 'current' && archivedReviews.length > 0;
 
-    // 과거 리뷰 타일 안내 말풍선 (ReviewPhotoConfirmScreen의 블러 안내와 동일하게 3초간 노출)
+    // 알림(댓글/반응)에서 특정 리뷰로 들어온 경우, "찾아서 열었다/포기했다" 결론 나기 전까지 그리드 화면을 숨김
+    // -> 장소 상세 그리드가 잠깐 보였다가 리뷰 사진 모달로 넘어가는 게 아니라, 곧바로 모달이 뜸
+    const isResolvingNotificationTarget = !!reviewId && !notificationHandled;
+
+    // 과거 리뷰 확인하기 말풍선 (ReviewPhotoConfirmScreen의 블러 안내와 동일하게 3초간)
+    // 앱 설치 이후 장소 상관없이 장소 상세 화면 방문 총 5번까지만 노출
     const [showArchiveHint, setShowArchiveHint] = useState(false);
     const archiveHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const hintAllowedRef = useRef<boolean | null>(null); // null = 아직 AsyncStorage 확인 전
     useEffect(() => {
         if (!hasArchiveTile) return;
 
-        setShowArchiveHint(true);
-        archiveHintTimerRef.current = setTimeout(() => setShowArchiveHint(false), 3000);
+        let cancelled = false; // 요청 작업이 유효할 때
+
+        (async () => {
+            if (hintAllowedRef.current === null) {
+                const countStr = await AsyncStorage.getItem(PHOTO_HINT_STORAGE_KEY);
+                const count = countStr ? Number(countStr) : 0;
+                hintAllowedRef.current = count < PHOTO_HINT_MAX_COUNT;
+                if (hintAllowedRef.current) {
+                    await AsyncStorage.setItem(PHOTO_HINT_STORAGE_KEY, String(count + 1)); // 문자열만 저장 가능
+                }
+            }
+            // 실시간 화면 페이지에 있다가 hintAllowedRef받아오는 동안 다른 페이지로 갈 경우 대비
+            if (cancelled || !hintAllowedRef.current) return;
+
+            setShowArchiveHint(true);
+            archiveHintTimerRef.current = setTimeout(() => setShowArchiveHint(false), 3000);
+        })();
 
         return () => {
+            cancelled = true; // 작업 무효 시킴
             if (archiveHintTimerRef.current) clearTimeout(archiveHintTimerRef.current);
         };
     }, [hasArchiveTile]);
@@ -171,10 +222,13 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             setActiveTab('current');
             return;
         }
+        // 반응 모달은 네비게이션 스택과 별개 레이어(포탈)라, 열려있는 채로 뒤로가면
+        // 백드롭이 안 닫힌 채 남아서 다음에 이 장소 들어올 때마다 화면이 뿌옇게 덮여 보임
+        reactionsSheetRef.current?.dismiss();
         navigation.goBack();
     }, [navigation, activeTab]);
 
-    // 리뷰 바로 쓰기 (조리개 버튼) - 현재 장소를 미리 실어 보냄
+    // 리뷰 바로 쓰기 버튼 - 현재 장소를 미리 실어 보냄
     const handleQuickReview = useCallback(() => {
         navigation.navigate('ReviewStack', {
             screen: 'ReviewCamera',
@@ -226,10 +280,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                     place={placeDetail}
                     distance={distanceText}
                     onBack={handleBack}
-                    onToggleSubscribe={handleToggleSubscribe}  // 알림 API 미구현
+                    onToggleSubscribe={handleToggleSubscribe}
                 />
 
-                {/* 실시간 탭 + 과거 리뷰 있을 때만: 과거 리뷰 타일 안내 말풍선 (자리 차지 안 하고 리뷰 위에 떠 있음) */}
+                {/* 실시간 탭 + 과거 리뷰 있을 때만: 과거 리뷰 안내 말풍선 (자리 차지 안 하고 리뷰 위에 떠 있음) */}
                 {showArchiveHint && (
                     <View style={styles.archiveHintWrapper}>
                         <View style={styles.archiveHintBubble}>
@@ -240,6 +294,13 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 )}
             </View>
 
+            {isResolvingNotificationTarget ? (
+                // 알림에서 들어온 경우 그리드 대신 로딩만 보여주고, 로딩 끝나면 위 useEffect가 바로 리뷰 사진 모달을 띄움
+                <View style={styles.notificationLoadingWrapper}>
+                    <ActivityIndicator size="large" color={colors.brand.primary} />
+                </View>
+            ) : (
+            <>
             {/* 과거 리뷰 화면일 때만 섹션 타이틀 노출 */}
             {activeTab === 'archived' && (
                 <Text style={styles.archivedSectionTitle}>과거 리뷰</Text>
@@ -268,7 +329,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                     if (item === null) {
                         return <View style={{flex: 1}} />;
                     }
-                    // 타일이 0번 칸을 차지하는 만큼 실제 리뷰 배열(reviews)에서의 인덱스는 하나 밀림
+                    // 과거 리뷰가 있다면 ui가 0번 칸을 차지하는 만큼 실제 리뷰 배열(reviews)에서의 인덱스는 하나 밀림
                     const reviewIndex = hasArchiveTile ? index - 1 : index;
                     return (
                         <ReviewCard
@@ -288,6 +349,8 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                     </View>
                 }
             />
+            </>
+            )}
 
             {/* 리뷰 사진 풀스크린 뷰어  */}
             <ReviewPhoto
@@ -363,6 +426,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: spacing['3xl'],
+    },
+    notificationLoadingWrapper: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     emptyText: {
         color: colors.text.subtle,

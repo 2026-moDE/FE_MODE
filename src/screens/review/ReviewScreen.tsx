@@ -16,7 +16,7 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
-import {useNavigation, useRoute} from '@react-navigation/native';
+import {useNavigation, useRoute, useIsFocused} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import ImageResizer from '@bam.tech/react-native-image-resizer';
 import type {RouteProp} from '@react-navigation/native';
@@ -64,6 +64,9 @@ export default function ReviewScreen() {
   // 장소 상세에서 진입 시 미리 선택된 장소 (없으면 undefined)
   const {placeId, placeName} = route.params ?? {};
   const cameraRef = useRef<Camera>(null);
+  // 화면 벗어나도 카메라가 계속 켜진 채로 남아있으면 홈으로 돌아왔을 때 지도 렌더링과 리소스를
+  // 다투다가 지도가 빈 화면으로 남는 문제가 있어서, 포커스 여부에 따라 꺼줘야 함
+  const isFocused = useIsFocused();
 
   const [cameraPosition, setCameraPosition] =
     useState<CameraPosition>('back');
@@ -248,7 +251,7 @@ export default function ReviewScreen() {
             ref={cameraRef}
             style={StyleSheet.absoluteFill}
             device={device}
-            isActive={true}
+            isActive={isFocused}
             photo={true}
             zoom={getCameraZoom()}
             outputOrientation="device"

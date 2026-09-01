@@ -138,3 +138,26 @@ export type RegionResponse = {
     region_2depth_name : string | null; // 구, 군
     region_3depth_name : string | null; // 동
 }
+
+// ─────────────────── 인기 장소 (72h 이내 리뷰 2개 이상, GET /api/places/hot) ───────────────────
+export type TrendingPlace = {
+    id: number;
+    name: string;
+    category: PlaceCategory;
+    congestion_level: CongestionLevel;
+    // 72시간 이내 리뷰 수
+    review_count: number;
+    // 최신순 최대 4개. review_id가 없어서 사진별로 특정 리뷰로 이동은 불가 (장소 상세로만 이동 가능)
+    review_images: {
+        thumbnail_url: string;
+        thumbnail_small_url: string;
+    }[];
+    latest_review: {
+        comment: string;
+        created_at: string;
+    };
+};
+
+export type TrendingPlacesResponse = {
+    places: TrendingPlace[];
+};

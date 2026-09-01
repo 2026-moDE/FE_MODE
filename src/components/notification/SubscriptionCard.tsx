@@ -14,6 +14,7 @@ const DELETE_ACTION_WIDTH = 88;
 type Props = {
     place: Subscription;
     isOpen: boolean;
+    // 부모에게 삭제 버튼 열린 상태 여부를 알려주는 콜백
     onOpenChange: (isOpen: boolean) => void;
     onPress: (placeId: number, placeName: string) => void;
     onDelete: (placeId: number) => void;
@@ -23,6 +24,7 @@ export default function SubscriptionCard({place, isOpen, onOpenChange, onPress, 
     const {place: {id: placeId, name, address}} = place;
     const translateX = useRef(new Animated.Value(0)).current;
     // 지금 카드가 멈춰있는 위치 (0 = 닫힘, -DELETE_ACTION_WIDTH = 열림) - 드래그 시작 기준점
+    // 즉, 얼마나 왼쪽으로 밀려있는 상태인지를 저장해두는 값
     const restX = useRef(0);
 
     // 다른 카드가 열리면(부모가 isOpen을 false로 바꾸면) 이 카드는 원위치로
@@ -35,16 +37,25 @@ export default function SubscriptionCard({place, isOpen, onOpenChange, onPress, 
 
     const panResponder = useRef(
         PanResponder.create({
+            // 터치가 움직이기 시작할 때, 뷰가 responder될지 결정
             onMoveShouldSetPanResponder: (_, gesture) =>
+                // 가로 움직임 && 세로스크롤 막지 않기 위함
                 Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+            // 터치 이동할 때마다 반복 호출
             onPanResponderMove: (_, gesture) => {
+                // DELETE_ACTION_WIDTH ~ 0까지로 위치를 한정 시키기 위해 min, max씀
+                // max은 사용자가 아무리 왼쪽으로 밀어도 최대가 -88이 되도록
+                // min은 사용자가 아무리 오른쪽으로 밀어도 최소가 0이 되도록
                 const next = Math.min(0, Math.max(-DELETE_ACTION_WIDTH, restX.current + gesture.dx));
                 translateX.setValue(next);
             },
+            // 터치 뗐을 때
             onPanResponderRelease: (_, gesture) => {
                 const current = restX.current + gesture.dx;
+                // 손 뗀 위치에 따라 삭제 버튼 열림 or 닫힘 상태로 둘지 결정 
                 const shouldOpen = current < -DELETE_ACTION_WIDTH / 2;
                 restX.current = shouldOpen ? -DELETE_ACTION_WIDTH : 0;
+                // 손 뗀 위치에서 -DELETE_ACTION_WIDTH아니면 0으로 이동 시킴
                 Animated.timing(translateX, {toValue: restX.current, duration: 200, useNativeDriver: false}).start();
                 onOpenChange(shouldOpen);
             },
@@ -60,7 +71,10 @@ export default function SubscriptionCard({place, isOpen, onOpenChange, onPress, 
         inputRange: [-DELETE_ACTION_WIDTH, 0],
         outputRange: [colors.text.disabled, colors.text.tertiary],
     });
+    
     // 평소엔 안 보이는 곳에 있다가, 카드가 밀리는 만큼 같이 따라 들어옴
+    // translateX가 -88이면 deleteActionTranslateX는 -88 + 88 = 0 (완전히 화면 밖에 숨어있던 삭제 버튼이 화면 안쪽으로)
+    // translateX가 0이면 deleteActionTranslateX는 0 + 88 = 88 (삭제 버튼이 자기 너비만큼 오른쪽으로 밀려나 화면 밖으로)
     const deleteActionTranslateX = Animated.add(translateX, new Animated.Value(DELETE_ACTION_WIDTH));
 
     const handlePress = () => {
