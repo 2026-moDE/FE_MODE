@@ -1,12 +1,12 @@
 import {apiClient} from './client';
-import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse} from '../types/place';
+import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse, TrendingPlacesResponse} from '../types/place';
 import { Location } from '../types/location';
 import { RegionResponse } from '../types/place';
 
 type FetchNearbyPlacesParams = {
   latitude: number;
   longitude: number;
-  radius?: number;                                // 반경 
+  radius?: number;                                // 반경
   query?: string;                                 // 카테고리
   filter?: 'all' | 'current' | 'archived';        // 리뷰 기준 필터 (기본 all)
   visibility?: 'all' | 'friends';
@@ -20,6 +20,23 @@ export async function fetchNearbyPlaces(
     params,
   });
   return response.data;
+}
+
+type FetchTrendingPlacesParams = {
+  latitude: number;
+  longitude: number;
+  limit?: number;                                 // 기본값 5
+};
+
+// 주변 반경 내 72시간 이내 리뷰가 많이 달린 장소 목록 조회 api (홈 바텀시트용) → GET /api/places/trending
+export async function fetchTrendingPlaces(
+  params: FetchTrendingPlacesParams,
+): Promise<TrendingPlacesResponse> {
+  const response = await apiClient.get<{success: boolean; message: string | null; data: TrendingPlacesResponse}>(
+    '/api/places/hot',
+    {params},
+  );
+  return response.data.data;
 }
 
 // 장소 상세 조회 api → GET /api/places/{id}

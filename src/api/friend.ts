@@ -102,3 +102,37 @@ export async function searchUsers(nickname: string): Promise<SearchedUser[]> {
 
   return response.data.data;
 }
+
+export type FriendReviewUser = {
+  user_id: number;
+  nickname: string;
+  profile_url: string;
+};
+
+export type FriendReview = {
+  id: number;
+  place_id: number;
+  place_name: string;
+  congestion_level: 'LOW' | 'MEDIUM' | 'HIGH';
+  comment: string;
+  image_url: string;
+  thumbnail_url: string;
+  // 없으면 thumbnail_url → image_url 순으로 폴백
+  thumbnail_small_url: string;
+  user: FriendReviewUser;
+  created_at: string;
+};
+
+// 친구 최근 리뷰 목록 조회 api (홈바텀시트)
+export async function fetchFriendReviews(limit?: number): Promise<FriendReview[]> {
+  console.log('[친구 최근 리뷰 목록 조회 요청]', {limit});
+
+  const response = await apiClient.get<ApiResponse<{reviews: FriendReview[]}>>(
+    '/api/friends/feed',
+    {params: {limit}},
+  );
+
+  console.log('[친구 최근 리뷰 목록 조회 응답]', response.data);
+
+  return response.data.data.reviews;
+}

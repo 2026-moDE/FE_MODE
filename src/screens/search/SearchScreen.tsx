@@ -173,7 +173,7 @@ export default function SearchScreen() {
                 },
             } as never);
         } else {
-            navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name });
+            navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name, reviewId: undefined, notificationAction: undefined });
         }
     }, [navigation, reviewPhotoUri, saveHistory]);
 
