@@ -6,6 +6,7 @@ import {
   StyleSheet,
   StatusBar,
   Alert,
+  Platform,
 } from 'react-native';
 import {loginWithKakaoAccount} from '@react-native-seoul/kakao-login';
 import {
@@ -14,6 +15,7 @@ import {
   isSuccessResponse,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import {appleAuth} from '@invertase/react-native-apple-authentication';
 import {socialLoginApi} from '../../api/auth';
 import {saveTokens} from '../../storage/tokenStorage';
 import {useAuth} from '../../context/AuthContext';
@@ -156,9 +158,59 @@ export default function LoginScreen({navigation}: Props) {
     }
   };
 
-  const handleAppleLogin = () => {
-    // TODO: 애플 로그인 SDK 연동
-    Alert.alert('안내', 'Apple 로그인은 준비 중입니다.');
+  const handleAppleLogin = async () => {
+    try {
+      setIsLoginLoading(true);
+
+      const appleAuthRequestResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
+
+      const {identityToken} = appleAuthRequestResponse;
+
+      if (!identityToken) {
+        throw new Error('Apple ID 토큰을 가져오지 못했습니다.');
+      }
+
+      const fcmToken = await getFcmToken();
+
+      const result = await socialLoginApi({
+        provider: 'APPLE',
+        accessToken: identityToken,
+        fcmToken,
+      });
+
+      if (!result.success || !result.data) {
+        throw new Error(result.message || '로그인 응답이 올바르지 않습니다.');
+      }
+
+      const {access_token, refresh_token, is_new_user, user} = result.data;
+
+      await saveTokens(access_token, refresh_token);
+
+      if (is_new_user) {
+        navigation.navigate('Terms');
+        return;
+      }
+
+      setIsLoggedIn(true);
+    } catch (error: any) {
+      if (error?.code === appleAuth.Error.CANCELED) {
+        return;
+      }
+
+      console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
+
+      Alert.alert(
+        '로그인 실패',
+        error?.message || '로그인 중 문제가 발생했습니다.',
+      );
+    } finally {
+      setIsLoginLoading(false);
+    }
   };
 
   return (
@@ -210,10 +262,13 @@ export default function LoginScreen({navigation}: Props) {
             disabled={isLoginLoading}
             style={{marginTop: 5}}
           />
-          <AppleLoginButton
-            onPress={handleAppleLogin}
-            style={{marginTop: 5}}
-          />
+          {Platform.OS === 'ios' && (
+            <AppleLoginButton
+              onPress={handleAppleLogin}
+              disabled={isLoginLoading}
+              style={{marginTop: 5}}
+            />
+          )}
         </View>
       </View>
     </SafeAreaView>

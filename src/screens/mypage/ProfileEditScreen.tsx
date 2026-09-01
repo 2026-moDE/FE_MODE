@@ -4,7 +4,7 @@ import FastImage from '@d11/react-native-fast-image';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -40,9 +40,13 @@ export default function ProfileEditScreen() {
   const [nicknameError, setNicknameError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const NICKNAME_MAX_LENGTH = 8;
+
   const trimmedNickname = nickname.trim();
-  const isNicknameValid = trimmedNickname.length > 0;
-  const hasError = nicknameError.length > 0;
+  const isOverLimit = nickname.length > NICKNAME_MAX_LENGTH;
+  const isNicknameValid = trimmedNickname.length > 0 && !isOverLimit;
+  const displayError = nicknameError || (isOverLimit ? '사용이 불가능한 닉네임이에요' : '');
+  const hasError = displayError.length > 0;
 
   const handlePressImageEdit = async () => {
     const image = await pickProfileImage();
@@ -72,6 +76,11 @@ export default function ProfileEditScreen() {
   const handleSubmit = async () => {
     if (!trimmedNickname) {
       setNicknameError('닉네임을 입력해주세요');
+      return;
+    }
+
+    if (isOverLimit) {
+      setNicknameError('사용이 불가능한 닉네임이에요');
       return;
     }
 
@@ -201,7 +210,15 @@ if (previewImage) {
               styles.nicknameGuide,
               hasError && styles.errorText,
             ]}>
-            {nicknameError || '닉네임을 입력해주세요'}
+            {displayError || '닉네임을 입력해주세요'}
+          </Text>
+
+          <Text
+            style={[
+              styles.nicknameCount,
+              hasError && styles.errorText,
+            ]}>
+            {nickname.length} / {NICKNAME_MAX_LENGTH}
           </Text>
         </View>
         </View>
@@ -276,9 +293,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     textAlignVertical: 'center',
     includeFontPadding: false,
-    lineHeight: 18,
-    fontSize: 18,
-    fontFamily: fontFamily.bold,
+    ...typography.b1,
     color: colors.text.basic,
   },
 
@@ -294,9 +309,17 @@ const styles = StyleSheet.create({
   },
 
   nicknameGuide: {
+    marginLeft: spacing.md,
     fontSize: 12,
     fontFamily: fontFamily.medium,
-    color: colors.text.brand,
+    color: colors.text.subtle,
+  },
+
+  nicknameCount: {
+    marginRight: spacing.md,
+    fontSize: 12,
+    fontFamily: fontFamily.medium,
+    color: colors.text.subtle,
   },
 
   errorText: {

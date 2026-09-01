@@ -1,7 +1,7 @@
 import React from 'react';
 import {View, Text, Image, Pressable, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-import {CurrentReview, ArchivedReview} from '../../types/place';
+import {CurrentReview, ArchivedReview, ReviewUser} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing, gap, padding} from '../../constants/spacing';
@@ -12,12 +12,32 @@ import IconFriend from '../../assets/icons/IconFriend';
 type Props = {
     review: CurrentReview | ArchivedReview;
     onPress?: () => void;
+    onPressUser?: (user: ReviewUser) => void;
     isArchived?: boolean;
 };
 
-export default function ReviewCard({review, onPress, isArchived}: Props) {
+export default function ReviewCard({review, onPress, onPressUser, isArchived}: Props) {
     const {thumbnail_url, image_url, comment, user, created_at, is_friend} = review;
     const timeAgo = formatReviewTime(created_at, isArchived ?? false);
+
+    const userGroup = (
+        <View style={styles.userGroup}>
+            <FastImage
+                source={{uri: user.profile_url ?? user.profile_image_url}}
+                style={styles.avatar}
+                resizeMode={FastImage.resizeMode.cover}
+            />
+            <Text style={styles.nickname} numberOfLines={1}>
+                {user.nickname}
+            </Text>
+            {/* 친구가 남긴 리뷰 표시 */}
+            {is_friend && (
+                <View style={styles.friendIconWrapper}>
+                    <IconFriend size={14} color={colors.brand.primary} />
+                </View>
+            )}
+        </View>
+    );
 
     return (
         <Pressable onPress={onPress} style={[styles.container, is_friend && styles.containerFriend]}>
@@ -28,23 +48,14 @@ export default function ReviewCard({review, onPress, isArchived}: Props) {
             />
             {/* 상단: 사용자 정보 */}
             <View style={styles.topRow}>
-                {/* 사용자 (아바타 + 닉네임) */}
-                <View style={styles.userGroup}>
-                    <FastImage
-                        source={{uri: user.profile_url ?? user.profile_image_url}}
-                        style={styles.avatar}
-                        resizeMode={FastImage.resizeMode.cover}
-                    />
-                    <Text style={styles.nickname} numberOfLines={1}>
-                        {user.nickname}
-                    </Text>
-                    {/* 친구가 남긴 리뷰 표시 */}
-                    {is_friend && (
-                        <View style={styles.friendIconWrapper}>
-                            <IconFriend size={14} color={colors.brand.primary} />
-                        </View>
-                    )}
-                </View>
+                {/* user_id가 없는 응답(목록 api 일부)이면 다른 유저 마이페이지로 이동할 수 없어 탭 비활성화 */}
+                {onPressUser && user.user_id != null ? (
+                    <Pressable onPress={() => onPressUser(user)} hitSlop={6}>
+                        {userGroup}
+                    </Pressable>
+                ) : (
+                    userGroup
+                )}
             </View>
 
             {/* 중앙: 코멘트 */}

@@ -3,7 +3,7 @@ import {getPresignedUrl} from './imageUpload';
 
 type ApiResponse<T> = {success: boolean; message: string | null; data: T};
 
-export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+export type CongestionLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
 
 // 리뷰 상세 조회 응답
 export type ReviewDetail = {
@@ -63,6 +63,7 @@ export type EmojiReaction = {
   emoji : string;
   is_mine : boolean;
   user: {
+    user_id: number;
     nickname: string;
     profile_image_url: string | null;
     profile_url: string | null;
@@ -92,6 +93,7 @@ export type ReviewComment = {
   is_mine: boolean;
   is_deleted: boolean;
   user: {
+    user_id?: number;
     nickname: string;
     profile_image_url: string;
     profile_url: string;

@@ -24,6 +24,8 @@ type Props = {
     onReportComment?: () => void;
     onPressReplyToggle?: () => void;
     onSubmitReply?: (content: string) => void;
+    // 프로필 사진/닉네임 탭 시 다른 유저 마이페이지로 이동 (user_id 없으면 무시됨)
+    onPressUser?: (userId: number) => void;
     // 답글 펼침 상태
     repliesExpanded?: boolean;
     // 답글 입력창 포커스 시작/종료
@@ -82,6 +84,7 @@ export default function ReviewCommentItem({
     onReportComment,
     onPressReplyToggle,
     onSubmitReply,
+    onPressUser,
     repliesExpanded,
     onReplyFocusChange,
     readOnly,
@@ -97,7 +100,10 @@ export default function ReviewCommentItem({
         <View style={styles.container}>
             {/* 상단: 아바타 + 닉네임(최대 8자) + 날짜 + ⋮ 메뉴 */}
             <View style={styles.header}>
-                <View style={styles.userGroup}>
+                <Pressable
+                    style={styles.userGroup}
+                    disabled={user.user_id == null || !onPressUser}
+                    onPress={() => user.user_id != null && onPressUser?.(user.user_id)}>
                     <FastImage
                         source={{uri: user.profile_url ?? user.profile_image_url}}
                         style={styles.avatar}
@@ -107,7 +113,7 @@ export default function ReviewCommentItem({
                         {user.nickname}
                     </Text>
                     <Text style={styles.date}>{formatCommentDate(created_at)}</Text>
-                </View>
+                </Pressable>
                 <Pressable
                     hitSlop={10}
                     onPress={() => {
@@ -145,7 +151,10 @@ export default function ReviewCommentItem({
                     <>
                         {replies.map(reply => (
                             <View key={reply.id} style={styles.replyItem}>
-                                <View style={styles.replyHeader}>
+                                <Pressable
+                                    style={styles.replyHeader}
+                                    disabled={reply.user.user_id == null || !onPressUser}
+                                    onPress={() => reply.user.user_id != null && onPressUser?.(reply.user.user_id)}>
                                     <FastImage
                                         source={{uri: reply.user.profile_url ?? reply.user.profile_image_url}}
                                         style={styles.replyAvatar}
@@ -154,7 +163,7 @@ export default function ReviewCommentItem({
                                     <Text style={styles.replyNickname} numberOfLines={1}>
                                         {reply.user.nickname}
                                     </Text>
-                                </View>
+                                </Pressable>
                                 <CommentBody content={reply.content} isSecret={reply.is_secret} isDeleted={reply.is_deleted} isReply />
                             </View>
                         ))}

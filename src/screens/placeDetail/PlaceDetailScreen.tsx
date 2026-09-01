@@ -274,6 +274,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                         <ReviewCard
                             review={item}
                             onPress={() => setImageIndex(reviewIndex)}
+                            onPressUser={user => {
+                                if (user.user_id == null) return;
+                                navigation.navigate('UserMyPage', {userId: user.user_id});
+                            }}
                             isArchived={activeTab === 'archived'}
                         />
                     );
@@ -294,6 +298,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 autoOpenChat={notificationAction === 'chat'}
                 onOpenReactionList={openReactions}
                 onClose={() => setImageIndex(null)}
+                onPressUser={user => {
+                    if (user.user_id == null) return;
+                    navigation.navigate('UserMyPage', {userId: user.user_id});
+                }}
                 onDelete={async () => {
                     if (imageIndex === null) return;
                     try {

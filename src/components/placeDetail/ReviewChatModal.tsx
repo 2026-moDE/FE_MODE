@@ -148,8 +148,16 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
     // 댓글 신고 - 신고 페이지로 넘어감 (API는 아직 리뷰 신고용이라 미연결 - commentId만 같이 넘겨둠)
     const handleReportComment = useCallback((commentId: number) => {
         if (!reviewId) return;
+        sheetRef.current?.dismiss();
         navigation.navigate('ReviewReport', {reviewId, commentId});
     }, [reviewId, navigation]);
+
+    // 댓글/답글 작성자 프로필 사진·닉네임 탭 - 다른 유저 마이페이지로 이동
+    // 시트는 네비게이션 스택과 별개 레이어(포탈)라 화면을 이동해도 저절로 안 닫혀서 직접 dismiss해줘야 함
+    const handlePressUser = useCallback((userId: number) => {
+        sheetRef.current?.dismiss();
+        navigation.navigate('UserMyPage', {userId});
+    }, [navigation]);
 
     // 입력창을 시트 전용 footer로 렌더링
     const renderFooter = useCallback(
@@ -206,6 +214,7 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                         onReplyFocusChange={setIsReplyFocused}
                         onDeleteComment={() => handleDeleteComment(item.id)}
                         onReportComment={() => handleReportComment(item.id)}
+                        onPressUser={handlePressUser}
                         readOnly={readOnly}
                     />
                 )}

@@ -6,6 +6,7 @@ import KakaoSDKAuth
 import KakaoSDKCommon
 import NMapsMap
 import FirebaseCore
+import GoogleSignIn
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -47,6 +48,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
     if AuthApi.isKakaoTalkLoginUrl(url) {
       return AuthController.handleOpenUrl(url: url)
+    }
+    if GIDSignIn.sharedInstance.handle(url) {
+      return true
     }
     return false
   }

@@ -117,7 +117,7 @@ const ProfileSetupScreen = ({navigation}: Props) => {
             onChangeText={setNickname}
             placeholder="닉네임을 입력해주세요."
             placeholderTextColor="#A3A3AA"
-            maxLength={12}
+            maxLength={8}
             autoCapitalize="none"
             autoCorrect={false}
           />

@@ -16,6 +16,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
+import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
 import {AppStackParamList} from '../../types/navigation';
 import MapView from '../../components/map/MapView';
@@ -31,7 +32,8 @@ import Supercluster from 'supercluster';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import type {NearbyPlace, CongestionLevel, CurrentReview} from '../../types/place';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
-import {deleteReview} from '../../api/review';
+import ReviewReactionsModal from '../../components/mypage/ReviewReactionsModal';
+import {deleteReview, fetchEmojis, EmojiReaction} from '../../api/review';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -67,6 +69,24 @@ export default function MyMapScreen({navigation}: Props) {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   // 풀스크린 뷰어에서 스와이프 가능한 범위를 같은 월로 제한하기 위한 키 (예: '2026-7')
   const [viewerMonthKey, setViewerMonthKey] = useState<string | null>(null);
+
+  // 내 리뷰 이모지 반응 목록 (마이페이지 ReviewReactionsModal 재사용)
+  const reactionsSheetRef = useRef<BottomSheetModal>(null);
+  const [reactions, setReactions] = useState<EmojiReaction[]>([]);
+  const [isReactionsLoading, setIsReactionsLoading] = useState(false);
+  const openReactions = useCallback(async (reviewId: number) => {
+    reactionsSheetRef.current?.present();
+    setIsReactionsLoading(true);
+    try {
+      const res = await fetchEmojis(reviewId);
+      setReactions(res.reactions);
+    } catch (error) {
+      console.error('이모지 반응 조회 실패:', error);
+      setReactions([]);
+    } finally {
+      setIsReactionsLoading(false);
+    }
+  }, []);
 
   const {height: SCREEN_HEIGHT} = Dimensions.get('window');
   const COLLAPSED_HEIGHT = 180;
@@ -158,6 +178,7 @@ export default function MyMapScreen({navigation}: Props) {
         thumbnail_small_url: r.thumbnail_small_url ?? null,
         congestion_level: r.congestion_level as CurrentReview['congestion_level'],
         comment: r.comment ?? '',
+        place_name: r.place.name,
         helpful_count: r.helpful_count,
         is_helpful: false,
         is_mine: true,
@@ -409,6 +430,11 @@ export default function MyMapScreen({navigation}: Props) {
         startIndex={imageIndex ?? 0}
         visible={imageIndex !== null}
         readOnlyComments
+        onOpenReactionList={openReactions}
+        onPressUser={user => {
+          if (user.user_id == null) return;
+          navigation.navigate('UserMyPage', {userId: user.user_id});
+        }}
         onClose={() => {
           setImageIndex(null);
           setViewerMonthKey(null);
@@ -426,6 +452,9 @@ export default function MyMapScreen({navigation}: Props) {
         onReport={() => setImageIndex(null)}
         useAbsoluteDate
       />
+
+      {/* 내 리뷰 이모지 반응 목록 */}
+      <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
     </View>
   );
 }
@@ -486,7 +515,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingTop: spacing.sm,
-    backgroundColor: colors.background.dark,
+    backgroundColor: colors.background.dimDarkest,
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
     overflow: 'hidden',

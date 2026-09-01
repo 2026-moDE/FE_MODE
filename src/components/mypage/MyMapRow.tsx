@@ -15,9 +15,10 @@ import ArchivedReviewStack from '../placeDetail/ArchivedReviewStack';
 type Props = {
   mapRef: React.RefObject<NaverMapViewRef | null>;
   reviews: MyReview[];
+  isReviewsLoading?: boolean;
 };
 
-export default function MyMapRow({mapRef, reviews}: Props) {
+export default function MyMapRow({mapRef, reviews, isReviewsLoading = false}: Props) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
   const photoReviews = reviews.filter((r): r is MyReview & {image_url: string} => !!r.image_url).slice(0, 3);
@@ -25,7 +26,7 @@ export default function MyMapRow({mapRef, reviews}: Props) {
   return (
     <View style={styles.myMapRow}>
       <View style={styles.myMapCard}>
-        <MyMapSection mapRef={mapRef} />
+        <MyMapSection mapRef={mapRef} reviews={reviews} isLoading={isReviewsLoading} />
       </View>
 
       <View style={styles.monthlyReviewCard}>

@@ -2,7 +2,7 @@ import React, {useState, useEffect, useRef} from 'react';
 import {View, Text, Image, Pressable, StyleSheet, Animated, PanResponder, ScrollView, Dimensions, Keyboard} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
-import {CurrentReview, ArchivedReview} from '../../types/place';
+import {CurrentReview, ArchivedReview, ReviewUser} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import { spacing } from '../../constants/spacing';
@@ -20,11 +20,13 @@ type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
     startIndex: number;
     visible: boolean; // 리뷰 사진 모달 클릭 여부
-    placeName?: string;
+    placeName?: string; // 장소상세처럼 장소가 하나로 고정된 경우용. 리뷰마다 장소가 다르면 reviews[].place_name을 대신 채워서 넘기면 됨
     onClose: () => void;
     onDelete: () => void;
     onReport: () => void;
     onChangeComment?: (reviewId: number, comment: string) => void;
+    // 상단 프로필 사진/닉네임 탭 시 다른 유저 마이페이지로 이동 (user_id 없으면 무시됨)
+    onPressUser?: (user: ReviewUser) => void;
     useAbsoluteDate?: boolean;
     // 내 리뷰일 때 이모지 버튼 누르면 반응 목록을 보여줘야 함
     onOpenReactionList?: (reviewId: number) => void;
@@ -43,7 +45,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, onPressUser, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat}: Props) {
     const insets = useSafeAreaInsets();
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -225,7 +227,10 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                     {/* ── 상단: 사용자(아바타+닉네임+시간) + ⋮ + X (이미지 바깥, 검은 배경 위) ── */}
                     <View style={styles.topRow}>
                         <View style={styles.leftGroup}>
-                            <View style={styles.userGroup}>
+                            <Pressable
+                                style={styles.userGroup}
+                                disabled={!onPressUser || review.user.user_id == null}
+                                onPress={() => onPressUser?.(review.user)}>
                                 <FastImage
                                     source={{uri: review.user.profile_url ?? review.user.profile_image_url}}
                                     style={styles.avatar}
@@ -234,7 +239,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                                 <Text style={styles.nickname} numberOfLines={1}>
                                     {review.user.nickname}
                                 </Text>
-                            </View>
+                            </Pressable>
                             <Text style={styles.timeText} numberOfLines={1}>
                                 {useAbsoluteDate ? formatAbsoluteDate(review.created_at) : formatRelativeTime(review.created_at)}
                             </Text>
@@ -293,11 +298,12 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
 
                     {/* ── 이미지 바로 아래: 장소명 + 채팅/이모지 반응 버튼 (가로 배치) ── */}
                     <View style={styles.bottomRow}>
-                        {placeName ? (
+                        {/* place_name: 마이페이지/마이맵처럼 리뷰마다 장소가 다른 목록용, placeName: 장소상세처럼 장소가 고정인 경우용 */}
+                        {(('place_name' in review ? review.place_name : undefined) ?? placeName) ? (
                             <View style={styles.placeGroup}>
                                 <IconPlaceLocation size={22} color={colors.icon.inverse} />
                                 <Text style={styles.placeName} numberOfLines={1}>
-                                    {placeName}
+                                    {('place_name' in review ? review.place_name : undefined) ?? placeName}
                                 </Text>
                             </View>
                         ) : <View />}
