@@ -10,6 +10,7 @@ import {typography} from '../../constants/typography';
 
 const notificationOnIcon = require('../../assets/image/notification_on.png');
 const notificationOffIcon = require('../../assets/image/notification_off.png');
+const emptyThumbnail = require('../../assets/image/empty_minicard.png');
 
 // 컴포넌트 Props 타입
 type HomeMiniCardProps = {
@@ -94,7 +95,9 @@ export default function HomeMiniCard({
                     ))
                 ) : (
                     // 이미지 없을 때 빈 슬롯 3개 표시
-                    [0, 1, 2].map(i => <View key={i} style={styles.imagePlaceholder} />)
+                    [0, 1, 2].map(i => (
+                        <Image key={i} source={emptyThumbnail} style={styles.imagePlaceholder} resizeMode="cover" />
+                    ))
                 )}
             </ScrollView>
         </View>

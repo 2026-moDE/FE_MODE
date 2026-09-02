@@ -302,8 +302,8 @@ export default function HomeScreen(){
         fetchNearbyPlaces({
             latitude: location.latitude,
             longitude: location.longitude,
-            filter: 'all',        // 전체 리뷰 버블 표시
-            visibility: 'all',    // 안 보내면 백엔드가 전체공개 리뷰만 내려줘서 친구공개 리뷰의 장소가 버블에서 빠짐
+            filter: 'current',     // 실시간 리뷰만 버블 표시
+            visibility: 'all',     // 전체공개 리뷰만 버블 표시
         })
             .then(res => {
                 if (res.places && res.places.length > 0) {

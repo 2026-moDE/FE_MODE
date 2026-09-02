@@ -36,6 +36,7 @@ import ReviewReactionsModal from '../../components/mypage/ReviewReactionsModal';
 import {deleteReview, fetchEmojis, EmojiReaction} from '../../api/review';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const EMPTY_THUMBNAIL = require('../../assets/image/empty_minicard.png');
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MyMap'>;
 
@@ -397,11 +398,14 @@ export default function MyMapScreen({navigation}: Props) {
                   key={review.id}
                   activeOpacity={0.85}
                   onPress={() => openViewer(visibleReviews, review)}>
-                  <FastImage
-                    source={{uri: review.thumbnail_small_url ?? review.thumbnail_url ?? review.image_url!}}
-                    style={styles.photoGridItem}
-                    resizeMode={FastImage.resizeMode.cover}
-                  />
+                  <View style={styles.photoGridItem}>
+                    <FastImage source={EMPTY_THUMBNAIL} style={StyleSheet.absoluteFill} resizeMode={FastImage.resizeMode.cover} />
+                    <FastImage
+                      source={{uri: review.thumbnail_small_url ?? review.thumbnail_url ?? review.image_url!}}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -412,11 +416,14 @@ export default function MyMapScreen({navigation}: Props) {
                   key={review.id}
                   activeOpacity={0.85}
                   onPress={() => openViewer(visibleReviews, review)}>
-                  <FastImage
-                    source={{uri: review.thumbnail_small_url ?? review.thumbnail_url ?? review.image_url!}}
-                    style={styles.photoGridItem}
-                    resizeMode={FastImage.resizeMode.cover}
-                  />
+                  <View style={styles.photoGridItem}>
+                    <FastImage source={EMPTY_THUMBNAIL} style={StyleSheet.absoluteFill} resizeMode={FastImage.resizeMode.cover} />
+                    <FastImage
+                      source={{uri: review.thumbnail_small_url ?? review.thumbnail_url ?? review.image_url!}}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -555,5 +562,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.muted,
     borderWidth: 2,
     borderColor: colors.border.inverse,
+    overflow: 'hidden',
   },
 });

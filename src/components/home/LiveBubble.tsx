@@ -24,6 +24,8 @@ type Props = {
     isReady?: boolean;
 };
 
+const EMPTY_THUMBNAIL = require('../../assets/image/empty_minicard.png');
+
 const BUBBLE_SIZE = 60;
 const TAIL_HEIGHT = 16;
 const TAIL_WIDTH = 12;
@@ -51,14 +53,14 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
             anchor={{x: 0.5, y: 1}}
             onTap={() => onPress(place)}>
             {/* 마커 생김새가 바뀌면(사진 준비 여부/혼잡도 색) key도 바뀌어야 네이티브 쪽이 새 마커로 인식함 - 라이브러리 문서 권장사항 */}
-            <View key={`${congestionColor ?? 'none'}-${isReady}`} collapsable={false} style={styles.container}>
+            <View key={`${congestionColor ?? 'none'}-${isReady}-${hasThumbnail}`} collapsable={false} style={styles.container}>
                 <View
                     collapsable={false}
                     style={[
                         styles.bubble,
                         {borderColor: congestionColor ?? colors.surface.white},
                     ]}>
-                    {place.thumbnail_url && place.thumbnail_url.length > 0 && isReady ? (
+                    {hasThumbnail ? (
                         <FastImage
                             source={{
                                 uri: place.thumbnail_small_url ?? place.thumbnail_url,
@@ -68,7 +70,9 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                             style={styles.thumbnail}
                             resizeMode={FastImage.resizeMode.cover}
                         />
-                    ) : null}
+                    ) : (
+                        <FastImage source={EMPTY_THUMBNAIL} style={styles.thumbnail} resizeMode={FastImage.resizeMode.cover} />
+                    )}
                 </View>
                 {/* 꼬리: 혼잡도 있으면 같은 색, 없으면 흰색 */}
                 <View

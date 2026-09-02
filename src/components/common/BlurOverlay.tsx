@@ -28,7 +28,8 @@ export default function BlurOverlay({style, blurAmount = 10, fallbackColor = 'rg
         <BlurView
             style={[StyleSheet.absoluteFill, style]}
             blurType="material"
-            blurAmount={blurAmount}
+            // iOS "material" 블러는 같은 blurAmount에서도 Android "light"보다 훨씬 세게 나와서 낮춤
+            blurAmount={blurAmount * 0.4}
             reducedTransparencyFallbackColor={fallbackColor}
             pointerEvents={pointerEvents}
         />
