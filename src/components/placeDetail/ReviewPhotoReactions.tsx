@@ -1,7 +1,7 @@
 import React, {useRef, useState} from 'react';
 import {View, Text, Pressable, Animated, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-import EmojiPicker, {ko} from 'rn-emoji-keyboard';
+import {EmojiPopup} from 'react-native-emoji-popup';
 import BlurOverlay from '../common/BlurOverlay';
 
 const chatIcon = require('../../assets/image/comment.png');
@@ -119,15 +119,7 @@ type EmojiPickerProps = {
 
 // 이모지 선택 화면
 export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPickerProps) {
-    // 맨 오른쪽 버튼 누르면 프리셋 4개 말고 전체 이모지 중에서 고를 수 있는 모달을 띄움
-    const [showMoreEmoji, setShowMoreEmoji] = useState(false);
-
     if (!visible) return null;
-
-    const handleSelectMore = (selection: {emoji: string}) => {
-        setShowMoreEmoji(false);
-        onSelect(selection.emoji);
-    };
 
     return (
         <>
@@ -140,16 +132,16 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPicker
                         <Text style={styles.emojiText}>{emoji}</Text>
                     </Pressable>
                 ))}
-                <Pressable onPress={() => setShowMoreEmoji(true)}>
+                {/* 맨 오른쪽 버튼 누르면 프리셋 4개 말고 기기 자체 이모지 피커(네이티브)로 원하는 이모지를 고를 수 있음
+                    (안드로이드 전용 props: 기본값은 전체화면 + 빨간 Close 버튼이라, 키보드처럼 하단에 붙이고
+                    닫기 버튼 자리는 없앰 - 뒤로가기 버튼으로 닫을 수 있음. iOS는 이 props 무시하고 자체 팝업 스타일 그대로 씀) */}
+                <EmojiPopup
+                    onEmojiSelected={onSelect}
+                    contentContainerStyle={styles.emojiPopupContainer}
+                    closeButton={() => null}>
                     <FastImage source={emojiIcon} style={styles.moreIcon} resizeMode={FastImage.resizeMode.contain} />
-                </Pressable>
+                </EmojiPopup>
             </View>
-            <EmojiPicker
-                open={showMoreEmoji}
-                onClose={() => setShowMoreEmoji(false)}
-                onEmojiSelected={handleSelectMore}
-                translation={ko}
-            />
         </>
     );
 }
@@ -207,5 +199,18 @@ const styles = StyleSheet.create({
     moreIcon: {
         width: 40,
         height: 40,
+    },
+    // 안드로이드 네이티브 이모지 피커 - 기본은 전체화면이라 키보드처럼 하단 45%로 붙임
+    emojiPopupContainer: {
+        height: '45%',
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        top: undefined,
+        paddingTop: 0,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        overflow: 'hidden',
     },
 });
