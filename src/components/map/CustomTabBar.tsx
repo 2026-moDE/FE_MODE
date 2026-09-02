@@ -2,7 +2,6 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BlurOverlay from '../common/BlurOverlay';
 import { colors } from '../../constants/colors';
 import { radius } from '../../constants/radius';
 import { spacing, gap } from '../../constants/spacing';
@@ -37,8 +36,8 @@ export default function CustomTabBar({ state, navigation, descriptors }: BottomT
     return (
         <View style={[styles.wrapper, { marginBottom: bottomMargin }]} pointerEvents="box-none">
             <View style={styles.container}>
-                {/* 배경 블러(16) - 지도 화면에선 안 먹음(SurfaceView라 캡처 불가), 다른 화면에선 정상 적용 */}
-                <BlurOverlay style={StyleSheet.absoluteFill} blurAmount={16} />
+                {/* 배경 블러는 뒤에 SurfaceView(지도/카메라)가 있을 때 화면 전환과 겹치면
+                    그쪽 렌더링을 깨트리는 문제가 있어서 빼고, 반투명 틴트만 남김 */}
                 <View style={[StyleSheet.absoluteFill, styles.tint]} />
 
                 <View style={styles.row}>
