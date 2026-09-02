@@ -25,20 +25,18 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {getFcmToken} from '../../utils/fcm';
 
 import type {AuthStackParamList} from '../../types/navigation';
-import {fontFamily} from '../../constants/typography';
+import {typography} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {gap} from '../../constants/spacing';
 import KakaoLoginButton from '../../components/auth/KakaoLoginButton';
 import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 import AppleLoginButton from '../../components/auth/AppleLoginButton';
 
-const logo = require('../../assets/image/logo.png');
-const iphoneMockup = require('../../assets/image/iphone_mockup.png');
+const logo = require('../../assets/image/logo_new.png');
 
-const LOGO_TOP = 78;
-const LOGO_WIDTH = 75;
-const LOGO_HEIGHT = 40;
-const LOGO_MOCKUP_GAP = 43;
-const MOCKUP_WIDTH = 262;
-const MOCKUP_HEIGHT = 397;
+const LOGO_TOP = 139;
+const LOGO_WIDTH = 83;
+const LOGO_HEIGHT = 52;
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -215,61 +213,38 @@ export default function LoginScreen({navigation}: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor="#2C343F" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.background.dark} />
 
-      <View style={styles.backgroundLayer} pointerEvents="none">
+      <View style={styles.logoSection} pointerEvents="none">
         <Image
           source={logo}
-          style={{
-            width: LOGO_WIDTH,
-            height: LOGO_HEIGHT,
-            marginTop: LOGO_TOP,
-          }}
+          tintColor={colors.brand.primary}
+          style={{width: LOGO_WIDTH, height: LOGO_HEIGHT, marginTop: LOGO_TOP}}
           resizeMode="contain"
         />
 
-        <Image
-          source={iphoneMockup}
-          style={{
-            width: MOCKUP_WIDTH,
-            height: MOCKUP_HEIGHT,
-            marginTop: LOGO_MOCKUP_GAP,
-          }}
-          resizeMode="contain"
-        />
+        <Text style={styles.description}>실시간 장소 정보 공유 플랫폼, 모잉</Text>
       </View>
 
       <View
         style={[
-          styles.bottomSection,
+          styles.socialButtonGroup,
           {paddingBottom: insets.bottom + 16},
         ]}>
-        <View style={styles.textGroup}>
-          <Text style={styles.title}>실시간으로 탐색하는 장소 정보</Text>
-
-          <Text style={styles.description}>
-            혼잡도 정보부터 장소 사진 확인까지{'\n'}모잉에서 한 번에!
-          </Text>
-        </View>
-
-        <View style={styles.socialButtonGroup}>
-          <KakaoLoginButton
-            onPress={handleKakaoLogin}
+        <KakaoLoginButton
+          onPress={handleKakaoLogin}
+          disabled={isLoginLoading}
+        />
+        <GoogleLoginButton
+          onPress={handleGoogleLogin}
+          disabled={isLoginLoading}
+        />
+        {Platform.OS === 'ios' && (
+          <AppleLoginButton
+            onPress={handleAppleLogin}
             disabled={isLoginLoading}
           />
-          <GoogleLoginButton
-            onPress={handleGoogleLogin}
-            disabled={isLoginLoading}
-            style={{marginTop: 5}}
-          />
-          {Platform.OS === 'ios' && (
-            <AppleLoginButton
-              onPress={handleAppleLogin}
-              disabled={isLoginLoading}
-              style={{marginTop: 5}}
-            />
-          )}
-        </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -278,54 +253,24 @@ export default function LoginScreen({navigation}: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2C343F',
-    justifyContent: 'flex-end',
+    backgroundColor: colors.background.dark,
   },
 
-  // 로고·목업 이미지는 화면 상단 기준 절대 위치로 고정한다.
-  // bottomSection의 높이(버튼 개수)가 늘어나도 이미지 위치가 밀리지 않도록 하기 위함.
-  backgroundLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  logoSection: {
     alignItems: 'center',
-  },
-
-  bottomSection: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 30,
-    alignItems: 'center',
-  },
-
-  textGroup: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-
-  title: {
-    color: '#000000',
-    fontSize: 20,
-    fontFamily: fontFamily.bold,
-    lineHeight: 24,
-    letterSpacing: -0.4,
-    textAlign: 'center',
-    marginBottom: 8,
+    gap: gap['2xl'],
   },
 
   description: {
-    color: '#000000',
-    fontSize: 14,
-    fontFamily: fontFamily.regular,
-    lineHeight: 18,
+    ...typography.b4,
+    color: colors.text.inverse,
     textAlign: 'center',
   },
 
   socialButtonGroup: {
     width: '100%',
+    marginTop: 'auto',
+    paddingHorizontal: 16,
+    gap: 12,
   },
 });
