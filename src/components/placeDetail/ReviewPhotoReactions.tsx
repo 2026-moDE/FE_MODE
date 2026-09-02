@@ -1,11 +1,12 @@
 import React, {useRef, useState} from 'react';
 import {View, Text, Pressable, Animated, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
+import EmojiPicker, {ko} from 'rn-emoji-keyboard';
 import BlurOverlay from '../common/BlurOverlay';
 
 const chatIcon = require('../../assets/image/comment.png');
 const emojiIcon = require('../../assets/image/emoji.png');
-const EMOJIS = ['😍', '👀', '❤️', '👍', '😑'];
+const EMOJIS = ['😍', '👀', '❤️', '👍'];
 
 // 선택된 이모지 자체는 리뷰별로 달라야 해서 ReviewPhoto에서 관리
 // 이 훅은 애니메이션 재생만 담당함
@@ -118,7 +119,16 @@ type EmojiPickerProps = {
 
 // 이모지 선택 화면
 export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPickerProps) {
+    // 맨 오른쪽 버튼 누르면 프리셋 4개 말고 전체 이모지 중에서 고를 수 있는 모달을 띄움
+    const [showMoreEmoji, setShowMoreEmoji] = useState(false);
+
     if (!visible) return null;
+
+    const handleSelectMore = (selection: {emoji: string}) => {
+        setShowMoreEmoji(false);
+        onSelect(selection.emoji);
+    };
+
     return (
         <>
             <Pressable style={styles.overlay} onPress={onClose}>
@@ -130,7 +140,16 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPicker
                         <Text style={styles.emojiText}>{emoji}</Text>
                     </Pressable>
                 ))}
+                <Pressable onPress={() => setShowMoreEmoji(true)}>
+                    <FastImage source={emojiIcon} style={styles.moreIcon} resizeMode={FastImage.resizeMode.contain} />
+                </Pressable>
             </View>
+            <EmojiPicker
+                open={showMoreEmoji}
+                onClose={() => setShowMoreEmoji(false)}
+                onEmojiSelected={handleSelectMore}
+                translation={ko}
+            />
         </>
     );
 }
@@ -184,5 +203,9 @@ const styles = StyleSheet.create({
     },
     emojiText: {
         fontSize: 30,
+    },
+    moreIcon: {
+        width: 40,
+        height: 40,
     },
 });
