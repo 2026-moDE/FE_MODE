@@ -16,7 +16,7 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
-import {useNavigation, useRoute, useIsFocused} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import ImageResizer from '@bam.tech/react-native-image-resizer';
 import type {RouteProp} from '@react-navigation/native';
@@ -64,9 +64,10 @@ export default function ReviewScreen() {
   // 장소 상세에서 진입 시 미리 선택된 장소 (없으면 undefined)
   const {placeId, placeName} = route.params ?? {};
   const cameraRef = useRef<Camera>(null);
-  // 화면 벗어나도 카메라가 계속 켜진 채로 남아있으면 홈으로 돌아왔을 때 지도 렌더링과 리소스를
-  // 다투다가 지도가 빈 화면으로 남는 문제가 있어서, 포커스 여부에 따라 꺼줘야 함
-  const isFocused = useIsFocused();
+  // Fabric에서 화면 전환 중 뷰가 마운트되면 네이티브 레이아웃(onMeasure/onLayout)이 아직
+  // 안 끝난 채로 카메라가 활성화되는 경우가 있어서, 실제로 크기를 받은 후에만 Camera를 켬
+  // (안 그러면 카메라 프리뷰용 Surface가 0x0으로 생성 시도되다가 CameraX가 5초 후 타임아웃 에러를 냄)
+  const [cameraBoxReady, setCameraBoxReady] = useState(false);
 
   const [cameraPosition, setCameraPosition] =
     useState<CameraPosition>('back');
@@ -246,16 +247,23 @@ export default function ReviewScreen() {
       </View>
 
       <View style={styles.cameraSection}>
-        <View style={styles.cameraBox}>
-          <Camera
-            ref={cameraRef}
-            style={StyleSheet.absoluteFill}
-            device={device}
-            isActive={isFocused}
-            photo={true}
-            zoom={getCameraZoom()}
-            outputOrientation="device"
-          />
+        <View
+          style={styles.cameraBox}
+          onLayout={e => {
+            const {width, height} = e.nativeEvent.layout;
+            if (width > 0 && height > 0) setCameraBoxReady(true);
+          }}>
+          {cameraBoxReady && (
+            <Camera
+              ref={cameraRef}
+              style={StyleSheet.absoluteFill}
+              device={device}
+              isActive={true}
+              photo={true}
+              zoom={getCameraZoom()}
+              outputOrientation="device"
+            />
+          )}
 
           <View style={styles.zoomContainer}>
             {ZOOM_LEVELS.map(item => {
