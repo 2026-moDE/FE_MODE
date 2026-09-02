@@ -1,6 +1,8 @@
 import React from 'react';
 import {Pressable, View, Text, StyleSheet, StyleProp, ViewStyle} from 'react-native';
 import {fontFamily} from '../../constants/typography';
+import {radius} from '../../constants/radius';
+import {gap} from '../../constants/spacing';
 
 type Props = {
     label: string;
@@ -51,8 +53,8 @@ export default function SocialLoginButton({
 const styles = StyleSheet.create({
     button: {
         width: '100%',
-        height: 45,
-        borderRadius: 6,
+        height: 54,
+        borderRadius: radius.lg,
         paddingHorizontal: 14,
         alignItems: 'center',
         justifyContent: 'center',
@@ -69,15 +71,15 @@ const styles = StyleSheet.create({
     },
 
     iconWrapper: {
-        marginRight: 6,
+        marginRight: gap.lg,
         alignItems: 'center',
         justifyContent: 'center',
     },
 
     label: {
-        fontFamily: fontFamily.bold,
-        fontSize: 15,
-        lineHeight: 22,
+        fontFamily: fontFamily.medium,
+        fontSize: 16,
+        letterSpacing: 0,
         includeFontPadding: false,
         textAlignVertical: 'center',
     },

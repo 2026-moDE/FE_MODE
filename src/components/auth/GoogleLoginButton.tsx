@@ -12,12 +12,12 @@ type Props = {
 export default function GoogleLoginButton({onPress, disabled, style}: Props) {
     return (
         <SocialLoginButton
-            label="Google로 로그인"
-            icon={<IconGoogleLogo size={18} />}
+            label="Google으로 계속하기"
+            icon={<IconGoogleLogo size={24} />}
             onPress={onPress}
             disabled={disabled}
             backgroundColor="#FFFFFF"
-            textColor="rgba(0, 0, 0, 0.85)"
+            textColor="rgba(0, 0, 0, 0.54)"
             borderColor="#E0E0E0"
             style={style}
         />

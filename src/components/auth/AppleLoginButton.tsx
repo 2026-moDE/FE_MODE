@@ -2,6 +2,7 @@ import React from 'react';
 import {StyleProp, ViewStyle} from 'react-native';
 import SocialLoginButton from './SocialLoginButton';
 import IconAppleLogo from '../../assets/icons/IconAppleLogo';
+import {colors} from '../../constants/colors';
 
 type Props = {
     onPress: () => void;
@@ -12,12 +13,13 @@ type Props = {
 export default function AppleLoginButton({onPress, disabled, style}: Props) {
     return (
         <SocialLoginButton
-            label="Apple로 로그인"
-            icon={<IconAppleLogo size={16} color="#FFFFFF" />}
+            label="Apple으로 계속하기"
+            icon={<IconAppleLogo size={24} color="#FFFFFF" />}
             onPress={onPress}
             disabled={disabled}
             backgroundColor="#000000"
             textColor="#FFFFFF"
+            borderColor={colors.border.inverse}
             style={style}
         />
     );
