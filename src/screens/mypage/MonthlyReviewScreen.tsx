@@ -18,6 +18,7 @@ import type {CurrentReview} from '../../types/place';
 import {deleteReview, changeReview, fetchEmojis, EmojiReaction} from '../../api/review';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const EMPTY_THUMBNAIL = require('../../assets/image/empty_minicard.png');
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MonthlyReview'>;
 
@@ -198,7 +199,8 @@ export default function MonthlyReviewScreen({navigation}: Props) {
                   <View key={cellIndex} style={styles.dayCell}>
                     {cell &&
                       (cell.review ? (
-                        <Pressable onPress={() => openViewer(cell.review!)}>
+                        <Pressable onPress={() => openViewer(cell.review!)} style={styles.dayPhoto}>
+                          <FastImage source={EMPTY_THUMBNAIL} style={StyleSheet.absoluteFill} resizeMode={FastImage.resizeMode.cover} />
                           <FastImage
                             source={{
                               uri:
@@ -206,7 +208,7 @@ export default function MonthlyReviewScreen({navigation}: Props) {
                                 cell.review.thumbnail_url ??
                                 cell.review.image_url!,
                             }}
-                            style={styles.dayPhoto}
+                            style={StyleSheet.absoluteFill}
                             resizeMode={FastImage.resizeMode.cover}
                           />
                         </Pressable>
@@ -347,5 +349,6 @@ const styles = StyleSheet.create({
     height: CELL_SIZE * 1.2 - 6,
     borderRadius: radius.md,
     backgroundColor: colors.surface.muted,
+    overflow: 'hidden',
   },
 });

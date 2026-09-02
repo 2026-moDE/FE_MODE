@@ -1,12 +1,11 @@
 import React from 'react';
 import {View, Image, Pressable, StyleSheet} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import IconSearch from '../../assets/icons/IconSearch';
 import IconMapBell from '../../assets/icons/IconMapBell';
-import {colors} from '../../constants/colors';
 import {gap, padding} from '../../constants/spacing';
 
 const LOGO = require('../../assets/image/logo_new.png');
+const SEARCH_ICON = require('../../assets/image/search_white.png');
 
 type Props = {
     // 상태바 높이만큼 콘텐츠(로고/아이콘)를 아래로 내림 - 그라디언트 자체는 화면 맨 위(상태바 뒤)부터 시작
@@ -27,10 +26,9 @@ export default function HomeHeader({insetTop = 0, onPressSearch, onPressBell, ha
 
                 <View style={styles.actions}>
                     <Pressable onPress={onPressSearch} hitSlop={8}>
-                        <IconSearch size={24} color={colors.icon.inverse} />
+                        <Image source={SEARCH_ICON} style={styles.searchIcon} resizeMode="contain" />
                     </Pressable>
-                    {/* bell png는 64x64 캔버스 안에서 가로 75%만 채우는 형태라, search(꽉 찬 정사각형)랑 같은 24로 두면 더 작아 보여서 살짝 키움 */}
-                    <IconMapBell size={30} onPress={onPressBell} showBadge={hasUnreadNotification} />
+                    <IconMapBell size={24} onPress={onPressBell} showBadge={hasUnreadNotification} />
                 </View>
             </View>
         </LinearGradient>
@@ -55,6 +53,10 @@ const styles = StyleSheet.create({
     logo: {
         width: 48,
         height: 30,
+    },
+    searchIcon: {
+        width: 24,
+        height: 24,
     },
     actions: {
         flexDirection: 'row',
