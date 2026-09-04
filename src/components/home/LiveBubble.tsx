@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
+import {View, Image, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import {NearbyPlace, CongestionLevel} from '../../types/place';
@@ -71,7 +71,9 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                             resizeMode={FastImage.resizeMode.cover}
                         />
                     ) : (
-                        <FastImage source={EMPTY_THUMBNAIL} style={styles.thumbnail} resizeMode={FastImage.resizeMode.cover} />
+                        // 로컬 placeholder는 RN Image로 - 마커는 네이티브가 비트맵으로 굽는데
+                        // FastImage로 넣으면 그려지기 전에 캡처돼서 버블 배경(회색)만 남음
+                        <Image source={EMPTY_THUMBNAIL} style={styles.thumbnail} resizeMode="cover" />
                     )}
                 </View>
                 {/* 꼬리: 혼잡도 있으면 같은 색, 없으면 흰색 */}

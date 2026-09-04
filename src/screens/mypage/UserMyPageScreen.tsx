@@ -146,7 +146,6 @@ export default function UserMyPageScreen() {
           isFriend={isFriend}
           onPressBack={() => navigation.goBack()}
           onPressSettings={() => {}}
-          onPressFriends={() => {}}
           onPressMenu={
             isFriend
               ? anchor => {

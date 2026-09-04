@@ -11,6 +11,7 @@ import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
 import {EmojiReaction} from '../../api/review';
 import {AppStackParamList} from '../../types/navigation';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 type Props = {
   reactions: EmojiReaction[];
@@ -58,15 +59,11 @@ const ReviewReactionsModal = forwardRef<BottomSheetModal, Props>(function Review
                 sheetRef.current?.dismiss();
                 navigation.navigate('UserMyPage', {userId: item.user.user_id});
               }}>
-              {item.user.profile_url ?? item.user.profile_image_url ? (
-                <FastImage
-                  source={{uri: item.user.profile_url ?? item.user.profile_image_url ?? undefined}}
-                  style={styles.avatar}
-                  resizeMode={FastImage.resizeMode.cover}
-                />
-              ) : (
-                <View style={styles.avatar} />
-              )}
+              <ProfileAvatar
+                profileUrl={item.user.profile_url}
+                profileImageUrl={item.user.profile_image_url}
+                style={styles.avatar}
+              />
 
               <Text style={styles.nickname} numberOfLines={1}>
                 {item.user.nickname}

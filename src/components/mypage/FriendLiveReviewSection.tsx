@@ -19,6 +19,7 @@ import {typography} from '../../constants/typography';
 import {formatRelativeTime} from '../../utils/date';
 import {UserReview} from '../../api/user';
 import ReviewChatModal from '../placeDetail/ReviewChatModal';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 type FriendInfo = {
   nickname: string;
@@ -98,15 +99,11 @@ export default function FriendLiveReviewSection({
 
               <View style={styles.content}>
                 <View style={styles.header}>
-                  {friend.profile_image_url ? (
-                    <FastImage
-                      source={{uri: friend.profile_url ?? friend.profile_image_url}}
-                      style={styles.avatar}
-                      resizeMode={FastImage.resizeMode.cover}
-                    />
-                  ) : (
-                    <View style={styles.avatar} />
-                  )}
+                  <ProfileAvatar
+                    profileUrl={friend.profile_url}
+                    profileImageUrl={friend.profile_image_url}
+                    style={styles.avatar}
+                  />
                   <Text style={styles.nickname} numberOfLines={1}>
                     {friend.nickname}
                   </Text>

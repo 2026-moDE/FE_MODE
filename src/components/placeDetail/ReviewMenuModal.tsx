@@ -1,6 +1,5 @@
 import React, {useState, useEffect} from 'react';
 import {Modal, View, Text, Pressable, StyleSheet, Dimensions, Image} from 'react-native';
-import BlurOverlay from '../common/BlurOverlay';
 import {colors} from '../../constants/colors';
 import {fontFamily, typography} from '../../constants/typography';
 import {padding, gap} from '../../constants/spacing';
@@ -44,7 +43,6 @@ export default function ReviewMenuModal({visible, isOwner, onClose, onDelete, on
         return (
             <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
                 <Pressable style={styles.overlay} onPress={onClose}>
-                    <BlurOverlay />
                     <View style={styles.menuBar} onStartShouldSetResponder={() => true}>
                         {isOwner ? (
                             <>
@@ -83,7 +81,6 @@ export default function ReviewMenuModal({visible, isOwner, onClose, onDelete, on
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={styles.confirmOverlay}>
-                <BlurOverlay fallbackColor="rgba(0,0,0,0.5)" />
                 <View style={styles.modalBox}>
                     <Image source={cautionIcon} style={styles.cautionIcon} resizeMode="contain" />
                     <Text allowFontScaling={false} style={styles.title}>
@@ -110,9 +107,11 @@ export default function ReviewMenuModal({visible, isOwner, onClose, onDelete, on
 
 const styles = StyleSheet.create({
     // ── 메뉴 ──
+    // 시안대로 블러 없이 딤만 - 뒤 사진이 그대로 보여야 함 (다른 시트/오버레이와 같은 값)
     overlay: {
         flex: 1,
         justifyContent: 'flex-end',
+        backgroundColor: colors.background.dimDarker,
     },
     menuBar: {
         backgroundColor: colors.surface.subtleDarker,
@@ -147,6 +146,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: colors.background.dimDarker,
     },
     modalBox: {
         width: px(320),

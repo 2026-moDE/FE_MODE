@@ -1,4 +1,4 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   StatusBar,
@@ -27,6 +27,7 @@ const SCROLL_END_THRESHOLD = 120;
 export default function MypageScreen() {
   const navigation = useNavigation<any>();
   const mapRef = useRef<NaverMapViewRef>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const shareModalRef = useRef<BottomSheetModal>(null);
   const [profile, setProfile] = useState<MyProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
@@ -85,6 +86,14 @@ export default function MypageScreen() {
     }, [loadProfile, loadRecentReviews]),
   );
 
+  // 이미 마이페이지인 상태에서 탭을 다시 누르면 맨 위로 (CustomTabBar가 활성 탭에서도 tabPress를 쏴줌)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      scrollRef.current?.scrollTo({y: 0, animated: true});
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {layoutMeasurement, contentOffset, contentSize} = event.nativeEvent;
     const distanceFromBottom =
@@ -128,6 +137,7 @@ export default function MypageScreen() {
       <StatusBar barStyle="light-content" backgroundColor={colors.background.white} />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

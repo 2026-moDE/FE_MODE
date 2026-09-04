@@ -59,6 +59,10 @@ export default function MyMapScreen({navigation}: Props) {
   const [loading, setLoading] = useState(true);
   const [locatedGroups, setLocatedGroups] = useState<LocatedPlaceReviewGroup[]>([]);
   const [zoom, setZoom] = useState(6);
+  // 홈과 동일한 썸네일 처리: decode 끝난 것만 마커에 그리고(네이티브 비트맵 크래시 방지),
+  // 로딩 실패한 URL은 아예 없는 것처럼 취급해서 empty_minicard가 나오게 함
+  const [readyUrls, setReadyUrls] = useState<Set<string>>(new Set());
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
   const [bounds, setBounds] = useState<[number, number, number, number]>([-180, -90, 180, 90]);
   const cameraDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<LocatedPlaceReviewGroup | null>(null);
@@ -131,16 +135,24 @@ export default function MyMapScreen({navigation}: Props) {
   ).current;
 
   const myMapPlaces = useMemo<NearbyPlace[]>(() => {
-    return locatedGroups.map(group => ({
-      id: group.placeId,
-      name: group.placeName,
-      address: group.address,
-      latitude: group.latitude,
-      longitude: group.longitude,
-      congestion_level: group.representativeReview.congestion_level as CongestionLevel,
-      thumbnail_url: group.representativeReview.thumbnail_url ?? group.representativeReview.image_url ?? '',
-      thumbnail_small_url: group.representativeReview.thumbnail_small_url ?? null,
-    }));
+    return locatedGroups.map(group => {
+      // 대표 리뷰(최신)에 사진이 없어도 같은 장소의 다른 리뷰 사진을 마커에 씀 -
+      // 최신 리뷰만 보면 사진 있는 장소인데도 빈 썸네일이 뜸
+      const reviewWithPhoto =
+        group.reviews.find(r => r.thumbnail_small_url ?? r.thumbnail_url ?? r.image_url) ??
+        group.representativeReview;
+
+      return {
+        id: group.placeId,
+        name: group.placeName,
+        address: group.address,
+        latitude: group.latitude,
+        longitude: group.longitude,
+        congestion_level: group.representativeReview.congestion_level as CongestionLevel,
+        thumbnail_url: reviewWithPhoto.thumbnail_url ?? reviewWithPhoto.image_url ?? '',
+        thumbnail_small_url: reviewWithPhoto.thumbnail_small_url ?? null,
+      };
+    });
   }, [locatedGroups]);
 
   const supercluster = useMemo(() => {
@@ -326,6 +338,9 @@ export default function MyMapScreen({navigation}: Props) {
             const [lng, lat] = cluster.geometry.coordinates;
             if (cluster.properties.cluster) {
               const leafPlace = supercluster.getLeaves(cluster.properties.cluster_id, 1)[0]?.properties.place;
+              const rawThumbnailUrl = leafPlace?.thumbnail_small_url ?? leafPlace?.thumbnail_url;
+              // 로딩 실패한(깨진) 이미지는 아예 없는 것처럼 취급 - 네이티브 마커에 절대 안 넘김
+              const thumbnailUrl = rawThumbnailUrl && !failedUrls.has(rawThumbnailUrl) ? rawThumbnailUrl : undefined;
 
               return (
                 <ClusterBubble
@@ -333,22 +348,47 @@ export default function MyMapScreen({navigation}: Props) {
                   latitude={lat}
                   longitude={lng}
                   count={cluster.properties.point_count}
-                  thumbnailUrl={leafPlace?.thumbnail_small_url ?? leafPlace?.thumbnail_url}
+                  thumbnailUrl={thumbnailUrl}
+                  // 프리로더로 디코딩까지 끝난 이미지만 마커에 그려서 네이티브 비트맵 크래시 방지
+                  isReady={!!thumbnailUrl && readyUrls.has(thumbnailUrl)}
                   onPress={() => handleClusterPress(cluster.properties.cluster_id, lat, lng)}
                 />
               );
             }
             const place = cluster.properties.place;
+            const rawPlaceThumbnailUrl = place.thumbnail_small_url ?? place.thumbnail_url;
+            const placeThumbnailFailed = !!rawPlaceThumbnailUrl && failedUrls.has(rawPlaceThumbnailUrl);
+            // 실패한 썸네일이면 LiveBubble에는 사진 없는 장소처럼 보이도록 필드를 비워서 전달
+            const safePlace = placeThumbnailFailed
+              ? {...place, thumbnail_url: '', thumbnail_small_url: null}
+              : place;
             return (
               <LiveBubble
                 key={`my-map-full-${place.id}`}
-                place={place}
+                place={safePlace}
+                isReady={!placeThumbnailFailed && !!rawPlaceThumbnailUrl && readyUrls.has(rawPlaceThumbnailUrl)}
                 onPress={handlePlacePress}
                 monochrome
               />
             );
           })}
         </MapView>
+
+        {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 - 버블이 실제로 쓰는 필드(thumbnail_small_url 우선)랑 맞춤 */}
+        {myMapPlaces.map(place => {
+          const bubbleUrl = place.thumbnail_small_url ?? place.thumbnail_url;
+          return bubbleUrl && !readyUrls.has(bubbleUrl) && !failedUrls.has(bubbleUrl) ? (
+            <FastImage
+              key={place.id}
+              source={{uri: bubbleUrl, priority: FastImage.priority.high}}
+              style={styles.preloader}
+              resizeMode={FastImage.resizeMode.cover}
+              onLoad={() => setReadyUrls(prev => new Set([...prev, bubbleUrl]))}
+              // 로딩 실패한 이미지는 ready가 아니라 failed로 분리 - 마커에 절대 안 넘어가게
+              onError={() => setFailedUrls(prev => new Set([...prev, bubbleUrl]))}
+            />
+          ) : null;
+        })}
 
         {/* 헤더 (지도 위 오버레이) */}
         <View style={styles.headerGradientWrap} pointerEvents="none">
@@ -467,6 +507,8 @@ export default function MyMapScreen({navigation}: Props) {
 }
 
 const styles = StyleSheet.create({
+  // 마커에 그리기 전 디코딩만 시키는 용도라 화면에는 안 보이게
+  preloader: {width: 60, height: 60, position: 'absolute', opacity: 0},
   container: {
     flex: 1,
     backgroundColor: colors.background.dimDarkest,

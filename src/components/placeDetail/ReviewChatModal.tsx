@@ -1,4 +1,4 @@
-import { BottomSheetModal, BottomSheetFlatList, BottomSheetFooter, BottomSheetFooterProps } from "@gorhom/bottom-sheet";
+import { BottomSheetModal, BottomSheetFlatList, BottomSheetFooter, BottomSheetFooterProps, BottomSheetBackdrop, BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -7,7 +7,6 @@ import { colors } from "../../constants/colors";
 import { spacing, gap, padding } from "../../constants/spacing";
 import { typography } from "../../constants/typography";
 import { radius } from "../../constants/radius";
-import BlurBackdrop from "../common/BlurBackdrop";
 import ReviewCommentItem from "./ReviewCommentItem";
 import CommentInput from "./CommentInput";
 import { ReviewComment, createComment, createReply, deleteComment, fetchComments } from "../../api/review";
@@ -73,9 +72,10 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         }
     }, [comments]);
 
+    // 반응 시트(ReviewReactionsModal)와 배경 처리를 통일 - 블러 대신 기본 딤
     const renderBackdrop = useCallback(
-        (props: React.ComponentProps<typeof BlurBackdrop>) => (
-            <BlurBackdrop {...props} onPress={() => sheetRef.current?.dismiss()} />
+        (props: BottomSheetBackdropProps) => (
+            <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} pressBehavior="close" />
         ),
         [],
     );
@@ -160,9 +160,10 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
     }, [navigation]);
 
     // 입력창을 시트 전용 footer로 렌더링
+    // bottomInset은 inputWrapper의 paddingBottom(16)이 더해지므로, 키보드 없을 때 하단 여백이 기존 43으로 유지되게 27
     const renderFooter = useCallback(
         (props: BottomSheetFooterProps) => (
-            <BottomSheetFooter {...props} bottomInset={43}>
+            <BottomSheetFooter {...props} bottomInset={27}>
                 <View style={styles.inputWrapper}>
                     {showDeleteToast && (
                         <View style={styles.deleteToast}>
@@ -187,6 +188,9 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
             ref={sheetRef}
             snapPoints={snapPoints}
             enableDynamicSizing={false}
+            // 기본값 "interactive"는 키보드 높이만큼 시트를 밀어올려서 화면 최상단까지 올라가버림.
+            // "extend"는 가장 높은 스냅포인트(85%)까지만 확장하고 멈춰서 위에 여백이 남음
+            keyboardBehavior="extend"
             keyboardBlurBehavior="restore"
             backgroundStyle={styles.sheetBackground}
             handleIndicatorStyle={styles.handle}
@@ -246,7 +250,9 @@ const styles = StyleSheet.create({
     },
     inputWrapper: {
         paddingHorizontal: spacing.xl,     // 20 - footer는 content 밖이라 패딩 따로 필요
-        paddingTop: gap.lg,                // 16 - 키보드/리스트 ↔ 입력창
+        paddingTop: gap.lg,                // 16 - 리스트 ↔ 입력창
+        // bottomInset은 키보드가 내려갔을 때만 적용돼서(라이브러리 구현), 키보드 ↔ 입력창 간격은 여기서 줘야 함
+        paddingBottom: gap.lg,             // 16 - 키보드 ↔ 입력창
         position: 'relative',              // 토스트를 얹을 기준점 (레이아웃 흐름엔 안 끼게)
     },
     deleteToast: {

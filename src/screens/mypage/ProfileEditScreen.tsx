@@ -93,6 +93,13 @@ export default function ProfileEditScreen() {
         profile_image_url: selectedProfileImageUrl,
       });
 
+      // 사진을 바꿨으면 이미지 캐시를 비움 - 서버가 같은 URL로 새 이미지를 주면
+      // FastImage가 URL 기준으로 캐시해서 마이페이지에 예전 사진이 그대로 남음
+      if (selectedProfileImageUrl !== profileImageUrl) {
+        FastImage.clearMemoryCache();
+        await FastImage.clearDiskCache();
+      }
+
       navigation.goBack();
     } catch (error: any) {
       console.log('프로필 수정 실패:', error);

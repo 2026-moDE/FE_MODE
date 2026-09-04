@@ -10,8 +10,8 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconSearch from '../../assets/icons/IconSearch';
+import ProfileAvatar from '../../components/common/ProfileAvatar';
 
-const emptyProfileIcon = require('../../assets/image/empty_profile.png');
 
 type SearchResultUser = {
   id: number;
@@ -116,10 +116,9 @@ export default function FriendSearchScreen() {
               style={styles.profileGroup}
               onPress={() => navigation.navigate('UserMyPage', {userId: item.id})}>
               <View style={styles.profile}>
-                <Image
-                  source={item.profileImageUrl ? {uri: item.profileImageUrl} : emptyProfileIcon}
+                <ProfileAvatar
+                  profileImageUrl={item.profileImageUrl}
                   style={styles.profileImage}
-                  resizeMode="cover"
                 />
               </View>
 

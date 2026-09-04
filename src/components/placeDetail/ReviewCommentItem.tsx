@@ -10,6 +10,7 @@ import {formatCommentDate} from '../../utils/date';
 import IconChevronDown from '../../assets/icons/IconChevronDown';
 import IconFriend from '../../assets/icons/IconFriend';
 import CommentInput from './CommentInput';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
 const sirenIcon = require('../../assets/image/siren.png');
@@ -104,10 +105,10 @@ export default function ReviewCommentItem({
                     style={styles.userGroup}
                     disabled={user.user_id == null || !onPressUser}
                     onPress={() => user.user_id != null && onPressUser?.(user.user_id)}>
-                    <FastImage
-                        source={{uri: user.profile_url ?? user.profile_image_url}}
+                    <ProfileAvatar
+                        profileUrl={user.profile_url}
+                        profileImageUrl={user.profile_image_url}
                         style={styles.avatar}
-                        resizeMode={FastImage.resizeMode.cover}
                     />
                     <Text style={styles.nickname} numberOfLines={1}>
                         {user.nickname}
@@ -155,10 +156,10 @@ export default function ReviewCommentItem({
                                     style={styles.replyHeader}
                                     disabled={reply.user.user_id == null || !onPressUser}
                                     onPress={() => reply.user.user_id != null && onPressUser?.(reply.user.user_id)}>
-                                    <FastImage
-                                        source={{uri: reply.user.profile_url ?? reply.user.profile_image_url}}
+                                    <ProfileAvatar
+                                        profileUrl={reply.user.profile_url}
+                                        profileImageUrl={reply.user.profile_image_url}
                                         style={styles.replyAvatar}
-                                        resizeMode={FastImage.resizeMode.cover}
                                     />
                                     <Text style={styles.replyNickname} numberOfLines={1}>
                                         {reply.user.nickname}

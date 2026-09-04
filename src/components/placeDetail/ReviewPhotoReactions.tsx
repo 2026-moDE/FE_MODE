@@ -1,12 +1,26 @@
 import React, {useRef, useState} from 'react';
-import {View, Text, Pressable, Animated, StyleSheet} from 'react-native';
+import {View, Text, Pressable, Animated, StyleSheet, Modal, TextInput, Platform, NativeModules} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-import {EmojiPopup} from 'react-native-emoji-popup';
 import BlurOverlay from '../common/BlurOverlay';
 
 const chatIcon = require('../../assets/image/comment.png');
 const emojiIcon = require('../../assets/image/emoji.png');
 const EMOJIS = ['😍', '👀', '❤️', '👍'];
+
+// 입력값이 이모지만으로 이뤄졌는지 검사. 스킨톤/변이 선택자/ZWJ 결합 이모지(👨‍👩‍👧 등)까지 통과시킴
+const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Emoji_Component}|‍|️)+$/u;
+
+// 이모지 키보드를 뜻하는 UIKeyboardType 값. 공개 상수가 없어서 실기기(iOS 26)에서 확인한 값을 씀.
+// 문서화된 값이 아니라 iOS 버전에 따라 안 먹을 수 있는데, 그 경우 평소 키보드가 뜰 뿐이라 앱은 정상 동작함
+const EMOJI_KEYBOARD_TYPE = 124;
+
+// 포커스된 입력창의 키보드를 이모지로 전환 (iOS 전용 네이티브 모듈).
+// 모듈이 없거나 실패해도 그냥 기본 키보드가 뜰 뿐이라 앱 동작에는 지장 없음
+function openEmojiKeyboard() {
+    if (Platform.OS !== 'ios') return;
+    // 실패해도 평소 키보드가 뜰 뿐이라 조용히 무시
+    NativeModules.EmojiKeyboard?.showEmojiKeyboard?.(EMOJI_KEYBOARD_TYPE)?.catch(() => {});
+}
 
 // 선택된 이모지 자체는 리뷰별로 달라야 해서 ReviewPhoto에서 관리
 // 이 훅은 애니메이션 재생만 담당함
@@ -111,38 +125,79 @@ export function ReviewPhotoReactionButtons({onOpenChat, selectedEmoji, emojiPop,
     );
 }
 
+// 피커를 띄운 카드의 화면상 위치. 리스트 안 카드처럼 부모가 화면 전체가 아닐 때 넘김
+export type PickerAnchor = {x: number; y: number; width: number; height: number};
+
 type EmojiPickerProps = {
     visible: boolean;
     onClose: () => void;
     onSelect: (emoji: string) => void;
+    // 없으면 부모를 화면 전체로 보고 그대로 그림 (사진 뷰어)
+    // 있으면 Modal로 띄워서 화면 어디를 눌러도 닫히게 하고, 프리셋 줄은 이 좌표에 맞춰 배치 (리스트 카드)
+    anchor?: PickerAnchor;
 };
 
 // 이모지 선택 화면
-export function ReviewPhotoEmojiPicker({visible, onClose, onSelect}: EmojiPickerProps) {
+export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, anchor}: EmojiPickerProps) {
+    // 맨 오른쪽 버튼을 누르면 OS 키보드를 띄움. 커스텀 피커가 아니라 애플이 그리는 진짜 이모지 키보드라
+    // 검색/최근사용/스킨톤이 전부 시스템 기능 그대로 동작함.
+    // 다만 이모지 탭으로 강제로 여는 공개 API는 없어서, 직전에 쓰던 키보드가 먼저 뜰 수 있음(지구본 키로 전환)
+    const inputRef = useRef<TextInput>(null);
+
     if (!visible) return null;
 
-    return (
+    const handleChangeText = (text: string) => {
+        if (!text) return;
+        // 이모지가 아니면(한글/영문 등) 무시하고 입력만 비움 - 반응은 이모지만 허용
+        if (EMOJI_ONLY.test(text)) {
+            inputRef.current?.blur();
+            onSelect(text);
+        }
+        inputRef.current?.clear();
+    };
+
+    // anchor가 있으면 카드 안이 아니라 화면 좌표계에 그리므로, 기존과 같은 위치가 되도록 직접 계산
+    const pickerPosition = anchor
+        ? {top: anchor.y + anchor.height * 0.4, left: anchor.x, width: anchor.width, right: undefined}
+        : null;
+
+    const content = (
         <>
+            {/* 약한 블러만 - 딤까지 겹치면 과해짐.
+                pointerEvents="none" 필수 - 없으면 BlurView가 탭을 흡수해서 바깥을 눌러도 안 닫힘 */}
             <Pressable style={styles.overlay} onPress={onClose}>
-                <BlurOverlay />
+                <BlurOverlay blurAmount={2} iosBlurType="ultraThinMaterial" pointerEvents="none" />
             </Pressable>
-            <View style={styles.picker}>
+            <View style={[styles.picker, pickerPosition]}>
                 {EMOJIS.map(emoji => (
                     <Pressable key={emoji} onPress={() => onSelect(emoji)}>
                         <Text style={styles.emojiText}>{emoji}</Text>
                     </Pressable>
                 ))}
-                {/* 맨 오른쪽 버튼 누르면 프리셋 4개 말고 기기 자체 이모지 피커(네이티브)로 원하는 이모지를 고를 수 있음
-                    (안드로이드 전용 props: 기본값은 전체화면 + 빨간 Close 버튼이라, 키보드처럼 하단에 붙이고
-                    닫기 버튼 자리는 없앰 - 뒤로가기 버튼으로 닫을 수 있음. iOS는 이 props 무시하고 자체 팝업 스타일 그대로 씀) */}
-                <EmojiPopup
-                    onEmojiSelected={onSelect}
-                    contentContainerStyle={styles.emojiPopupContainer}
-                    closeButton={() => null}>
+                <Pressable onPress={() => inputRef.current?.focus()}>
                     <FastImage source={emojiIcon} style={styles.moreIcon} resizeMode={FastImage.resizeMode.contain} />
-                </EmojiPopup>
+                </Pressable>
             </View>
+            {/* OS 키보드를 띄우기 위한 입력창 - 화면에는 보이지 않음 */}
+            <TextInput
+                ref={inputRef}
+                style={styles.hiddenInput}
+                onChangeText={handleChangeText}
+                // focus() 직후엔 아직 first responder가 아니라서, 실제로 포커스된 뒤에 키보드를 전환해야 함
+                onFocus={openEmojiKeyboard}
+                autoCorrect={false}
+                autoCapitalize="none"
+                caretHidden
+            />
         </>
+    );
+
+    // 부모(카드)보다 바깥을 눌러도 닫히려면 화면 전체를 덮어야 해서 Modal로 올림
+    if (!anchor) return content;
+    return (
+        <Modal visible transparent animationType="none" onRequestClose={onClose}>
+            {content}
+        </Modal>
     );
 }
 
@@ -173,6 +228,15 @@ const styles = StyleSheet.create({
         fontSize: 23,
     },
 
+    // 키보드 호출 전용 - 크기 0으로 두면 iOS에서 포커스가 안 잡혀서 1px만 남기고 투명 처리
+    hiddenInput: {
+        position: 'absolute',
+        width: 1,
+        height: 1,
+        opacity: 0,
+        bottom: 0,
+    },
+
     // 피커 뜰 때 화면 전체(사진+썸네일)를 덮는 오버레이
     overlay: {
         position: 'absolute',
@@ -199,18 +263,5 @@ const styles = StyleSheet.create({
     moreIcon: {
         width: 40,
         height: 40,
-    },
-    // 안드로이드 네이티브 이모지 피커 - 기본은 전체화면이라 키보드처럼 하단 45%로 붙임
-    emojiPopupContainer: {
-        height: '45%',
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        top: undefined,
-        paddingTop: 0,
-        borderTopLeftRadius: 16,
-        borderTopRightRadius: 16,
-        overflow: 'hidden',
     },
 });

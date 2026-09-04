@@ -15,7 +15,8 @@ import {formatRelativeTime} from '../../utils/date';
 import ReviewMenuModal from '../placeDetail/ReviewMenuModal';
 import ReviewChatModal from '../placeDetail/ReviewChatModal';
 import ReviewReactionsModal from './ReviewReactionsModal';
-import {ReviewPhotoEmojiPicker} from '../placeDetail/ReviewPhotoReactions';
+import {ReviewPhotoEmojiPicker, type PickerAnchor} from '../placeDetail/ReviewPhotoReactions';
+import ProfileAvatar from '../common/ProfileAvatar';
 import QuickReviewButton from '../home/QuickReviewButton';
 import {MyProfile, MyReview} from '../../api/mypage';
 import {UserReview} from '../../api/user';
@@ -287,18 +288,27 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
   // 친구 마이페이지 피드 전체가 아니라, 그중 친구공개(FRIENDS)로 쓴 리뷰에만 별 배지/노란 테두리 표시
   const isFriendOnlyPost = showFriendBadge && review.visibility === 'FRIENDS';
 
+  // 피커는 카드 안에 그리면 카드 바깥 탭을 못 받아서 안 닫힘 - Modal로 띄우려고 사진 영역의 화면 좌표를 재둠
+  const photoRef = useRef<View>(null);
+  const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor | undefined>(undefined);
+  useEffect(() => {
+    if (!showPicker) {
+      setPickerAnchor(undefined);
+      return;
+    }
+    photoRef.current?.measureInWindow((x, y, width, height) =>
+      setPickerAnchor({x, y, width, height}),
+    );
+  }, [showPicker]);
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        {profile?.profile_image_url ? (
-          <FastImage
-            source={{uri: profile.profile_url ?? profile.profile_image_url}}
-            style={styles.headerAvatar}
-            resizeMode={FastImage.resizeMode.cover}
-          />
-        ) : (
-          <View style={styles.headerAvatar} />
-        )}
+        <ProfileAvatar
+          profileUrl={profile?.profile_url}
+          profileImageUrl={profile?.profile_image_url}
+          style={styles.headerAvatar}
+        />
 
         <Text style={styles.headerNickname} numberOfLines={1}>
           {profile?.nickname ?? '닉네임'}
@@ -326,7 +336,9 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
         </View>
       </View>
 
-      <View style={[styles.cardPhoto, isFriendOnlyPost && styles.cardPhotoFriendBorder]}>
+      <View
+        ref={photoRef}
+        style={[styles.cardPhoto, isFriendOnlyPost && styles.cardPhotoFriendBorder]}>
         {review.image_url ? (
           <FastImage
             source={{
@@ -363,9 +375,10 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
           )
         )}
 
-        {!isOwner && (
+        {!isOwner && pickerAnchor && (
           <ReviewPhotoEmojiPicker
             visible={showPicker}
+            anchor={pickerAnchor}
             onClose={onClosePicker}
             onSelect={emoji => onSelectEmoji(review.id, emoji)}
           />

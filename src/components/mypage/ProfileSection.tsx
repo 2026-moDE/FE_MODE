@@ -8,6 +8,7 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import type {MyProfile} from '../../api/mypage';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 const pencilIcon = require('../../assets/image/pencil.png');
 
@@ -39,16 +40,11 @@ export default function ProfileSection({
   return (
     <View style={styles.profileArea}>
       <View style={styles.profileImageBox}>
-        {profile?.profile_image_url ? (
-          <FastImage
-            source={{
-              uri: profile.profile_url ?? profile.profile_image_url,
-              priority: FastImage.priority.high,
-            }}
-            style={styles.profileImage}
-            resizeMode={FastImage.resizeMode.cover}
-          />
-        ) : null}
+        <ProfileAvatar
+          profileUrl={profile?.profile_url}
+          profileImageUrl={profile?.profile_image_url}
+          style={styles.profileImage}
+        />
       </View>
 
       {isLoading && !profile ? (

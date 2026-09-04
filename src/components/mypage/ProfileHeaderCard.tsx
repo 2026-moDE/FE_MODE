@@ -1,6 +1,5 @@
 import React, {useRef} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Dimensions} from 'react-native';
-import FastImage from '@d11/react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 
 import {fontFamily, fontSize, lineHeight, letterSpacing} from '../../constants/typography';
@@ -11,6 +10,7 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconChevronDown from '../../assets/icons/IconChevronDown';
 import IconFriend from '../../assets/icons/IconFriend';
 import {MyProfile} from '../../api/mypage';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 const settingIcon = require('../../assets/image/setting.png');
 const menuIcon = require('../../assets/image/vertical_ellipis.png');
@@ -26,7 +26,8 @@ type Props = {
   isProfileLoading: boolean;
   onPressBack: () => void;
   onPressSettings?: () => void;
-  onPressFriends: () => void;
+  // 없으면 친구 수를 눌러도 갈 곳이 없다는 뜻 - 화살표를 숨기고 탭도 막음 (다른 유저 마이페이지)
+  onPressFriends?: () => void;
   showSettings?: boolean;
   // 이미 친구인 다른 유저 마이페이지에서 닉네임 앞에 별 배지 표시
   isFriend?: boolean;
@@ -58,18 +59,11 @@ export default function ProfileHeaderCard({
 
   return (
     <View style={styles.profileCard}>
-      {profile?.profile_image_url ? (
-        <FastImage
-          source={{
-            uri: profile.profile_url ?? profile.profile_image_url,
-            priority: FastImage.priority.high,
-          }}
-          style={styles.profileImage}
-          resizeMode={FastImage.resizeMode.cover}
-        />
-      ) : (
-        <View style={styles.profileImagePlaceholder} />
-      )}
+      <ProfileAvatar
+        profileUrl={profile?.profile_url}
+        profileImageUrl={profile?.profile_image_url}
+        style={styles.profileImage}
+      />
 
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.55)']}
@@ -118,16 +112,20 @@ export default function ProfileHeaderCard({
         <TouchableOpacity
           activeOpacity={0.7}
           style={styles.friendCountRow}
+          disabled={!onPressFriends}
           onPress={onPressFriends}>
           <View style={styles.friendCountTextRow}>
             <Text style={styles.profileFriendLabel}>친구</Text>
             <Text style={styles.profileFriendCount}>{profile?.friend_count ?? 0}</Text>
           </View>
-          <IconChevronDown
-            size={16}
-            color={colors.icon.inverse}
-            style={styles.friendCountArrow}
-          />
+          {/* 이동할 곳이 있을 때만 화살표 표시 - 안 그러면 눌러도 아무 일 없는데 눌리는 것처럼 보임 */}
+          {!!onPressFriends && (
+            <IconChevronDown
+              size={16}
+              color={colors.icon.inverse}
+              style={styles.friendCountArrow}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -150,15 +148,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-
-  profileImagePlaceholder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.background.dark,
   },
 
   profileScrim: {

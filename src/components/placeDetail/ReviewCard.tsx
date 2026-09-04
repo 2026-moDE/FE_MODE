@@ -8,6 +8,7 @@ import {spacing, gap, padding} from '../../constants/spacing';
 import {typography} from '../../constants/typography';
 import {formatReviewTime} from '../../utils/date';
 import IconFriend from '../../assets/icons/IconFriend';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 type Props = {
     review: CurrentReview | ArchivedReview;
@@ -22,10 +23,10 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
 
     const userGroup = (
         <View style={styles.userGroup}>
-            <FastImage
-                source={{uri: user.profile_url ?? user.profile_image_url}}
+            <ProfileAvatar
+                profileUrl={user.profile_url}
+                profileImageUrl={user.profile_image_url}
                 style={styles.avatar}
-                resizeMode={FastImage.resizeMode.cover}
             />
             <Text style={styles.nickname} numberOfLines={1}>
                 {user.nickname}

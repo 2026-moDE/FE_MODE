@@ -15,6 +15,7 @@ import ReviewPhotoComment, {ReviewPhotoCommentHandle} from './ReviewPhotoComment
 import {formatRelativeTime, formatAbsoluteDate} from '../../utils/date';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import {addEmoji, removeEmoji, fetchEmojis} from '../../api/review';
+import ProfileAvatar from '../common/ProfileAvatar';
 
 type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
@@ -231,10 +232,10 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                                 style={styles.userGroup}
                                 disabled={!onPressUser || review.user.user_id == null}
                                 onPress={() => onPressUser?.(review.user)}>
-                                <FastImage
-                                    source={{uri: review.user.profile_url ?? review.user.profile_image_url}}
+                                <ProfileAvatar
+                                    profileUrl={review.user.profile_url}
+                                    profileImageUrl={review.user.profile_image_url}
                                     style={styles.avatar}
-                                    resizeMode={FastImage.resizeMode.cover}
                                 />
                                 <Text style={styles.nickname} numberOfLines={1}>
                                     {review.user.nickname}

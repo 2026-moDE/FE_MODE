@@ -26,8 +26,8 @@ import {radius} from '../../constants/radius';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconSearch from '../../assets/icons/IconSearch';
 import IconFriendAdd from '../../assets/icons/IconFriendAdd';
+import ProfileAvatar from '../../components/common/ProfileAvatar';
 
-const emptyProfileIcon = require('../../assets/image/empty_profile.png');
 
 type FriendTab = 'friends' | 'requests';
 
@@ -114,10 +114,9 @@ function FriendListItem({
       <GestureDetector gesture={rowGesture}>
         <Reanimated.View style={[styles.userRow, rowAnimatedStyle]}>
           <View style={styles.profile}>
-            <Image
-              source={item.profileImageUrl ? {uri: item.profileImageUrl} : emptyProfileIcon}
+            <ProfileAvatar
+              profileImageUrl={item.profileImageUrl}
               style={styles.profileImage}
-              resizeMode="cover"
             />
           </View>
 
@@ -143,24 +142,29 @@ function FriendRequestItem({
   item,
   onAccept,
   onReject,
+  onPress,
 }: {
   item: FriendUser;
   onAccept: (id: number) => void;
   onReject: (id: number) => void;
+  // 요청 온 사람도 수락 전에 프로필을 보고 판단할 수 있어야 함 - 친구 목록과 동일하게 이동
+  onPress: (user: FriendUser) => void;
 }) {
   return (
     <View style={styles.requestRow}>
-      <View style={styles.profileGroup}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        style={styles.profileGroup}
+        onPress={() => onPress(item)}>
         <View style={styles.profile}>
-          <Image
-            source={item.profileImageUrl ? {uri: item.profileImageUrl} : emptyProfileIcon}
+          <ProfileAvatar
+            profileImageUrl={item.profileImageUrl}
             style={styles.profileImage}
-            resizeMode="cover"
           />
         </View>
 
         <Text style={styles.userName}>{item.nickname}</Text>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.requestActions}>
         <TouchableOpacity
@@ -356,6 +360,11 @@ export default function FollowListScreen() {
                 item={item}
                 onAccept={handleAcceptRequest}
                 onReject={handleRejectRequest}
+                onPress={friend =>
+                  navigation.navigate('UserMyPage', {
+                    userId: friend.id,
+                  })
+                }
               />
             )
           }

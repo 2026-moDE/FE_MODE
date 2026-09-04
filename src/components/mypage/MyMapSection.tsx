@@ -50,7 +50,14 @@ export default function MyMapSection({mapRef, reviews, isLoading = false}: Props
 
 
   const myMapPlaces = useMemo<NearbyPlace[]>(() => {
-    return locatedGroups.map(group => ({
+    return locatedGroups.map(group => {
+        // 대표 리뷰(최신)에 사진이 없어도 같은 장소의 다른 리뷰 사진을 마커에 씀 -
+        // 최신 리뷰만 보면 사진 있는 장소인데도 빈 썸네일이 뜸
+        const reviewWithPhoto =
+        group.reviews.find(r => r.thumbnail_small_url ?? r.thumbnail_url ?? r.image_url) ??
+        group.representativeReview;
+
+        return {
         id: group.placeId,
         name: group.placeName,
         address: group.address,
@@ -58,10 +65,10 @@ export default function MyMapSection({mapRef, reviews, isLoading = false}: Props
         longitude: group.longitude,
         congestion_level:
         group.representativeReview.congestion_level as CongestionLevel,
-        thumbnail_url:
-        group.representativeReview.thumbnail_url ?? group.representativeReview.image_url ?? '',
-        thumbnail_small_url: group.representativeReview.thumbnail_small_url ?? null,
-    }));
+        thumbnail_url: reviewWithPhoto.thumbnail_url ?? reviewWithPhoto.image_url ?? '',
+        thumbnail_small_url: reviewWithPhoto.thumbnail_small_url ?? null,
+        };
+    });
     }, [locatedGroups]);
 
   // 클러스터링 (줌 6 고정이라 넓은 범위)
