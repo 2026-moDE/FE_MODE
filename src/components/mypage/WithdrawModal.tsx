@@ -18,7 +18,7 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
-const cautionIcon = require('../../assets/image/caution.png');
+const cautionIcon = require('../../assets/image/caution_yellow.png');
 
 type WithdrawModalProps = {
   visible: boolean;

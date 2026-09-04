@@ -9,6 +9,7 @@ export type AuthStackParamList = {
     marketing_agreed: boolean;
   };
   SignupComplete: undefined;
+  TermsOfService: {initialOpenId?: number} | undefined;
 };
 
 export type TabParamList = {
@@ -58,7 +59,7 @@ export type AppStackParamList = {
 
   Setting: undefined;
 
-  TermsOfService: undefined;
+  TermsOfService: {initialOpenId?: number} | undefined;
 
   TermsAgreement: {viewOnly?: boolean} | undefined;
 

@@ -17,7 +17,10 @@ const ReviewCompleteScreen = ({navigation}: Props) => {
   const insets = useSafeAreaInsets();
 
   const handleGoHome = () => {
-    navigation.getParent()?.navigate('Tab' as never);
+    // Home 탭으로 명확히 지정 + 리뷰 작성 스택(카메라~완료) 기록을 지워야
+    // 나중에 다른 탭으로 갔다가 뒤로가기를 눌러도 이 화면들이 다시 튀어나오지 않음
+    navigation.getParent()?.navigate('Tab', {screen: 'Home'} as never);
+    navigation.popToTop();
   };
 
   return (

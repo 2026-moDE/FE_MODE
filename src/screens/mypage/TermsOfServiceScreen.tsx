@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 
 import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
@@ -21,7 +21,10 @@ import {termsMock} from '../../mocks/termsMock';
 
 export default function TermsOfServiceScreen() {
   const navigation = useNavigation<any>();
-  const [openId, setOpenId] = useState<number | null>(null);
+  const route = useRoute<any>();
+  const [openId, setOpenId] = useState<number | null>(
+    route.params?.initialOpenId ?? null,
+  );
 
   const toggleSection = (id: number) => {
     setOpenId(prev => (prev === id ? null : id));

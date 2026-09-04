@@ -11,12 +11,13 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import type {AuthStackParamList} from '../../types/navigation';
-import {fontFamily, fontSize} from '../../constants/typography';
+import {typography} from '../../constants/typography';
+import {colors} from '../../constants/colors';
 import {useAuth} from '../../context/AuthContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'SignupComplete'>;
 
-const logoNavy = require('../../assets/image/logo_navy.png');
+const logo = require('../../assets/image/logo_new.png');
 
 const SignupCompleteScreen = () => {
   const {setIsLoggedIn} = useAuth();
@@ -30,7 +31,12 @@ const SignupCompleteScreen = () => {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <View style={styles.content}>
-        <Image source={logoNavy} style={styles.logo} />
+        <Image
+          source={logo}
+          tintColor={colors.brand.secondary}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
         <Text style={styles.title}>가입이 완료되었어요</Text>
       </View>
@@ -60,31 +66,26 @@ const styles = StyleSheet.create({
   logo: {
     width: 94,
     height: 50,
-    resizeMode: 'contain',
     marginBottom: 30,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 28,
-    fontFamily: 'Pretendard',
-    color: '#111114',
+    ...typography.h1,
+    color: colors.gray[900],
     textAlign: 'center',
   },
   bottomArea: {
-    paddingHorizontal: 25,
-    paddingBottom: 34,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   startButton: {
-    height: 60,
-    borderRadius: 11,
-    backgroundColor: '#1D232C',
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: colors.button.secondaryFill,
     justifyContent: 'center',
     alignItems: 'center',
   },
   startButtonText: {
-    fontSize: fontSize.xl,
-    fontFamily: fontFamily.bold,
-    color: '#FFFFFF',
+    ...typography.b1,
+    color: colors.text.inverse,
   },
 });

@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, TextInput} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
@@ -47,7 +47,13 @@ type Props = {
   onReportReview?: (reviewId: number) => void;
 };
 
-export default function RecentReviewSection({
+// 스크롤하면서 이모지 피커 위치(anchor)가 카드와 어긋나는 걸 막기 위해, 부모의 onScroll에서
+// closeEmojiPicker()를 호출해 피커를 닫을 수 있게 ref로 노출
+export type RecentReviewSectionRef = {
+  closeEmojiPicker: () => void;
+};
+
+const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(function RecentReviewSection({
   profile,
   recentReviews,
   isReviewsLoading,
@@ -58,7 +64,7 @@ export default function RecentReviewSection({
   onDeleteReview,
   onEditComment,
   onReportReview,
-}: Props) {
+}: Props, ref) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const menuTargetRef = useRef<number | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -146,6 +152,8 @@ export default function RecentReviewSection({
   }, []);
 
   const closePicker = useCallback(() => setPickerReviewId(null), []);
+
+  useImperativeHandle(ref, () => ({closeEmojiPicker: closePicker}), [closePicker]);
 
   const onChangeDraftComment = useCallback((reviewId: number, text: string) => {
     setDraftComments(prev => ({...prev, [reviewId]: text}));
@@ -240,7 +248,9 @@ export default function RecentReviewSection({
       <ReviewChatModal ref={chatSheetRef} reviewId={activeChatReviewId ?? undefined} />
     </View>
   );
-}
+});
+
+export default RecentReviewSection;
 
 type ReviewFeedCardProps = {
   review: ReviewItem;
@@ -283,6 +293,7 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
   onClosePicker,
   onSelectEmoji,
 }: ReviewFeedCardProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const originalComment = review.comment ?? '';
   const currentDraft = draftComment ?? originalComment;
   // 친구 마이페이지 피드 전체가 아니라, 그중 친구공개(FRIENDS)로 쓴 리뷰에만 별 배지/노란 테두리 표시
@@ -296,9 +307,14 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
       setPickerAnchor(undefined);
       return;
     }
-    photoRef.current?.measureInWindow((x, y, width, height) =>
-      setPickerAnchor({x, y, width, height}),
-    );
+    // 상태 변경 직후 바로 재면(특히 안드로이드) 아직 레이아웃이 안 잡혀서 0에 가까운 값이
+    // 나올 때가 있어서, 한 프레임 넘긴 뒤에 측정함
+    const raf = requestAnimationFrame(() => {
+      photoRef.current?.measureInWindow((x, y, width, height) =>
+        setPickerAnchor({x, y, width, height}),
+      );
+    });
+    return () => cancelAnimationFrame(raf);
   }, [showPicker]);
 
   return (
@@ -386,10 +402,19 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
       </View>
 
       <View style={styles.cardFooter}>
-        <IconPlaceLocation size={24} color={colors.icon.inverse} />
-        <Text style={styles.cardPlaceName} numberOfLines={1}>
-          {review.place.name}
-        </Text>
+        <TouchableOpacity
+          style={styles.cardPlaceRow}
+          onPress={() =>
+            navigation.navigate('PlaceDetail', {
+              placeId: review.place.id,
+              placeName: review.place.name,
+            })
+          }>
+          <IconPlaceLocation size={24} color={colors.icon.inverse} />
+          <Text style={styles.cardPlaceName} numberOfLines={1}>
+            {review.place.name}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           hitSlop={10}
           style={styles.cardReactionIconFirst}
@@ -564,6 +589,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: spacing.lg,
+  },
+
+  cardPlaceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
   },
 
   cardPlaceName: {

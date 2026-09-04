@@ -156,9 +156,11 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, anchor}: Emo
         inputRef.current?.clear();
     };
 
-    // anchor가 있으면 카드 안이 아니라 화면 좌표계에 그리므로, 기존과 같은 위치가 되도록 직접 계산
+    // anchor가 있으면 카드 안이 아니라 화면 좌표계(Modal)에 그림. 세로 위치는 사진의 스크롤된
+    // 위치를 쫓아가면 화면 밖으로 나갈 수 있어서 안 씀 - 항상 현재 보이는 화면 기준 40%(styles.picker
+    // 기본값)에 고정하고, 가로 위치(카드 폭)만 anchor에 맞춤
     const pickerPosition = anchor
-        ? {top: anchor.y + anchor.height * 0.4, left: anchor.x, width: anchor.width, right: undefined}
+        ? {left: anchor.x, width: anchor.width, right: undefined}
         : null;
 
     const content = (
