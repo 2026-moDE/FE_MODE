@@ -31,7 +31,6 @@ type ReviewNav = NativeStackNavigationProp<ReviewStackParamList>;
 type CameraPosition = 'back' | 'front';
 
 const refreshIcon = require('../../assets/image/refresh.png');
-const logoIcon = require('../../assets/image/logo.png');
 const photoIcon = require('../../assets/image/photo.png');
 
 const DESIGN_WIDTH = 393;
@@ -207,7 +206,8 @@ export default function ReviewScreen() {
   };
 
   const handleClose = () => {
-    navigation.getParent()?.navigate('Tab' as never);
+    navigation.getParent()?.navigate('Tab', {screen: 'Home'} as never);
+    navigation.popToTop();
   };
 
   if (!hasPermission) {
@@ -234,10 +234,6 @@ export default function ReviewScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#050509" />
 
       <View style={styles.topSection}>
-        <View style={styles.logoWrapper}>
-          <Image source={logoIcon} style={styles.logo} resizeMode="contain" />
-        </View>
-
         <TouchableOpacity
           style={styles.closeButton}
           activeOpacity={0.8}
@@ -349,17 +345,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: TOP_SECTION_HEIGHT,
     position: 'relative',
-  },
-  logoWrapper: {
-    position: 'absolute',
-    top: LOGO_TOP,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  logo: {
-    width: px(60.44),
-    height: px(32),
   },
   closeButton: {
     position: 'absolute',

@@ -7,6 +7,7 @@ import TermsScreen from '../screens/auth/TermsScreen';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
 
 import SignupCompleteScreen from '../screens/auth/SignupCompleteScreen';
+import TermsOfServiceScreen from '../screens/mypage/TermsOfServiceScreen';
 
 import {AuthStackParamList} from '../types/navigation';
 
@@ -24,6 +25,7 @@ export default function AuthStack() {
       <Stack.Screen name="Terms" component={TermsScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="SignupComplete" component={SignupCompleteScreen} />
+      <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
     </Stack.Navigator>
   );
 }
