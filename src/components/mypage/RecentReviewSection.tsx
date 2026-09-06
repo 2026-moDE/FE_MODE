@@ -23,8 +23,9 @@ import {UserReview} from '../../api/user';
 import {fetchEmojis, addEmoji, removeEmoji, EmojiReaction} from '../../api/review';
 import {AppStackParamList} from '../../types/navigation';
 
-const chatIcon = require('../../assets/image/comment.png');
-const emojiIcon = require('../../assets/image/emoji.png');
+const chatIcon = require('../../assets/image/placeDeail_comment.png'); // 파일명에 오타 있음(Detail -> Deail)
+const emojiIcon = require('../../assets/image/placeDetail_emoji.png');       // 타인 리뷰 - 반응 남기기
+const emojiIconFill = require('../../assets/image/placeDetail_emojiFill.png'); // 본인 리뷰 - 반응 조회
 const menuIcon = require('../../assets/image/vertical_ellipis.png');
 
 // 다른 유저 프로필(UserProfile)도 그대로 넘길 수 있도록 실제 사용하는 필드만 뽑아서 타입 지정
@@ -417,18 +418,25 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
         </TouchableOpacity>
         <TouchableOpacity
           hitSlop={10}
-          style={styles.cardReactionIconFirst}
+          style={[styles.cardReactionBtn, styles.cardReactionIconFirst]}
           onPress={() => onPressChat(review.id)}>
           <Image source={chatIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
         </TouchableOpacity>
         <TouchableOpacity
           hitSlop={10}
-          style={styles.cardReactionIconSpacing}
+          style={[styles.cardReactionBtn, styles.cardReactionIconSpacing]}
           onPress={() => onPressEmojiButton(review.id)}>
           {!isOwner && myEmoji ? (
             <Text style={styles.selectedEmojiText}>{myEmoji}</Text>
           ) : (
-            <Image source={emojiIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
+            <>
+              <Image
+                source={isOwner ? emojiIconFill : emojiIcon}
+                style={styles.cardReactionIconImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.cardReactionLabel}>{isOwner ? '반응 조회' : '반응 남기기'}</Text>
+            </>
           )}
         </TouchableOpacity>
       </View>
@@ -606,10 +614,20 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
 
+  cardReactionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+
   cardReactionIconImage: {
-    width: 32,
-    height: 32,
-    tintColor: colors.icon.inverse,
+    width: 24,
+    height: 24,
+  },
+
+  cardReactionLabel: {
+    ...typography.c2,
+    color: colors.text.inverse,
   },
 
   selectedEmojiText: {
