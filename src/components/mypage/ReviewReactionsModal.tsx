@@ -25,7 +25,7 @@ const ReviewReactionsModal = forwardRef<BottomSheetModal, Props>(function Review
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const sheetRef = useRef<BottomSheetModal>(null);
   useImperativeHandle(ref, () => sheetRef.current as BottomSheetModal);
-  const snapPoints = useMemo(() => ['45%', '75%'], []);
+  const snapPoints = useMemo(() => ['50%', '85%'], []);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
@@ -83,12 +83,12 @@ export default ReviewReactionsModal;
 const styles = StyleSheet.create({
   sheetBackground: {
     backgroundColor: colors.background.dimDarkest,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+    borderTopLeftRadius: radius['2xl'],
+    borderTopRightRadius: radius['2xl'],
   },
   handle: {
-    backgroundColor: colors.gray[600],
-    width: 40,
+    backgroundColor: colors.surface.white,
+    width: 75,
   },
   loadingIndicator: {
     marginTop: spacing['2xl'],

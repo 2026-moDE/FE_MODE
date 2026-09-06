@@ -8,7 +8,7 @@ export type OnboardingRequest = {
   location_terms_agreed: boolean;
   privacy_agreed?: boolean;
   marketing_agreed?: boolean;
-  profile_image_url?: string;
+  profile_image_url?: string | null;
 };
 
 export const onboardingApi = async (body: OnboardingRequest) => {
@@ -31,7 +31,9 @@ export const onboardingApi = async (body: OnboardingRequest) => {
   const data = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    throw new Error(data?.message || `온보딩 실패: ${response.status}`);
+    const error: any = new Error(data?.message || `온보딩 실패: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

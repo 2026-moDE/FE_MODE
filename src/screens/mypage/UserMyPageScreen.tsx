@@ -8,7 +8,7 @@ import type {RouteProp} from '@react-navigation/native';
 import {colors} from '../../constants/colors';
 import ProfileHeaderCard from '../../components/mypage/ProfileHeaderCard';
 import FriendActionButton from '../../components/mypage/FriendActionButton';
-import RecentReviewSection from '../../components/mypage/RecentReviewSection';
+import RecentReviewSection, {RecentReviewSectionRef} from '../../components/mypage/RecentReviewSection';
 import FriendLiveReviewSection from '../../components/mypage/FriendLiveReviewSection';
 import FriendProfileMenu from '../../components/mypage/FriendProfileMenu';
 import {getUserProfile, getUserReviews, UserProfile, UserReview} from '../../api/user';
@@ -36,6 +36,7 @@ export default function UserMyPageScreen() {
   const [isRequestSubmitting, setIsRequestSubmitting] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{top: number; right: number} | null>(null);
+  const recentReviewSectionRef = useRef<RecentReviewSectionRef>(null);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -87,6 +88,9 @@ export default function UserMyPageScreen() {
   );
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // 스크롤하면 카드 위치가 바뀌어서 이모지 피커가 엉뚱한 자리에 뜨는 문제가 있어서, 스크롤 시작하면 바로 닫음
+    recentReviewSectionRef.current?.closeEmojiPicker();
+
     // 친구 아니면 최근 리뷰 3건만 보여주고 끝 - 더 불러올 필요 없음
     if (!isFriend) return;
 
@@ -168,6 +172,7 @@ export default function UserMyPageScreen() {
 
             {/* 친구 공개 게시물 포함 전체 리뷰 - 내 마이페이지와 동일한 피드 UI */}
             <RecentReviewSection
+              ref={recentReviewSectionRef}
               profile={profile}
               recentReviews={recentReviews}
               isReviewsLoading={isReviewsLoading}
@@ -188,6 +193,7 @@ export default function UserMyPageScreen() {
             )}
 
             <RecentReviewSection
+              ref={recentReviewSectionRef}
               profile={profile}
               recentReviews={recentReviews.slice(0, 3)}
               isReviewsLoading={isReviewsLoading}
