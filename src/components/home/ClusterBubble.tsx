@@ -24,6 +24,11 @@ const TAIL_WIDTH = 12;
 const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
 const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, count, thumbnailUrl, isReady = true, onPress}: Props) {
+    // 로컬 placeholder(Image)도 iOS에서는 마커 스냅샷이 찍히는 시점보다 실제 페인트가 늦어서
+    // 버블 배경색(회색)만 캡처될 수 있음 - 로드 완료 후 key를 바꿔서 다시 스냅샷 찍게 함
+    // (early return보다 먼저 선언해야 훅 규칙 위반이 안 됨)
+    const [placeholderReady, setPlaceholderReady] = React.useState(false);
+
     // 보여줄 썸네일이 있는데 아직 준비 안 됐으면, 빈 버블을 먼저 띄우지 않고 준비될 때까지 통째로 대기
     if (thumbnailUrl && !isReady) {
         return null;
@@ -37,8 +42,9 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
             height={TOTAL_HEIGHT}
             anchor={{x: 0.5, y: 1}}
             onTap={onPress}>
-            {/* 마커 생김새가 바뀌면(사진 준비 여부/개수) key도 바뀌어야 네이티브 쪽이 새 마커로 인식함 - 라이브러리 문서 권장사항 */}
-            <View key={`${thumbnailUrl ?? 'none'}-${isReady}-${count}`} collapsable={false} style={styles.container}>
+            {/* 마커 생김새가 바뀌면(사진 준비 여부/개수/placeholder 로드 여부) key도 바뀌어야
+                네이티브 쪽이 새 마커로 인식함 - 라이브러리 문서 권장사항 */}
+            <View key={`${thumbnailUrl ?? 'none'}-${isReady}-${count}-${placeholderReady}`} collapsable={false} style={styles.container}>
                 <View collapsable={false} style={styles.bubble}>
                     {thumbnailUrl ? (
                         <FastImage
@@ -48,8 +54,15 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
                         />
                     ) : (
                         // 로컬 placeholder는 RN Image로 - 마커는 네이티브가 비트맵으로 굽는데
-                        // FastImage로 넣으면 그려지기 전에 캡처돼서 버블 배경(회색)만 남음
-                        <Image source={EMPTY_THUMBNAIL} style={styles.thumbnail} resizeMode="cover" />
+                        // FastImage로 넣으면 그려지기 전에 캡처돼서 버블 배경(회색)만 남음.
+                        // iOS는 로컬 이미지도 로드가 한 프레임 늦어서 첫 스냅샷엔 회색만 잡힐 수 있어,
+                        // onLoad 이후 key를 바꿔 다시 스냅샷 찍게 함
+                        <Image
+                            source={EMPTY_THUMBNAIL}
+                            style={styles.thumbnail}
+                            resizeMode="cover"
+                            onLoad={() => setPlaceholderReady(true)}
+                        />
                     )}
                     {/* 숫자 오버레이 */}
                     <View style={styles.overlay}>

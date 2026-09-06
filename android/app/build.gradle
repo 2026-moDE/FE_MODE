@@ -117,4 +117,7 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // 구글 공식 Jetpack 이모지 피커 - EmojiKeyboardModule(안드로이드 쪽)에서 씀
+    implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
 }

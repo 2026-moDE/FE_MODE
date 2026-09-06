@@ -8,8 +8,6 @@ import {spacing, gap} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {typography} from '../../constants/typography';
 
-const notificationOnIcon = require('../../assets/image/notification_on.png');
-const notificationOffIcon = require('../../assets/image/notification_off.png');
 const emptyThumbnail = require('../../assets/image/empty_minicard.png');
 
 // 컴포넌트 Props 타입
@@ -17,7 +15,6 @@ type HomeMiniCardProps = {
     place: PlaceDetail;
     distance?: string;
     images?: string[];
-    onToggleSubscribe?: () => void;             // 알림 토글 핸들러
     onPress?: (imageIndex?: number) => void;    // 카드 클릭 (imageIndex 있으면 그 사진 기준)
 };
 
@@ -25,36 +22,20 @@ export default function HomeMiniCard({
     place,
     distance,
     images = [],
-    onToggleSubscribe,
     onPress,
 }: HomeMiniCardProps) {
-    const {name, address, category, business_hours, is_subscribed} = place;
+    const {name, address, category, business_hours} = place;
     const categoryLabel = CATEGORY_LABEL[category] ?? category;
 
     // 나중에 핸들러로 바꾸기!! 넘 더러움 지금
     return (
         <View style={styles.container}>
-            {/* 상단: 카테고리 태그 + 장소명 + 알림 */}
             <Pressable onPress={() => onPress?.()}>
-                <View style={styles.headerRow}>
-                    <View style={styles.titleGroup}>
-                        <View style={styles.categoryTag}>
-                            <Text style={styles.categoryText}>{categoryLabel}</Text>
-                        </View>
-                        <Text style={styles.placeName} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
+                <View style={styles.titleGroup}>
+                    <View style={styles.categoryTag}>
+                        <Text style={styles.categoryText}>{categoryLabel}</Text>
                     </View>
-                    {/* 벨은 내부 Pressable로 따로 (네비게이션 안 됨, 토글만) */}
-                    <Pressable
-                        style={styles.bellWrapper}
-                        // 버블링 방지 stopPropagation
-                        onPress={e => { e.stopPropagation(); onToggleSubscribe?.(); }}
-                        hitSlop={8}>
-                        {is_subscribed ? (
-                            <Image source={notificationOnIcon} style={styles.bellIcon} resizeMode="contain" />
-                        ) : (
-                            <Image source={notificationOffIcon} style={styles.bellIcon} resizeMode="contain" />
-                        )}
-                    </Pressable>
+                    <Text style={styles.placeName} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
                 </View>
             </Pressable>
 
@@ -107,24 +88,19 @@ export default function HomeMiniCard({
 const styles = StyleSheet.create({
     container: {
         width: 369,
-        backgroundColor: colors.surface.white,
+        backgroundColor: colors.surface.inverse,
         borderRadius: radius['2xl'],        // 20
         padding: spacing.lg,                // 16
         gap: spacing.md,                    // 12
     },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
     titleGroup: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.lg,                    
-        flex: 1,
+        alignItems: 'flex-start',    // 제목 2줄로 넘어가면 카테고리 태그는 첫 줄 높이에 맞춰 위쪽 정렬
+        gap: spacing.lg,
+        width: '100%',                // 폭을 명확히 고정해야 placeName이 안 넘치고 줄바꿈됨
     },
     categoryTag: {
-        backgroundColor: colors.button.primaryLighter,
+        backgroundColor: colors.button.primaryFill,
         paddingHorizontal: spacing.s,
         paddingVertical: spacing.xs,
         borderRadius: radius.md,
@@ -138,21 +114,10 @@ const styles = StyleSheet.create({
         letterSpacing: -0.06,
     },
     placeName: {
-        ...typography.h1,                 
-        color: colors.text.basic,         
+        ...typography.b1,                 
+        color: colors.text.inverse,         
         letterSpacing: -0.36,
         flexShrink: 1,
-    },
-    bellWrapper: {
-        width: spacing['2xl'],
-        height: spacing['2xl'],
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    bellIcon: {
-        width: 24,
-        height: 24,
-        tintColor: colors.icon.tertiary,
     },
     infoGroup: {
         gap: spacing.xs,                  
@@ -164,14 +129,14 @@ const styles = StyleSheet.create({
     },
     addressText: {
         ...typography.b6,                 
-        color: colors.text.subtle,        
+        color: colors.text.disabled,        
         fontWeight: '400',
         letterSpacing: -0.07,
         flexShrink: 1,                      // 주소 길면 줄어들어서 거리 보장
     },
     distanceText: {
         ...typography.b5,
-        color: colors.text.brandDarker,
+        color: colors.text.brand,
         letterSpacing: -0.07,
         flexShrink: 0,                      // 거리는 절대 안 줄어듦
         marginLeft: gap.md - gap.xs,        // row gap(4)에 8 더해서 총 gap-md(12) 맞춤 (주소 ↔ 거리)

@@ -11,6 +11,7 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import IconLocationPin from '../../assets/icons/IconLocationPin';
 const cautionIcon = require('../../assets/image/caution_yellow.png');
+const reviewMapMarker = require('../../assets/image/review_mapMarker.png');
 
 type Props = NativeStackScreenProps<
   ReviewStackParamList,
@@ -127,6 +128,10 @@ const handleLocationFailConfirm = () => {
                   <NaverMapMarkerOverlay
                     latitude={latitude}
                     longitude={longitude}
+                    image={reviewMapMarker}
+                    width={50}
+                    height={50}
+                    anchor={{x: 0.5, y: 1}}
                   />
                 </NaverMapView>
               ) : (

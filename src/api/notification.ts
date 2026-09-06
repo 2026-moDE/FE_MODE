@@ -42,6 +42,15 @@ export async function fetchSubscriptions(): Promise<SubscriptionsResponse> {
   return response.data.data;
 }
 
+// 미읽음 알림 여부 조회 api (홈 알림 벨 뱃지 표시용)
+export async function fetchHasUnreadNotification(): Promise<boolean> {
+  const response = await apiClient.get<ApiResponse<{has_unread: boolean}>>(
+    '/api/users/me/notifications/unread',
+  );
+
+  return response.data.data.has_unread;
+}
+
 // 알림 읽음 처리 api (알림 클릭 시 호출)
 export async function readNotification(id: number): Promise<void> {
   console.log('[알림 읽음 처리 요청]', {id});

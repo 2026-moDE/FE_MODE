@@ -13,8 +13,8 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
-import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, subscribe, unsubscribe, fetchTrendingPlaces } from "../../api/place";
-import { fetchNotifications } from "../../api/notification";
+import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, fetchTrendingPlaces } from "../../api/place";
+import { fetchHasUnreadNotification } from "../../api/notification";
 import { NearbyPlace, PlaceDetail, TrendingPlace } from "../../types/place";
 import { FriendReview, fetchFriendReviews } from "../../api/friend";
 import { colors } from '../../constants/colors';
@@ -52,7 +52,10 @@ export default function HomeScreen(){
     const navBarFootprint = (insets.bottom > 0 ? insets.bottom : 36) + 64;
 
     // 바텀시트 상단 Y좌표
-    const sheetPosition = useSharedValue(0);
+    // 초기값을 0(화면 맨 위)으로 두면 실제 바텀시트가 마운트돼서 진짜 위치를 보고하기 전까지
+    // "시트가 다 올라온 상태"로 잘못 계산돼서 지도가 잠깐 완전히 딤 처리됨 -
+    // 실제 초기 위치(70% 지점)로 맞춰서 그 플래시를 없앰
+    const sheetPosition = useSharedValue(windowHeight * 0.7);
     // 30% 스냅일 때 시트 상단 Y의 초기 추정 값
     const pos30 = useSharedValue(windowHeight * 0.7);
     // 바텀시트가 70%일 때 지도 위로 올리는 값
@@ -357,14 +360,11 @@ export default function HomeScreen(){
         }, [loadNearbyPlaces])
     );
 
-    // 화면 포커스 시 안 읽은 알림 여부 조회 (알림 벨 빨간 점)
+    // 화면 포커스 시 안 읽은 알림 여부 조회
     useFocusEffect(
         useCallback(() => {
-            fetchNotifications()
-                .then(res => {
-                    const unread = (res.notifications ?? []).some(n => !n.is_read);
-                    setHasUnreadNotification(unread);
-                })
+            fetchHasUnreadNotification()
+                .then(setHasUnreadNotification)
                 .catch(err => console.warn('알림 조회 실패:', err?.message));
         }, [])
     );
@@ -395,28 +395,6 @@ export default function HomeScreen(){
         });
     }, [placeDetail, reviewItems, goTo]);
 
-    // 알림 토글 (벨 아이콘 클릭)
-    const handleToggleSubscribe = useCallback(async () => {
-        if (!placeDetail) return;
-
-        const previous = placeDetail;
-        setPlaceDetail({
-            ...placeDetail,
-            is_subscribed: !placeDetail.is_subscribed,
-        });
-
-        //──────────────────────  API 호출  ──────────────────────
-        try {
-            if (previous.is_subscribed) {
-                await unsubscribe(previous.id);
-            } else {
-                await subscribe(previous.id);
-            }
-        } catch (error) {
-            console.error('구독 토글 실패:', error);
-            setPlaceDetail(previous);
-        }
-    }, [placeDetail]);
 
     // 클러스터 바텀시트 목록에서 장소 클릭 시 → 미니카드 없이 바로 상세 페이지로 이동
     const handleClusterItemPress = useCallback((place: NearbyPlace) => {
@@ -558,7 +536,6 @@ export default function HomeScreen(){
                         place={placeDetail}
                         distance={distanceText}
                         images={reviewImages}
-                        onToggleSubscribe={handleToggleSubscribe}
                         onPress={handleCardPress}
                     />
                 </View>
