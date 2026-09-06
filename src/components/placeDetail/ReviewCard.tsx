@@ -18,8 +18,9 @@ type Props = {
 };
 
 export default function ReviewCard({review, onPress, onPressUser, isArchived}: Props) {
-    const {thumbnail_url, image_url, comment, user, created_at, is_friend} = review;
+    const {thumbnail_url, image_url, comment, user, created_at, is_friend, visibility} = review;
     const timeAgo = formatReviewTime(created_at, isArchived ?? false);
+    const isFriendsOnly = visibility === 'FRIENDS';
 
     const userGroup = (
         <View style={styles.userGroup}>
@@ -41,7 +42,7 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
     );
 
     return (
-        <Pressable onPress={onPress} style={[styles.container, is_friend && styles.containerFriend]}>
+        <Pressable onPress={onPress} style={[styles.container, isFriendsOnly && styles.containerFriend]}>
             <FastImage
                 source={{uri: thumbnail_url ?? image_url , priority: FastImage.priority.high}}
                 style={styles.image}
@@ -85,7 +86,6 @@ const styles = StyleSheet.create({
         borderRadius: radius.xl,                            // 16
         overflow: 'hidden',
     },
-    // 친구가 남긴 리뷰
     containerFriend: {
         borderColor: colors.border.brand,
     },

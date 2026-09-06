@@ -15,6 +15,7 @@ import ReviewPhotoComment, {ReviewPhotoCommentHandle} from './ReviewPhotoComment
 import {formatRelativeTime, formatAbsoluteDate} from '../../utils/date';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import {addEmoji, removeEmoji, fetchEmojis} from '../../api/review';
+import { typography } from '../../constants/typography';
 import ProfileAvatar from '../common/ProfileAvatar';
 
 type Props = {
@@ -60,7 +61,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
     //댓글
     const modalRef = useRef<BottomSheetModal>(null);
     // 채팅/이모지 반응 (애니메이션만 담당)
-    const {showPicker, emojiPop, emojiBurst, isExiting, togglePicker, closePicker, playSelectAnimation, playCancelAnimation, syncEmoji} = useReviewPhotoReactions();
+    const {showPicker, emojiPop, togglePicker, closePicker, playSelectAnimation, syncEmoji} = useReviewPhotoReactions();
     // 리뷰별 이모지 선택 상태 (리뷰마다 따로 관리해야 다른 리뷰로 넘어가도 안 섞임)
     const [emojiSelections, setEmojiSelections] = useState<Record<number, string>>({});
 
@@ -72,11 +73,18 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
     // 스와이프 닫기용 위치 값 (Animated)
     const translateY = useRef(new Animated.Value(0)).current;
 
+    // 리뷰(사진)마다 서버에 저장된 내 리액션을 조회해서 초기 상태로 채움 - 한 번 조회한 리뷰는
+    // 다시 조회 안 하는 캐시. visible이 false→true 될 때(뷰어를 다시 열 때)마다 비워서,
+    // 화면 인스턴스가 재사용되는 경우(react-navigation의 navigate()가 스택에 이미 있는 PlaceDetail을
+    // 재사용하는 경우)에도 이전 방문 때 캐시된 "반응 없음" 값이 계속 남아있지 않고 서버 최신값을 다시 받아오게 함
+    const fetchedEmojiReviewIds = useRef<Set<number>>(new Set());
+
     // visible 켜질 때마다 startIndex로 초기화 + 위치 리셋
     useEffect(() => {
         if (visible) {
             setCurrentIndex(startIndex);
             translateY.setValue(0);
+            fetchedEmojiReviewIds.current.clear();
         } else {
             setMenuOpen(false);
         }
@@ -123,7 +131,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
     }, [currentIndex]);
 
     // 리뷰(사진)마다 서버에 저장된 내 리액션을 한 번만 조회해서 초기 상태로 채움
-    const fetchedEmojiReviewIds = useRef<Set<number>>(new Set());
+    // (fetchedEmojiReviewIds 선언은 위쪽 visible 초기화 effect 앞으로 옮김)
     useEffect(() => {
         if (!review || fetchedEmojiReviewIds.current.has(review.id)) return;
         fetchedEmojiReviewIds.current.add(review.id);
@@ -132,12 +140,16 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
         fetchEmojis(reviewId)
             .then(res => {
                 const mine = res.reactions.find(r => r.is_mine);
-                if (mine) {
-                    setEmojiSelections(prev => ({...prev, [reviewId]: mine.emoji}));
-                    // 데이터가 도착했을 때도 여전히 이 리뷰를 보고 있으면 애니메이션 없이 바로 반영
-                    if (reviews[currentIndexRef.current]?.id === reviewId) {
-                        syncEmoji(true);
-                    }
+                // 서버 값이 항상 우선 - 반응이 없으면 이전에 남아있던 값(다른 세션/재사용된 화면의 캐시)도 지움
+                setEmojiSelections(prev => {
+                    const next = {...prev};
+                    if (mine) next[reviewId] = mine.emoji;
+                    else delete next[reviewId];
+                    return next;
+                });
+                // 데이터가 도착했을 때도 여전히 이 리뷰를 보고 있으면 애니메이션 없이 바로 반영
+                if (reviews[currentIndexRef.current]?.id === reviewId) {
+                    syncEmoji(!!mine);
                 }
             })
             .catch(err => console.warn('이모지 반응 조회 실패:', err?.message));
@@ -158,19 +170,20 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
         addEmoji(review.id, emoji).catch(err => console.warn('이모지 추가 실패:', err?.message));
     };
 
-    // 이모지 선택 취소
+    // 이모지 선택 취소 - 사라지는 애니메이션은 피커 안에서 이미 다 보여줬으니(ReviewPhotoEmojiPicker의
+    // 자체 취소 애니메이션), 여기 메인 버튼에서 또 재생하면 220ms(피커) + 420ms(메인 버튼) 이중으로
+    // 걸려서 그 사이에 피커를 닫으면 메인 버튼이 "지워지는 중" 애매한 상태로 보였음(아이콘도
+    // "반응 남기기" 텍스트도 없는 것처럼). 애니메이션 없이 바로 상태만 정리
     const handleCancelEmoji = () => {
-        // 퇴장 애니메이션 재생 중에 중복으로 눌리는 것 방지 (겹치면 애니메이션/터치가 꼬임)
-        if (!review || !selectedEmoji || isExiting) return;
+        if (!review || !selectedEmoji) return;
         const emoji = selectedEmoji;
         const reviewId = review.id;
         removeEmoji(reviewId, emoji).catch(err => console.warn('이모지 삭제 실패:', err?.message));
-        playCancelAnimation(() => {
-            setEmojiSelections(prev => {
-                const next = {...prev};
-                delete next[reviewId];
-                return next;
-            });
+        syncEmoji(false); // 메인 버튼 애니메이션 값 즉시 리셋 (애니메이션 없이)
+        setEmojiSelections(prev => {
+            const next = {...prev};
+            delete next[reviewId];
+            return next;
         });
     };
 
@@ -313,14 +326,12 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                             onOpenChat={() => modalRef.current?.present()}
                             selectedEmoji={selectedEmoji}
                             emojiPop={emojiPop}
-                            emojiBurst={emojiBurst}
-                            isExiting={isExiting}
+                            isOwner={isOwner}
                             onPressEmojiButton={
                                 isOwner
                                     ? () => onOpenReactionList?.(review.id)
                                     : togglePicker
                             }
-                            onCancelEmoji={handleCancelEmoji}
                         />
                     </View>
 
@@ -353,7 +364,13 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                 </Animated.View>
 
                 {/* ── 이모지 반응 : 화면 전체 오버레이 + 이모지 목록 ── */}
-                <ReviewPhotoEmojiPicker visible={showPicker} onClose={closePicker} onSelect={handleSelectEmoji} />
+                <ReviewPhotoEmojiPicker
+                    visible={showPicker}
+                    onClose={closePicker}
+                    onSelect={handleSelectEmoji}
+                    selectedEmoji={selectedEmoji}
+                    onCancel={handleCancelEmoji}
+                />
             </Pressable>
         </>
 
@@ -438,8 +455,7 @@ const styles = StyleSheet.create({
     },
     placeName: {
         color: colors.text.inverse,
-        fontSize: fontSize.b3,
-        fontFamily: fontFamily.bold,
+        ...typography.b5,
         flexShrink: 1,
     },
     leftGroup: {
@@ -462,8 +478,7 @@ const styles = StyleSheet.create({
     },
     nickname: {
         color: colors.text.inverse,
-        fontSize: fontSize.b1,
-        fontFamily: fontFamily.bold,
+        ...typography.b1,
         flexShrink: 1,
         textShadowColor: 'rgba(0,0,0,0.5)',
         textShadowOffset: {width: 0, height: 1},
@@ -471,8 +486,7 @@ const styles = StyleSheet.create({
     },
     timeText: {
         color: colors.text.inverse,
-        fontSize: fontSize.c2,
-        fontFamily: fontFamily.medium,
+        ...typography.c2,
         marginLeft: spacing.md,               // Gap/gap-md (닉네임 ↔ 시간)
         textShadowColor: 'rgba(0,0,0,0.5)',
         textShadowOffset: {width: 0, height: 1},
