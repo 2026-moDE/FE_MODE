@@ -32,13 +32,13 @@ const getCongestionLevel = (
 ): CongestionLevel => {
   switch (congestion) {
     case '한산해요':
-      return 'LOW';
+      return 'RELAXED';
     case '적당해요':
-      return 'MEDIUM';
+      return 'MODERATE';
     case '붐벼요':
-      return 'HIGH';
+      return 'CROWDED';
     case '매우 붐벼요':
-      return 'VERY_HIGH';
+      return 'VERY_CROWDED';
   }
 };
 type CongestionType = (typeof CONGESTION_OPTIONS)[number];
@@ -76,9 +76,10 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
   const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
   const formattedDate = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} (${DAYS[now.getDay()]}) ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+  // placeId 없이 placeName만 있으면 등록 자체가 불가능하므로 버튼도 비활성화
   const isSubmitActive = useMemo(() => {
-    return !!placeName && !!selectedCongestion && !isSubmitting;
-  }, [placeName, selectedCongestion, isSubmitting]);
+    return !!placeId && !!placeName && !!selectedCongestion && !isSubmitting;
+  }, [placeId, placeName, selectedCongestion, isSubmitting]);
 
     const handlePressPlace = () => {
       navigation.getParent()?.navigate('Search', {
@@ -94,10 +95,15 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
   const handleSubmit = async (visibility: ReviewVisibility) => {
     if (isSubmitting) return;
-    if (!isSubmitActive || !selectedCongestion) return;
 
-    if (!placeId) {
-      console.log('placeId 없음. 장소 선택 먼저 필요');
+    // 조용히 return하면 버튼이 안 눌리는 것처럼 보여서, 막힌 이유를 항상 알려줌
+    if (!placeId || !placeName) {
+      Alert.alert('장소를 선택해주세요', '후기를 남길 장소를 먼저 설정해주세요.');
+      return;
+    }
+
+    if (!selectedCongestion) {
+      Alert.alert('혼잡도를 선택해주세요', '이용하신 곳의 혼잡도 상태를 골라주세요.');
       return;
     }
 

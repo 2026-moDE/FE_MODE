@@ -24,8 +24,10 @@ type Props = {
     visible: boolean; // 리뷰 사진 모달 클릭 여부
     placeName?: string; // 장소상세처럼 장소가 하나로 고정된 경우용. 리뷰마다 장소가 다르면 reviews[].place_name을 대신 채워서 넘기면 됨
     onClose: () => void;
-    onDelete: () => void;
-    onReport: () => void;
+    // 뷰어 안에서 사진을 넘길 수 있어서, 부모가 처음 열었던 index로 지우면 엉뚱한 리뷰가 지워짐.
+    // 지금 보고 있는 리뷰 id를 그대로 넘겨줌
+    onDelete: (reviewId: number) => void;
+    onReport: (reviewId: number) => void;
     onChangeComment?: (reviewId: number, comment: string) => void;
     // 상단 프로필 사진/닉네임 탭 시 다른 유저 마이페이지로 이동 (user_id 없으면 무시됨)
     onPressUser?: (user: ReviewUser) => void;
@@ -133,6 +135,8 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
     // 리뷰(사진)마다 서버에 저장된 내 리액션을 한 번만 조회해서 초기 상태로 채움
     // (fetchedEmojiReviewIds 선언은 위쪽 visible 초기화 effect 앞으로 옮김)
     useEffect(() => {
+        // 뷰어가 닫혀 있을 땐 조회 안 함 - visible이 다시 켜질 때 위 effect가 캐시를 비우고 여기서 서버 최신값을 받아옴
+        if (!visible) return;
         if (!review || fetchedEmojiReviewIds.current.has(review.id)) return;
         fetchedEmojiReviewIds.current.add(review.id);
         const reviewId = review.id;
@@ -153,7 +157,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                 }
             })
             .catch(err => console.warn('이모지 반응 조회 실패:', err?.message));
-    }, [currentIndex]);
+    }, [currentIndex, visible]);
 
     // 리뷰(사진) 전환 시에만(선택/취소 애니메이션과는 별개로), 그 리뷰의 실제 선택 상태로 즉시 맞춤
     useEffect(() => {
@@ -162,29 +166,65 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentIndex]);
 
-    // 이모지 선택
-    const handleSelectEmoji = (emoji: string) => {
+    // 선택/취소가 서버에 저장 안 됐을 때 화면을 원래 상태로 되돌림
+    // (UI만 바뀐 채로 두면 다음에 다시 열었을 때 반응이 사라진 것처럼 보임)
+    const rollbackEmoji = (reviewId: number, prevEmoji: string | null) => {
+        setEmojiSelections(prev => {
+            const next = {...prev};
+            if (prevEmoji) next[reviewId] = prevEmoji;
+            else delete next[reviewId];
+            return next;
+        });
+        // 되돌리는 시점에도 같은 리뷰를 보고 있으면 메인 버튼 상태까지 같이 맞춤
+        if (reviews[currentIndexRef.current]?.id === reviewId) syncEmoji(!!prevEmoji);
+    };
+
+    // 이모지 선택 (이미 남긴 반응이 있으면 그걸 지우고 새 걸로 교체)
+    const handleSelectEmoji = async (emoji: string) => {
         if (!review) return;
-        setEmojiSelections(prev => ({...prev, [review.id]: emoji}));
+        const reviewId = review.id;
+        const prevEmoji = emojiSelections[reviewId] ?? null;
+        if (prevEmoji === emoji) return; // 같은 이모지는 취소 경로에서 처리
+
+        setEmojiSelections(prev => ({...prev, [reviewId]: emoji}));
         playSelectAnimation();
-        addEmoji(review.id, emoji).catch(err => console.warn('이모지 추가 실패:', err?.message));
+
+        try {
+            // 반응은 리뷰당 하나라, 바꿀 때는 기존 걸 먼저 지워야 두 개로 남지 않음
+            if (prevEmoji) await removeEmoji(reviewId, prevEmoji);
+            await addEmoji(reviewId, emoji);
+        } catch (err: any) {
+            console.warn('이모지 반영 실패:', err?.message);
+            rollbackEmoji(reviewId, prevEmoji);
+        }
     };
 
     // 이모지 선택 취소 - 사라지는 애니메이션은 피커 안에서 이미 다 보여줬으니(ReviewPhotoEmojiPicker의
     // 자체 취소 애니메이션), 여기 메인 버튼에서 또 재생하면 220ms(피커) + 420ms(메인 버튼) 이중으로
     // 걸려서 그 사이에 피커를 닫으면 메인 버튼이 "지워지는 중" 애매한 상태로 보였음(아이콘도
     // "반응 남기기" 텍스트도 없는 것처럼). 애니메이션 없이 바로 상태만 정리
-    const handleCancelEmoji = () => {
-        if (!review || !selectedEmoji) return;
+    // 취소는 서버가 지워준 걸 확인한 뒤에만 화면에서 지움 - 먼저 지웠다가 실패해서 되돌리면
+    // "사라졌다 다시 나타나는" 깜빡임이 생겨서, 실패하면 아예 그대로 두는 쪽을 택함
+    // (false를 돌려주면 피커가 사라지는 애니메이션까지 원래대로 되돌림)
+    const handleCancelEmoji = async (): Promise<boolean> => {
+        if (!review || !selectedEmoji) return false;
         const emoji = selectedEmoji;
         const reviewId = review.id;
-        removeEmoji(reviewId, emoji).catch(err => console.warn('이모지 삭제 실패:', err?.message));
+
+        try {
+            await removeEmoji(reviewId, emoji);
+        } catch (err: any) {
+            console.warn('이모지 삭제 실패:', err?.message);
+            return false; // 피커가 이모지를 원래대로 되돌림
+        }
+
         syncEmoji(false); // 메인 버튼 애니메이션 값 즉시 리셋 (애니메이션 없이)
         setEmojiSelections(prev => {
             const next = {...prev};
             delete next[reviewId];
             return next;
         });
+        return true;
     };
 
     // 이전/다음 사진
@@ -379,8 +419,8 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
             visible={menuOpen}
             isOwner={isOwner}
             onClose={() => setMenuOpen(false)}
-            onDelete={onDelete}
-            onReport={onReport}
+            onDelete={() => review && onDelete(review.id)}
+            onReport={() => review && onReport(review.id)}
             onEdit={() => commentRef.current?.focusEnd()}
         />
 

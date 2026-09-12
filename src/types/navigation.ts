@@ -13,7 +13,6 @@ export type AuthStackParamList = {
 };
 
 export type TabParamList = {
-  Review: undefined;
   Home: undefined;
   ReviewEntry: undefined; // 탭에서 진입점만
   Mypage: undefined;

@@ -192,14 +192,12 @@ export default function MyMapScreen({navigation}: Props) {
         congestion_level: r.congestion_level as CurrentReview['congestion_level'],
         comment: r.comment ?? '',
         place_name: r.place.name,
-        helpful_count: r.helpful_count,
-        is_helpful: false,
         is_mine: true,
-        // /api/users/me/reviews엔 visibility/is_friend가 없음 - ReviewPhoto를 readOnlyComments로 열어서 댓글 입력창 자체가 없으니 더미값으로
-        visibility: 'PUBLIC', // 더미값
+        visibility: r.visibility,
+        // /api/users/me/reviews엔 is_friend가 없음 - ReviewPhoto를 readOnlyComments로 열어서 댓글 입력창 자체가 없으니 더미값으로
         is_friend: false, // 더미값
+        // 전부 내 리뷰라 user_id는 안 넣음 - ReviewPhoto에서 프로필 탭이 비활성화됨
         user: {
-          id: profile?.id ?? 0,
           nickname: profile?.nickname ?? '',
           profile_image_url: profile?.profile_image_url ?? '',
           profile_url: profile?.profile_url ?? null,
@@ -478,19 +476,14 @@ export default function MyMapScreen({navigation}: Props) {
         visible={imageIndex !== null}
         readOnlyComments
         onOpenReactionList={openReactions}
-        onPressUser={user => {
-          if (user.user_id == null) return;
-          navigation.navigate('UserMyPage', {userId: user.user_id});
-        }}
         onClose={() => {
           setImageIndex(null);
           setViewerMonthKey(null);
         }}
-        onDelete={async () => {
-          if (imageIndex === null) return;
+        onDelete={async reviewId => {
           try {
-            await deleteReview(photoReviews[imageIndex].id);
-            setReviews(prev => prev.filter(r => r.id !== photoReviews[imageIndex].id));
+            await deleteReview(reviewId);
+            setReviews(prev => prev.filter(r => r.id !== reviewId));
             setImageIndex(null);
           } catch (error) {
             console.error('리뷰 삭제 실패:', error);

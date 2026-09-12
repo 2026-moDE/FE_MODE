@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, useState, useCallback, useMemo} from "react";
-import {View, Text, StyleSheet, ActivityIndicator, useWindowDimensions, InteractionManager} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, useWindowDimensions, InteractionManager, Platform} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
@@ -20,6 +20,7 @@ import { FriendReview, fetchFriendReviews } from "../../api/friend";
 import { colors } from '../../constants/colors';
 import IconCurrentLocation from "../../assets/icons/IconCurrentLocation";
 import HomeMiniCard from "../../components/home/HomeMiniCard";
+import BubbleFilterToggle, {type BubbleFilter} from "../../components/home/BubbleFilterToggle";
 import QuickReviewButton from "../../components/home/QuickReviewButton";
 import HomeBottomSheet from "../../components/home/HomeBottomSheet";
 import { getDistance, formatDistance } from "../../utils/distance";
@@ -117,6 +118,9 @@ export default function HomeScreen(){
 
     // 주변 장소 목록
     const [places, setPlaces] = useState<NearbyPlace[]>([]);
+
+    // 지도 버블 필터 - '전체'는 과거 리뷰만 있는 장소까지, '최근'은 실시간 리뷰가 달린 장소만
+    const [bubbleFilter, setBubbleFilter] = useState<BubbleFilter>('all');
 
     // 주변 장소 최초 조회 완료 여부 (로딩중 / 리뷰없음 구분용)
     const [placesLoaded, setPlacesLoaded] = useState(false);
@@ -302,28 +306,55 @@ export default function HomeScreen(){
     const loadNearbyPlaces = useCallback(() => {
         if (!location) return;
 
-        fetchNearbyPlaces({
+        const baseParams = {
             latitude: location.latitude,
             longitude: location.longitude,
-            filter: 'current',     // 실시간 리뷰만 버블 표시
-            visibility: 'all',     // 전체공개 리뷰만 버블 표시
-        })
-            .then(res => {
-                if (res.places && res.places.length > 0) {
-                    const unique = res.places.filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+            visibility: 'all' as const,   // 전체공개 리뷰만 버블 표시
+        };
+
+        // '최근'이면 실시간 리뷰만, '전체'면 과거(archived)까지 같이 조회해서 합침
+        // 한쪽이 실패해도 나머지는 살리려고 개별 catch
+        const includeArchived = bubbleFilter === 'all';
+
+        Promise.all([
+            fetchNearbyPlaces({...baseParams, filter: 'current'})
+                .catch(error => {
+                    console.warn('주변 장소(current) 조회 실패:', error?.message);
+                    return {places: [] as NearbyPlace[]};
+                }),
+            includeArchived
+                ? fetchNearbyPlaces({...baseParams, filter: 'archived'})
+                    .catch(error => {
+                        console.warn('주변 장소(archived) 조회 실패:', error?.message);
+                        return {places: [] as NearbyPlace[]};
+                    })
+                : Promise.resolve({places: [] as NearbyPlace[]}),
+        ])
+            .then(([currentRes, archivedRes]) => {
+                // current를 앞에 둬야 같은 장소가 양쪽에 있을 때 실시간 쪽 썸네일이 남음
+                const merged = [...(currentRes.places ?? []), ...(archivedRes.places ?? [])];
+                if (merged.length > 0) {
+                    const unique = merged.filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
                     const newUrls = new Set(unique.map(p => p.thumbnail_small_url ?? p.thumbnail_url).filter(Boolean) as string[]);
                     setPlaces(unique);
                     // 기존에 로드된 URL은 유지, 새 URL만 preloader가 채움
                     setReadyUrls(prev => new Set([...prev].filter(url => newUrls.has(url))));
                 }
             })
-            .catch(error => {
-                console.warn('주변 장소 API 실패:', error?.message);
-            })
             .finally(() => {
                 setPlacesLoaded(true);   // 성공/실패 무관 최초 조회 끝났음 표시
             });
-    }, [location]);
+    }, [location, bubbleFilter]);
+
+    // 필터를 바꾸면 이전 필터의 버블이 남아있지 않게 먼저 비움
+    // (조회 결과가 비어도 이전 목록을 유지하는 로직이 있어서, 여기서 직접 지워줘야 함)
+    const handleChangeBubbleFilter = useCallback((next: BubbleFilter) => {
+        if (next === bubbleFilter) return;
+        setPlaces([]);
+        setPlacesLoaded(false);
+        handleCloseCard();   // 필터에서 빠지는 장소의 미니카드가 떠 있을 수 있음
+        setBubbleFilter(next);
+    }, [bubbleFilter, handleCloseCard]);
 
     // 위치 들어오면 최초 조회
     useEffect(() => {
@@ -462,6 +493,10 @@ export default function HomeScreen(){
                 }}
                 onInitialized={() => {
                     setMapReady(true);
+                    // iOS는 Follow를 켜면 SDK가 현위치 마커 아이콘을 기본값으로 덮어써서
+                    // 커스텀 마커가 사라짐 - 안드로이드에서만 SDK 추적을 씀
+                    // (iOS는 MapView가 locationOverlay.position에 실시간 위치를 직접 먹임)
+                    if (Platform.OS !== 'android') return;
                     setTimeout(() => {
                         mapRef.current?.setLocationTrackingMode('Follow');
                     }, 300);
@@ -487,6 +522,13 @@ export default function HomeScreen(){
                 onPressBell={handleBellPress}
                 hasUnreadNotification={hasUnreadNotification}
             />
+
+            {/* 버블 필터 (전체/최근) - 로고 아래. 미니카드가 떠 있을 땐 숨김 */}
+            {!placeDetail && (
+                <View style={[styles.bubbleFilterWrapper, {top: insets.top + 62}]} pointerEvents="box-none">
+                    <BubbleFilterToggle value={bubbleFilter} onChange={handleChangeBubbleFilter} />
+                </View>
+            )}
 
             {/* 썸네일 프리로더: decode 완료 후에만 마커 렌더 - LiveBubble이 실제로 쓰는 필드(thumbnail_small_url 우선)랑 맞춤 */}
             {places.map(place => {
@@ -518,10 +560,13 @@ export default function HomeScreen(){
                                 easing: 'Fly',
                                 duration: 800,
                             });
-                            setTimeout(() => {
-                                // 안드로이드에서만 자동 애니메이션
-                                mapRef.current?.setLocationTrackingMode('Follow');
-                            }, 850);
+                            // 안드로이드에서만 자동 애니메이션
+                            // (iOS는 Follow를 켜면 커스텀 현위치 마커가 SDK 기본 아이콘으로 덮어써짐)
+                            if (Platform.OS === 'android') {
+                                setTimeout(() => {
+                                    mapRef.current?.setLocationTrackingMode('Follow');
+                                }, 850);
+                            }
                         }}
                     />
                     <View style={styles.quickReviewRow} pointerEvents="box-none">
@@ -602,6 +647,11 @@ const styles = StyleSheet.create({
     },
     // 버블 크기(60x60)랑 똑같이 맞춰야 캐시가 실제 버블 로딩 때도 재사용됨 (크기 다르면 다시 로딩함)
     preloader: { width: 60, height: 60, position: 'absolute', opacity: 0 },
+    bubbleFilterWrapper: {
+        position: 'absolute',
+        left: 24,          // HomeHeader의 paddingHorizontal(padding['2xl'])과 맞춤
+        right: 24,
+    },
     loadingContainer: {
         justifyContent: 'center',
         alignItems: 'center',

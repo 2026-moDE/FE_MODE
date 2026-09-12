@@ -1,4 +1,5 @@
 import {apiClient} from './client';
+import type {CongestionLevel} from '../types/place';
 
 export type MyProfile = {
   id: number;
@@ -28,12 +29,10 @@ export type MyReview = {
   image_url: string | null;
   thumbnail_url?: string | null;
   thumbnail_small_url?: string | null;
-  congestion_level: string;
+  congestion_level: CongestionLevel;
   comment: string | null;
-  helpful_count: number;
   created_at: string;
-  // TODO: 백엔드 응답에 아직 없음 - 친구 마이페이지 피드에서 친구공개 리뷰만 노란 테두리 표시하는 데 필요
-  visibility?: 'PUBLIC' | 'FRIENDS';
+  visibility: 'PUBLIC' | 'FRIENDS';
 };
 
 export type MyReviewsResponse = {

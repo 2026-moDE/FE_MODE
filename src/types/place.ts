@@ -4,7 +4,10 @@
 export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'POPUP' | 'CONCERT' | 'ETC';
 
 // 혼잡도 레벨
-export type CongestionLevel = 'LOW' | 'MODERATE' | 'CROWDED' | 'MEDIUM' | 'HIGH';
+export type CongestionLevel = 'RELAXED' | 'MODERATE' | 'CROWDED' | 'VERY_CROWDED';
+
+// 혼잡도 버블 색상
+export type BubbleColor = 'GREEN' | 'YELLOW' | 'RED';
 
 // 요일
 export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
@@ -18,6 +21,29 @@ export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
     ETC:        '기타',
 };
 
+// 혼잡도 한글 레이블 매핑 (서버는 congestion_level만 내려주고 문구는 FE에서 만듦)
+export const CONGESTION_LABEL: Record<CongestionLevel, string> = {
+    RELAXED:      '한산해요',
+    MODERATE:     '적당해요',
+    CROWDED:      '붐벼요',
+    VERY_CROWDED: '매우 붐벼요',
+};
+
+// 혼잡도 → 버블 색상 매핑 (서버는 congestion_level만 내려주고 색은 FE에서 정함)
+export const CONGESTION_BUBBLE_COLOR: Record<CongestionLevel, BubbleColor> = {
+    RELAXED:      'GREEN',
+    MODERATE:     'GREEN',
+    CROWDED:      'YELLOW',
+    VERY_CROWDED: 'RED',
+};
+
+// 버블 색상 → 실제 컬러값
+export const BUBBLE_COLOR_HEX: Record<BubbleColor, string> = {
+    GREEN:  '#84E588',
+    YELLOW: '#FFD75E',
+    RED:    '#FF685D',
+};
+
 // ─────────────────── 장소 상세 조회 api (GET /api/places/:id) ───────────────────
 export type PlaceDetail = {
     id: number;
@@ -26,6 +52,7 @@ export type PlaceDetail = {
     category: PlaceCategory;
     business_hours: string | null;
     is_subscribed: boolean;
+    // 서버 응답에 congestion_label / bubble_color는 없음 - 레벨로 CONGESTION_LABEL, CONGESTION_BUBBLE_COLOR 매핑해서 씀
     congestion_level: CongestionLevel | null;
     congestion_index: number | null;
     congestion_review_count: number;
@@ -96,7 +123,6 @@ export type ArchivedReview = {
     thumbnail_small_url : string | null;
     congestion_level: CongestionLevel;
     comment: string;
-    helpful_count: number;
     is_mine : boolean;
     visibility : 'PUBLIC' | 'FRIENDS';
     is_friend : boolean; 

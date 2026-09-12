@@ -1,5 +1,5 @@
-import React, {useRef, useState, useEffect} from 'react';
-import {View, Text, Pressable, Animated, StyleSheet, Modal, TextInput, Platform, NativeModules, Easing} from 'react-native';
+import React, {useRef, useState} from 'react';
+import {View, Text, Pressable, Animated, StyleSheet, Modal, TextInput, Platform, NativeModules} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import BlurOverlay from '../common/BlurOverlay';
 import {typography} from '../../constants/typography';
@@ -123,7 +123,8 @@ type EmojiPickerProps = {
     // 없으면(null) 전부 선택 가능
     selectedEmoji?: string | null;
     // 이미 선택된 이모지를 다시 누르면 취소 (다른 이모지로 바로 바꾸는 건 불가 - 먼저 취소해야 함)
-    onCancel?: () => void;
+    // 서버 취소가 실패하면 false를 돌려줌 - 그때는 사라졌던 이모지를 도로 보이게 되돌림
+    onCancel?: () => void | boolean | Promise<void | boolean>;
     // 없으면 부모를 화면 전체로 보고 그대로 그림 (사진 뷰어)
     // 있으면 Modal로 띄워서 화면 어디를 눌러도 닫히게 하고, 프리셋 줄은 이 좌표에 맞춰 배치 (리스트 카드)
     anchor?: PickerAnchor;
@@ -140,29 +141,18 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoj
     // 다만 이모지 탭으로 강제로 여는 공개 API는 없어서, 직전에 쓰던 키보드가 먼저 뜰 수 있음(지구본 키로 전환)
     const inputRef = useRef<TextInput>(null);
 
-    // 취소 시 피커 자체는 안 닫고, 선택된 이모지가 그 자리에서 사라지는 애니메이션만 재생 -
-    // 끝난 뒤에 실제 취소 처리(onCancel)를 해서 다른 이모지를 바로 이어서 고를 수 있게 함
-    const cancelAnim = useRef(new Animated.Value(0)).current;
+    // 취소해도 피커는 닫지 않고 이모지도 그 자리에 그대로 둠 - 선택만 풀려서
+    // (회색 처리됐던 나머지 이모지가 살아나고) 바로 다시 고를 수 있는 상태가 됨
     const [isCanceling, setIsCanceling] = useState(false);
-    const handleCancelPress = () => {
-        if (isCanceling) return; // 애니메이션 중 중복 실행 방지
+    const handleCancelPress = async () => {
+        if (isCanceling) return; // 응답 기다리는 동안 중복 실행 방지
         setIsCanceling(true);
-        Animated.timing(cancelAnim, {
-            toValue: 1,
-            duration: 210,
-            easing: Easing.out(Easing.ease), // 처음엔 빠르게, 끝으로 갈수록 느려짐
-            useNativeDriver: true,
-        }).start(() => {
+        try {
+            await onCancel?.();
+        } finally {
             setIsCanceling(false);
-            onCancel?.();
-        });
+        }
     };
-    // cancelAnim 리셋은 완료 콜백이 아니라 selectedEmoji가 실제로 바뀐 시점에 맞춤 -
-    // 완료 콜백에서 바로 리셋하면 부모 상태(selectedEmoji)가 아직 안 바뀐 채로 퉅명도가
-    // 먼저 1로 튀어버려서 사라졌다 다시 보이는 깜빡임이 생김
-    useEffect(() => {
-        cancelAnim.setValue(0);
-    }, [selectedEmoji, cancelAnim]);
 
     if (!visible) return null;
 
@@ -193,30 +183,23 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoj
             <View style={[styles.picker, pickerPosition]}>
                 {EMOJIS.map(emoji => {
                     const isSelected = emoji === selectedEmoji;
-                    // 이미 다른 이모지가 선택돼있으면(취소 안 하고) 이 이모지는 못 고름
-                    const disabled = hasSelection && !isSelected;
                     return (
                         <Pressable
                             key={emoji}
-                            disabled={disabled || (isSelected && isCanceling)}
+                            disabled={isSelected && isCanceling}
                             onPress={() => {
+                                // 이미 고른 걸 다시 누르면 취소, 다른 걸 누르면 그걸로 바로 변경
                                 if (isSelected) {
                                     handleCancelPress();
                                 } else {
                                     onSelect(emoji);
                                 }
                             }}>
-                            <Animated.Text
-                                style={[
-                                    styles.emojiText,
-                                    disabled && styles.emojiTextDisabled,
-                                    isSelected && {
-                                        opacity: cancelAnim.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-                                        transform: [{scale: cancelAnim.interpolate({inputRange: [0, 1], outputRange: [1, 1.35]})}],
-                                    },
-                                ]}>
+                            {/* 선택된 것만 원래 크기, 나머지는 살짝 흐리게 해서 지금 고른 게 뭔지 보이게 함
+                                (예전처럼 비활성화는 아니고 눌러서 바로 바꿀 수 있음) */}
+                            <Text style={[styles.emojiText, hasSelection && !isSelected && styles.emojiTextDimmed]}>
                                 {emoji}
-                            </Animated.Text>
+                            </Text>
                         </Pressable>
                     );
                 })}
@@ -224,20 +207,10 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoj
                     그 이모지를 보여주고 눌러서 취소할 수 있게 함. 선택된 게 없으면 원래 "더보기" 아이콘 */}
                 {isCustomSelected ? (
                     <Pressable disabled={isCanceling} onPress={handleCancelPress}>
-                        <Animated.Text
-                            style={[
-                                styles.emojiText,
-                                {
-                                    opacity: cancelAnim.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-                                    transform: [{scale: cancelAnim.interpolate({inputRange: [0, 1], outputRange: [1, 1.35]})}],
-                                },
-                            ]}>
-                            {selectedEmoji}
-                        </Animated.Text>
+                        <Text style={styles.emojiText}>{selectedEmoji}</Text>
                     </Pressable>
                 ) : (
                     <Pressable
-                        disabled={hasSelection}
                         onPress={async () => {
                             // 안드로이드는 구글 공식 이모지 피커를 다이얼로그로 띄움 (시스템 키보드 전환 API가 없음)
                             if (Platform.OS === 'android') {
@@ -248,7 +221,7 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoj
                             // iOS는 숨겨진 입력창에 포커스를 줘서 시스템 이모지 키보드를 띄움
                             inputRef.current?.focus();
                         }}>
-                        <FastImage source={emojiIcon} style={[styles.moreIcon, hasSelection && styles.moreIconDisabled]} resizeMode={FastImage.resizeMode.contain} />
+                        <FastImage source={emojiIcon} style={[styles.moreIcon, hasSelection && styles.moreIconDimmed]} resizeMode={FastImage.resizeMode.contain} />
                     </Pressable>
                 )}
             </View>
@@ -340,15 +313,15 @@ const styles = StyleSheet.create({
     emojiText: {
         fontSize: 30,
     },
-    // 이미 다른 이모지가 선택돼있을 때(취소 안 한 상태) 회색으로 표시
-    emojiTextDisabled: {
+    // 다른 이모지를 이미 고른 상태 - 눌러서 바꿀 수는 있고, 지금 고른 게 뭔지 구분되게만 흐리게
+    emojiTextDimmed: {
         opacity: 0.4,
     },
     moreIcon: {
         width: 40,
         height: 40,
     },
-    moreIconDisabled: {
+    moreIconDimmed: {
         opacity: 0.4,
     },
 });

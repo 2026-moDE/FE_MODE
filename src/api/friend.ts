@@ -1,4 +1,5 @@
 import {apiClient} from './client';
+import type {CongestionLevel} from '../types/place';
 
 type ApiResponse<T> = {
   success: boolean;
@@ -113,7 +114,7 @@ export type FriendReview = {
   id: number;
   place_id: number;
   place_name: string;
-  congestion_level: 'LOW' | 'MEDIUM' | 'HIGH';
+  congestion_level: CongestionLevel;
   comment: string;
   image_url: string;
   thumbnail_url: string;

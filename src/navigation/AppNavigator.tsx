@@ -32,7 +32,8 @@ function TabNavigator() {
       screenOptions={{headerShown: false}}
       initialRouteName="Home"
       backBehavior="initialRoute">
-      <Tab.Screen name="Review" component={ReviewStack} />
+      {/* 리뷰 작성은 탭바에 버튼이 없고(CustomTabBar의 TAB_ORDER) 전부 루트 스택의
+          'ReviewStack'으로 진입하므로, 여기 탭 화면으로는 등록하지 않음 */}
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Mypage" component={MyPageScreen} />
     </Tab.Navigator>

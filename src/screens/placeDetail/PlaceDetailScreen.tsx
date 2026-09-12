@@ -365,20 +365,17 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                     if (user.user_id == null) return;
                     navigation.navigate('UserMyPage', {userId: user.user_id});
                 }}
-                onDelete={async () => {
-                    if (imageIndex === null) return;
+                onDelete={async reviewId => {
                     try {
-                        await deleteReview(reviews[imageIndex].id);
-                        setReviews(prev => prev.filter((_, i) => i !== imageIndex));
+                        await deleteReview(reviewId);
+                        setReviews(prev => prev.filter(r => r.id !== reviewId));
                         setImageIndex(null);
                     } catch (error) {
                         console.error('리뷰 삭제 실패:', error);
                     }
                 }}
-                
-                onReport={() => {
-                    if (imageIndex === null) return;
-                    const reviewId = reviews[imageIndex].id;
+
+                onReport={reviewId => {
                     navigation.navigate('ReviewReport', {reviewId});
                     setImageIndex(null);
                 }}

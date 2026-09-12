@@ -28,6 +28,29 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
     // 버블 배경색(회색)만 캡처될 수 있음 - 로드 완료 후 key를 바꿔서 다시 스냅샷 찍게 함
     // (early return보다 먼저 선언해야 훅 규칙 위반이 안 됨)
     const [placeholderReady, setPlaceholderReady] = React.useState(false);
+    // 네트워크 썸네일도 같은 문제가 있음 - 캐시에 있어도 첫 스냅샷보다 페인트가 늦으면
+    // 회색 배경만 찍힌 채로 굳어버림. 실제로 그려진 뒤 key를 바꿔 다시 찍게 함
+    const [thumbnailPainted, setThumbnailPainted] = React.useState(false);
+
+    const [rebakeTick, setRebakeTick] = React.useState(0);
+
+    // 그릴 이미지가 바뀌면 처음부터 다시 판단
+    React.useEffect(() => {
+        setThumbnailPainted(false);
+        setRebakeTick(0);
+    }, [thumbnailUrl, isReady]);
+
+    // 이미지가 실제로 그려졌다고 보고가 왔는지 (사진이면 FastImage, 없으면 빈 카드 기준)
+    const painted = thumbnailUrl ? thumbnailPainted : placeholderReady;
+
+    // onLoad가 실제 페인트 시점과 안 맞는 경우에만 다시 굽게 함 -
+    // 정상적으로 그려진 버블까지 다시 구우면 지도가 깜빡임
+    const MAX_REBAKE = 2;
+    React.useEffect(() => {
+        if (painted || rebakeTick >= MAX_REBAKE) return;
+        const timer = setTimeout(() => setRebakeTick(t => t + 1), 250);
+        return () => clearTimeout(timer);
+    }, [painted, rebakeTick]);
 
     // 보여줄 썸네일이 있는데 아직 준비 안 됐으면, 빈 버블을 먼저 띄우지 않고 준비될 때까지 통째로 대기
     if (thumbnailUrl && !isReady) {
@@ -44,13 +67,14 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
             onTap={onPress}>
             {/* 마커 생김새가 바뀌면(사진 준비 여부/개수/placeholder 로드 여부) key도 바뀌어야
                 네이티브 쪽이 새 마커로 인식함 - 라이브러리 문서 권장사항 */}
-            <View key={`${thumbnailUrl ?? 'none'}-${isReady}-${count}-${placeholderReady}`} collapsable={false} style={styles.container}>
+            <View key={`${thumbnailUrl ?? 'none'}-${isReady}-${count}-${placeholderReady}-${thumbnailPainted}-${rebakeTick}`} collapsable={false} style={styles.container}>
                 <View collapsable={false} style={styles.bubble}>
                     {thumbnailUrl ? (
                         <FastImage
                             source={{uri: thumbnailUrl, priority: FastImage.priority.high}}
                             style={styles.thumbnail}
                             resizeMode={FastImage.resizeMode.cover}
+                            onLoad={() => setThumbnailPainted(true)}
                         />
                     ) : (
                         // 로컬 placeholder는 RN Image로 - 마커는 네이티브가 비트맵으로 굽는데

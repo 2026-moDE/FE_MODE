@@ -16,6 +16,7 @@ import {onboardingApi} from '../../api/onboardingApi';
 import {useProfileImageUpload, PickedProfileImage} from '../../hooks/useProfileImageUpload';
 import type {AuthStackParamList} from '../../types/navigation';
 import {useAuth} from '../../context/AuthContext';
+import ProfileAvatar from '../../components/common/ProfileAvatar';
 
 import {fontFamily, fontSize, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
@@ -23,7 +24,6 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
 const pencilIcon = require('../../assets/image/pencil.png');
-const defaultProfileImage = require('../../assets/image/empty_profile.png');
 
 const appliedFontFamily = fontFamily ?? {
   bold: 'Pretendard-Bold',
@@ -125,10 +125,17 @@ const ProfileSetupScreen = (_props: Props) => {
 
         <View style={styles.profileSection}>
           <View style={styles.imageBox}>
-            <Image
-              source={pickedImage ? {uri: pickedImage.uri} : defaultProfileImage}
-              style={styles.profileImage}
-            />
+            {pickedImage ? (
+              <Image
+                source={{uri: pickedImage.uri}}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+            ) : (
+              // 기본 이미지도 박스를 꽉 채워야 해서, 안에 테두리가 그려진 empty_profile.png
+              // 대신 공통 아바타(배경색 + 로고)를 씀
+              <ProfileAvatar style={styles.profileImage} />
+            )}
           </View>
 
           <Pressable style={styles.editButton} onPress={handlePickImage}>
@@ -233,10 +240,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  // imageBox가 overflow: hidden으로 잘라주므로 안쪽 여백 없이 박스를 그대로 채움
   profileImage: {
-    width: 146,
-    height: 146,
-    borderRadius: radius['2xl'],
+    width: '100%',
+    height: '100%',
   },
   editButton: {
     position: 'absolute',

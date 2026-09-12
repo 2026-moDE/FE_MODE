@@ -99,6 +99,16 @@ export default function SearchScreen() {
     // 뒤로가기
     const handleBack = () => navigation.goBack();
 
+    // 위치를 알면 일반 검색에도 항상 좌표를 같이 보내서 거리순으로 받음
+    // (isLocationMode는 "현재 위치" 칩 표시 같은 UI 용도로만 씀)
+    const searchWithLocation = useCallback((keyword: string) => {
+        if (location) {
+            search(keyword, { latitude: location.latitude, longitude: location.longitude });
+        } else {
+            search(keyword);
+        }
+    }, [search, location]);
+
     // 검색창에 글자 한 자 칠 때마다
     const handleChangeText = (text: string) => {
         setSearchText(text);
@@ -114,35 +124,27 @@ export default function SearchScreen() {
 
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-            searchAutocomplete(text);
-            // "현위치로 장소 찾기" 이후에 이어서 타이핑하는 거면 좌표를 같이 보내서 거리순 유지, 아니면 일반 검색
-            if (isLocationMode && location) {
-                search(text, { latitude: location.latitude, longitude: location.longitude });
-            } else {
-                search(text);
-            }
+            // 자동완성도 장소 검색과 같은 좌표를 넘겨서 거리 기준으로 추려지게 함
+            searchAutocomplete(text, location ?? undefined);
+            searchWithLocation(text);
         }, 300);
     };
 
     // 검색 실행
     const handleSubmit = useCallback(() => {
         setMode(isLocationMode ? 'location' : 'searched');
-        if (isLocationMode && location) {
-            search(searchText, { latitude: location.latitude, longitude: location.longitude });
-        } else {
-            search(searchText);
-        }
+        searchWithLocation(searchText);
         fetchHistory();
-    }, [searchText, search, fetchHistory, location, isLocationMode]);
+    }, [searchText, searchWithLocation, fetchHistory, isLocationMode]);
 
-    // 최근/추천 검색어 클릭 → 검색 실행 (일반 검색이므로 위치 모드 해제)
+    // 최근/추천/자동완성 검색어 클릭 → 검색 실행 (일반 검색이므로 위치 모드 해제)
     const handleSelectKeyword = useCallback((keyword: string) => {
         setSearchText(keyword);
         setMode('searched');
         setIsLocationMode(false);
-        search(keyword);
+        searchWithLocation(keyword);
         fetchHistory();
-    }, [search, fetchHistory]);
+    }, [searchWithLocation, fetchHistory]);
 
     // 검색창 X → 텍스트 초기화 (gui상 아직 없음)
     const handleClear = () => {

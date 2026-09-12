@@ -48,10 +48,20 @@ export async function deleteAllSearchHistory(): Promise<void> {
 }
 
 // 검색 자동완성 API → GET /api/search/autocomplete?keyword=...
-export async function fetchAutocomplete(keyword: string): Promise<AutocompleteResponse> {
+// 좌표를 같이 보내야 거리 기준으로 추려짐 (없으면 전국 정확도순이라 가까운 장소가 안 뜸)
+export async function fetchAutocomplete(
+  keyword: string,
+  options?: { latitude?: number; longitude?: number },
+): Promise<AutocompleteResponse> {
   const response = await apiClient.get<ApiResponse<AutocompleteResponse>>(
     '/api/search/autocomplete',
-    {params: {keyword}},
+    {
+      params: {
+        keyword,
+        ...(options?.latitude != null && { latitude: options.latitude }),
+        ...(options?.longitude != null && { longitude: options.longitude }),
+      },
+    },
   );
   return response.data.data;
 }

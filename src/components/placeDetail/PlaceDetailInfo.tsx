@@ -13,12 +13,12 @@ const notificationOnIcon = require('../../assets/image/notification_on.png');
 const notificationOffIcon = require('../../assets/image/notification_off.png');
 
 // 혼잡도 레벨 → 한글 레이블
-const CONGESTION_LABEL: Record<CongestionLevel, string> = {
-    LOW:      '여유',
-    MEDIUM:   '보통',
-    MODERATE: '보통',
-    HIGH:     '혼잡',
-    CROWDED:  '혼잡',
+// CONGESTION_LABEL('한산해요' 등)은 문장형이라, 칩에는 짧은 형태로 표시
+const CONGESTION_SHORT_LABEL: Record<CongestionLevel, string> = {
+    RELAXED:      '여유',
+    MODERATE:     '보통',
+    CROWDED:      '혼잡',
+    VERY_CROWDED: '매우 혼잡',
 };
 
 type Props = {
@@ -37,7 +37,7 @@ export default function PlaceDetailInfo({
     const {name, address, category, business_hours, is_subscribed, congestion_level} = place;
     const categoryLabel = CATEGORY_LABEL[category] ?? category;
     const congestionLabel = congestion_level
-        ? CONGESTION_LABEL[congestion_level] ?? congestion_level
+        ? CONGESTION_SHORT_LABEL[congestion_level] ?? congestion_level
         : '집계중';
 
     return (

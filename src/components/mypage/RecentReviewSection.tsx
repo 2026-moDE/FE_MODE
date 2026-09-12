@@ -83,6 +83,49 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
   const myEmojiByReviewRef = useRef<Record<number, string | null>>({});
   const [pickerReviewId, setPickerReviewId] = useState<number | null>(null);
 
+  // 이미 조회를 걸어둔 리뷰 - 목록이 다시 그려져도 같은 리뷰를 중복 조회하지 않게 함
+  const prefetchedEmojiIdsRef = useRef<Set<number>>(new Set());
+
+  // 남의 피드를 열면 카드에 내 반응이 바로 보여야 해서, 목록에 있는 리뷰들의 내 반응을 미리 조회함
+  // (리뷰 목록 API에 내 반응 정보가 없어서 리뷰마다 따로 조회해야 함)
+  useEffect(() => {
+    if (isOwner) return;
+
+    const targets = recentReviews
+      .map(r => r.id)
+      .filter(id => !prefetchedEmojiIdsRef.current.has(id));
+    if (targets.length === 0) return;
+
+    targets.forEach(id => prefetchedEmojiIdsRef.current.add(id));
+
+    let cancelled = false;
+    Promise.all(
+      targets.map(id =>
+        fetchEmojis(id)
+          .then(res => ({id, emoji: res.reactions.find(r => r.is_mine)?.emoji ?? null}))
+          .catch(() => ({id, emoji: null})),
+      ),
+    ).then(results => {
+      if (cancelled) return;
+      const next = {...myEmojiByReviewRef.current};
+      let changed = false;
+      results.forEach(({id, emoji}) => {
+        // 조회하는 사이에 사용자가 직접 남기거나 취소했으면 그쪽이 최신이므로 덮어쓰지 않음
+        if (next[id] === undefined) {
+          next[id] = emoji;
+          changed = true;
+        }
+      });
+      if (!changed) return;
+      myEmojiByReviewRef.current = next;
+      setMyEmojiByReview(next);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recentReviews, isOwner]);
+
   // 카드 하나하나가 최신 콜백을 계속 참조하면서도 의존성 없이(=항상 같은 함수 참조로) 넘어가게 하기 위한 ref
   const onEditCommentRef = useRef(onEditComment);
   useEffect(() => {
@@ -113,6 +156,12 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
     }
   }, []);
 
+  // 서버 저장이 실패했는데 화면만 바뀐 채로 두면, 다음에 다시 볼 때 반응이 사라진 것처럼 보임 - 원래 값으로 되돌림
+  const rollbackEmoji = useCallback((reviewId: number, prevEmoji: string | null) => {
+    myEmojiByReviewRef.current = {...myEmojiByReviewRef.current, [reviewId]: prevEmoji};
+    setMyEmojiByReview(myEmojiByReviewRef.current);
+  }, []);
+
   // 남의 리뷰 이모지 버튼: 처음 누를 때만 내 반응 여부를 조회해서 캐싱, 이미 반응했으면 취소 / 아니면 피커 열기
   const handlePressEmojiButton = useCallback(async (reviewId: number) => {
     let mine = myEmojiByReviewRef.current[reviewId];
@@ -128,13 +177,26 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
       setMyEmojiByReview(myEmojiByReviewRef.current);
     }
 
-    if (mine) {
-      myEmojiByReviewRef.current = {...myEmojiByReviewRef.current, [reviewId]: null};
-      setMyEmojiByReview(myEmojiByReviewRef.current);
-      removeEmoji(reviewId, mine).catch(err => console.log('[이모지 삭제 실패]', err?.message));
-    } else {
-      setPickerReviewId(reviewId);
+    // 사진 뷰어와 동일하게, 이미 반응이 있어도 바로 취소하지 않고 피커를 엶
+    // (피커 안에서 다른 이모지를 누르면 변경, 같은 걸 누르면 취소)
+    setPickerReviewId(reviewId);
+  }, []);
+
+  // 취소는 서버가 지워준 걸 확인한 뒤에만 화면에서 지움 - 실패하면 반응을 그대로 둠
+  const handleCancelEmoji = useCallback(async (reviewId: number): Promise<boolean> => {
+    const mine = myEmojiByReviewRef.current[reviewId];
+    if (!mine) return false;
+
+    try {
+      await removeEmoji(reviewId, mine);
+    } catch (err: any) {
+      console.log('[이모지 삭제 실패]', err?.message);
+      return false; // 피커가 이모지를 원래대로 되돌림
     }
+
+    myEmojiByReviewRef.current = {...myEmojiByReviewRef.current, [reviewId]: null};
+    setMyEmojiByReview(myEmojiByReviewRef.current);
+    return true;
   }, []);
 
   const onPressEmojiButton = useCallback((reviewId: number) => {
@@ -145,12 +207,24 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
     }
   }, [isOwner, openReactions, handlePressEmojiButton]);
 
-  const handleSelectEmoji = useCallback((reviewId: number, emoji: string) => {
+  // 이미 남긴 반응이 있으면 그걸 지우고 새 걸로 교체
+  const handleSelectEmoji = useCallback(async (reviewId: number, emoji: string) => {
+    const prevEmoji = myEmojiByReviewRef.current[reviewId] ?? null;
+    if (prevEmoji === emoji) return; // 같은 이모지는 취소 경로에서 처리
+
     myEmojiByReviewRef.current = {...myEmojiByReviewRef.current, [reviewId]: emoji};
     setMyEmojiByReview(myEmojiByReviewRef.current);
     setPickerReviewId(null);
-    addEmoji(reviewId, emoji).catch(err => console.log('[이모지 추가 실패]', err?.message));
-  }, []);
+
+    try {
+      // 반응은 리뷰당 하나라, 바꿀 때는 기존 걸 먼저 지워야 두 개로 남지 않음
+      if (prevEmoji) await removeEmoji(reviewId, prevEmoji);
+      await addEmoji(reviewId, emoji);
+    } catch (err: any) {
+      console.log('[이모지 반영 실패]', err?.message);
+      rollbackEmoji(reviewId, prevEmoji);
+    }
+  }, [rollbackEmoji]);
 
   const closePicker = useCallback(() => setPickerReviewId(null), []);
 
@@ -216,6 +290,7 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
               onRegisterInputRef={onRegisterInputRef}
               onClosePicker={closePicker}
               onSelectEmoji={handleSelectEmoji}
+              onCancelEmoji={handleCancelEmoji}
             />
           ))}
         </View>
@@ -245,8 +320,12 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
 
       <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
 
-      {/* MyReview엔 visibility가 없어서 비밀 댓글 체크박스는 못 띄움 */}
-      <ReviewChatModal ref={chatSheetRef} reviewId={activeChatReviewId ?? undefined} />
+      {/* 친구공개(FRIENDS) 리뷰일 때만 댓글 입력창에 비밀 댓글 체크박스가 뜸 */}
+      <ReviewChatModal
+        ref={chatSheetRef}
+        reviewId={activeChatReviewId ?? undefined}
+        reviewVisibility={recentReviews.find(r => r.id === activeChatReviewId)?.visibility}
+      />
     </View>
   );
 });
@@ -271,6 +350,8 @@ type ReviewFeedCardProps = {
   onRegisterInputRef: (reviewId: number, ref: TextInput | null) => void;
   onClosePicker: () => void;
   onSelectEmoji: (reviewId: number, emoji: string) => void;
+  // 취소 성공 여부를 돌려줌 - 실패하면 피커가 이모지를 원래대로 되돌림
+  onCancelEmoji: (reviewId: number) => Promise<boolean>;
 };
 
 // 리스트 안 카드 하나 - React.memo로 감싸서, 이 카드와 무관한 상태(반응 목록 로딩 등)가 바뀌어도
@@ -293,11 +374,12 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
   onRegisterInputRef,
   onClosePicker,
   onSelectEmoji,
+  onCancelEmoji,
 }: ReviewFeedCardProps) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const originalComment = review.comment ?? '';
   const currentDraft = draftComment ?? originalComment;
-  // 친구 마이페이지 피드 전체가 아니라, 그중 친구공개(FRIENDS)로 쓴 리뷰에만 별 배지/노란 테두리 표시
+  // 피드 전체가 아니라, 그중 친구공개(FRIENDS)로 쓴 리뷰에만 친구 배지/노란 테두리 표시 (내 마이페이지·친구 마이페이지 공통)
   const isFriendOnlyPost = showFriendBadge && review.visibility === 'FRIENDS';
 
   // 피커는 카드 안에 그리면 카드 바깥 탭을 못 받아서 안 닫힘 - Modal로 띄우려고 사진 영역의 화면 좌표를 재둠
@@ -398,6 +480,8 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
             anchor={pickerAnchor}
             onClose={onClosePicker}
             onSelect={emoji => onSelectEmoji(review.id, emoji)}
+            selectedEmoji={myEmoji ?? null}
+            onCancel={() => onCancelEmoji(review.id)}
           />
         )}
       </View>

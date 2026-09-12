@@ -6,15 +6,15 @@ import { colors } from '../../constants/colors';
 import { radius } from '../../constants/radius';
 import { spacing, gap } from '../../constants/spacing';
 import { typography } from '../../constants/typography';
-import IconSharedMap from '../../assets/icons/IconSharedMap';
+// import IconSharedMap from '../../assets/icons/IconSharedMap';   // 공유지도 탭 임시 제외
 import IconHome from '../../assets/icons/IconHome';
 import IconMyPage from '../../assets/icons/IconMyPage';
 
-// 공유지도 → 홈 → 마이페이지
-const TAB_ORDER = ['SharedMap', 'Home', 'Mypage'] as const;
+// 홈 → 마이페이지  (공유지도 임시 제외)
+const TAB_ORDER = [/* 'SharedMap', */ 'Home', 'Mypage'] as const;
 
 const TAB_LABEL: Record<string, string> = {
-    SharedMap: '공유지도',
+    // SharedMap: '공유지도',
     Home: '홈',
     Mypage: '마이페이지',
 };
@@ -42,17 +42,17 @@ export default function CustomTabBar({ state, navigation, descriptors }: BottomT
 
                 <View style={styles.row}>
                 {TAB_ORDER.map(name => {
-                    // 공유지도는 아직 연결할 화면이 없어서 임시
-                    if (name === 'SharedMap') {
-                        return (
-                            <TouchableOpacity key="SharedMap" style={styles.tab} onPress={() => {}}>
-                                <IconSharedMap size={24} color={colors.icon.inverse} active={false} />
-                                <Text style={styles.label}>{TAB_LABEL.SharedMap}</Text>
-                            </TouchableOpacity>
-                        );
-                    }
+                    // 공유지도는 아직 연결할 화면이 없어서 임시 (지금은 탭에서 제외)
+                    // if (name === 'SharedMap') {
+                    //     return (
+                    //         <TouchableOpacity key="SharedMap" style={styles.tab} onPress={() => {}}>
+                    //             <IconSharedMap size={24} color={colors.icon.inverse} active={false} />
+                    //             <Text style={styles.label}>{TAB_LABEL.SharedMap}</Text>
+                    //         </TouchableOpacity>
+                    //     );
+                    // }
 
-                    // 지금 탭이 가리키는 화면 
+                    // 지금 탭이 가리키는 화면
                     const route = state.routes.find(r => r.name === name);
                     if (!route) return null;
                     const index = state.routes.indexOf(route);

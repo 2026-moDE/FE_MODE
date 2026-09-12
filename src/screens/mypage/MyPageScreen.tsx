@@ -168,6 +168,7 @@ export default function MypageScreen() {
           recentReviews={recentReviews}
           isReviewsLoading={isReviewsLoading}
           isLoadingMore={isLoadingMoreReviews}
+          showFriendBadge
           onDeleteReview={handleDeleteReview}
           onEditComment={handleEditReviewComment}
         />
