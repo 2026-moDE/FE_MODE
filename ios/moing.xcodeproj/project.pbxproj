@@ -12,6 +12,7 @@
 		2E2B6F045077CE2B34425853 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		3DC85D5A61A349B7B5840A30 /* Pretendard-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8CECC3B807B24798B4E93555 /* Pretendard-Bold.otf */; };
 		5FD54AF798494ED393E38929 /* Pretendard-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5FB1A353F08B4B1182616D83 /* Pretendard-Medium.otf */; };
+		6321FAC059678DD2217F9BCC /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 185849D64AD7803BAACD1428 /* AppIcon.icon */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		7D6163C64941D8020B8E2DB4 /* Pretendard-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AB23282459FAF6D589102FE2 /* Pretendard-SemiBold.ttf */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -25,6 +26,7 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = moing/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = moing/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = moing/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		185849D64AD7803BAACD1428 /* AppIcon.icon */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		28190A483007C4BF0011052B /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		28190A4A3007C81B0011052B /* moing.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = moing.entitlements; path = moing/moing.entitlements; sourceTree = "<group>"; };
 		3BF2415D15A70C7A5135D931 /* libPods-moing.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-moing.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -94,6 +96,7 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
 				D9578DA5BC614A4F9D29B5C2 /* Resources */,
+				185849D64AD7803BAACD1428 /* AppIcon.icon */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -197,6 +200,7 @@
 				7D6163C64941D8020B8E2DB4 /* Pretendard-SemiBold.ttf in Resources */,
 				2E2B6F045077CE2B34425853 /* PrivacyInfo.xcprivacy in Resources */,
 				28190A493007C4BF0011052B /* GoogleService-Info.plist in Resources */,
+				6321FAC059678DD2217F9BCC /* AppIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -318,11 +322,12 @@
 			baseConfigurationReference = 965A86F1CBF995D3F278CD25 /* Pods-moing.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = moing/moing.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = CZ26P5Y37K;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = moing/Info.plist;
@@ -354,11 +359,12 @@
 			baseConfigurationReference = DF87524E3CEE6784A73C42E8 /* Pods-moing.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = moing/moing.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = CZ26P5Y37K;
 				INFOPLIST_FILE = moing/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
