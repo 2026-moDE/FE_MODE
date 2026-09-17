@@ -1,6 +1,5 @@
 import {useState} from 'react';
-import {launchImageLibrary} from 'react-native-image-picker';
-import ImageResizer from '@bam.tech/react-native-image-resizer';
+import ImagePicker from 'react-native-image-crop-picker';
 import {getPresignedUrl, uploadImageToS3} from '../api/imageUpload';
 
 export type PickedProfileImage = {
@@ -12,53 +11,44 @@ export type PickedProfileImage = {
 export const useProfileImageUpload = () => {
   const [uploading, setUploading] = useState(false);
 
-  // 1. 갤러리에서 사진만 선택
+  // 1. 갤러리에서 사진 선택 + 확대/축소·위치 조정(크롭)
   const pickProfileImage = async (): Promise<PickedProfileImage | null> => {
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      selectionLimit: 1,
-      quality: 0.9,
-    });
-
-    if (result.didCancel) {
-      return null;
-    }
-
-    const asset = result.assets?.[0];
-
-    if (!asset?.uri) {
-      return null;
-    }
-
-    const type = asset.type ?? 'image/jpeg';
-    const extension = type.split('/')[1] ?? 'jpg';
-
-    // 수동으로 90도/270도 돌리지 않고 EXIF 방향을 실제 픽셀에 반영한 새 파일 생성.
-    // 이걸 안 하면 세로로 찍은 사진이 눕거나 뒤집힌 채로 업로드됨 (리뷰 사진과 동일한 처리)
-    let uri = asset.uri;
     try {
-      const normalized = await ImageResizer.createResizedImage(
-        asset.uri,
-        asset.width ?? 1024,
-        asset.height ?? 1024,
-        'JPEG',
-        100,
-        0,
-        undefined,
-        false,
-        {mode: 'contain', onlyScaleDown: true},
-      );
-      uri = normalized.uri;
-    } catch (error) {
-      // 정규화 실패해도 원본으로 업로드는 되게 함 (각도만 틀어질 수 있음)
-      console.log('프로필 이미지 방향 보정 실패:', error);
-    }
+      const image = await ImagePicker.openPicker({
+        mediaType: 'photo',
+        cropping: true,
+        width: 800,
+        height: 800,
+        cropperCircleOverlay: false,
+        freeStyleCropEnabled: false,
+        compressImageQuality: 0.9,
+        hideBottomControls: true,
+        // 앱 프리뷰 화면(검정 배경)과 톤을 맞춤. 안드로이드 UCrop 툴바는 아이콘 색을
+        // 개별 지정할 수 없어(뒤로가기/체크 아이콘이 같은 색을 공유) 전부 흰색으로 통일
+        cropperToolbarTitle: '프로필 수정',
+        cropperToolbarColor: '#050509',
+        cropperToolbarWidgetColor: '#FFFFFF',
+        cropperStatusBarLight: true,
+        cropperActiveWidgetColor: '#FFFD6D',
+      });
 
-    return {
-      uri,
-      fileName: asset.fileName ?? `profile_${Date.now()}.${extension}`,
-      type,
-    };
+      const type = image.mime ?? 'image/jpeg';
+      const extension = type.split('/')[1] ?? 'jpg';
+
+      return {
+        uri: image.path,
+        fileName: image.filename ?? `profile_${Date.now()}.${extension}`,
+        type,
+      };
+    } catch (error: any) {
+      // 사용자가 취소한 경우는 에러가 아님
+      if (error?.code === 'E_PICKER_CANCELLED') {
+        return null;
+      }
+
+      console.log('프로필 이미지 선택/크롭 실패:', error);
+      return null;
+    }
   };
 
   // 2. 확인 누른 뒤 S3 업로드
