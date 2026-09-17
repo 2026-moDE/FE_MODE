@@ -27,6 +27,7 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconSearch from '../../assets/icons/IconSearch';
 import IconFriendAdd from '../../assets/icons/IconFriendAdd';
 import ProfileAvatar from '../../components/common/ProfileAvatar';
+import FriendDeleteModal from '../../components/mypage/FriendDeleteModal';
 
 
 type FriendTab = 'friends' | 'requests';
@@ -194,6 +195,7 @@ export default function FollowListScreen() {
   const [requests, setRequests] = useState<FriendUser[]>([]);
   const [openFriendId, setOpenFriendId] = useState<number | null>(null);
   const [keyword, setKeyword] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const loadFriends = useCallback(async () => {
     try {
@@ -248,8 +250,18 @@ export default function FollowListScreen() {
     return users.filter(user => user.nickname.includes(trimmed));
   }, [users, keyword, activeTab]);
 
-  const handleDelete = async (id: number) => {
+  const handleDeleteRequest = (id: number) => {
     setOpenFriendId(null);
+    setDeleteTargetId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteTargetId === null) {
+      return;
+    }
+
+    const id = deleteTargetId;
+    setDeleteTargetId(null);
 
     try {
       await deleteFriend(id);
@@ -339,6 +351,7 @@ export default function FollowListScreen() {
 
         <FlatList
           data={filteredUsers}
+          extraData={openFriendId}
           keyExtractor={item => String(item.id)}
           style={styles.list}
           contentContainerStyle={styles.listContent}
@@ -348,7 +361,7 @@ export default function FollowListScreen() {
                 item={item}
                 isOpen={item.id === openFriendId}
                 onOpenChange={isOpen => setOpenFriendId(isOpen ? item.id : null)}
-                onDelete={handleDelete}
+                onDelete={handleDeleteRequest}
                 onPress={friend =>
                   navigation.navigate('UserMyPage', {
                     userId: friend.id,
@@ -370,6 +383,12 @@ export default function FollowListScreen() {
           }
         />
       </Pressable>
+
+      <FriendDeleteModal
+        visible={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onDelete={handleDeleteConfirm}
+      />
     </SafeAreaView>
   );
 }
