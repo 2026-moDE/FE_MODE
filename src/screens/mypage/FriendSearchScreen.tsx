@@ -1,7 +1,7 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {View, Text, StyleSheet, StatusBar, TouchableOpacity, TextInput, FlatList, Image} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 import {searchUsers, sendFriendRequest, FriendStatus} from '../../api/friend';
 import {fontFamily} from '../../constants/typography';
@@ -26,10 +26,31 @@ export default function FriendSearchScreen() {
   const [results, setResults] = useState<SearchResultUser[]>([]);
   const inputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keywordRef = useRef(keyword);
+
+  useEffect(() => {
+    keywordRef.current = keyword;
+  }, [keyword]);
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 100);
     return () => clearTimeout(timer);
+  }, []);
+
+  const runSearch = useCallback(async (trimmed: string) => {
+    try {
+      const users = await searchUsers(trimmed);
+      setResults(
+        users.map(user => ({
+          id: user.user_id,
+          nickname: user.nickname,
+          profileImageUrl: user.profile_image_url,
+          friendStatus: user.friend_status,
+        })),
+      );
+    } catch (error) {
+      console.log('[유저 검색 실패]', error);
+    }
   }, []);
 
   useEffect(() => {
@@ -44,20 +65,8 @@ export default function FriendSearchScreen() {
       return;
     }
 
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const users = await searchUsers(trimmed);
-        setResults(
-          users.map(user => ({
-            id: user.user_id,
-            nickname: user.nickname,
-            profileImageUrl: user.profile_image_url,
-            friendStatus: user.friend_status,
-          })),
-        );
-      } catch (error) {
-        console.log('[유저 검색 실패]', error);
-      }
+    debounceRef.current = setTimeout(() => {
+      runSearch(trimmed);
     }, 300);
 
     return () => {
@@ -65,7 +74,18 @@ export default function FriendSearchScreen() {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [keyword]);
+  }, [keyword, runSearch]);
+
+  // 프로필 화면 등을 다녀오면 friend_status가 바뀌었을 수 있어 focus될 때마다 재검색
+  useFocusEffect(
+    useCallback(() => {
+      const trimmed = keywordRef.current.trim();
+
+      if (trimmed) {
+        runSearch(trimmed);
+      }
+    }, [runSearch]),
+  );
 
   const handleSendRequest = async (id: number) => {
     try {
@@ -106,6 +126,7 @@ export default function FriendSearchScreen() {
 
       <FlatList
         data={results}
+        extraData={results}
         keyExtractor={item => String(item.id)}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.listContent}
