@@ -467,9 +467,7 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
         ) : (
           !!review.comment && (
             <View style={styles.cardCommentOverlay} pointerEvents="none">
-              <Text style={styles.cardCommentText} numberOfLines={2}>
-                {review.comment}
-              </Text>
+              <Text style={styles.cardCommentText}>{review.comment}</Text>
             </View>
           )
         )}
@@ -654,11 +652,14 @@ const styles = StyleSheet.create({
 
   cardCommentOverlay: {
     position: 'absolute',
-    top: '50%',
+    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
 
   cardCommentText: {
