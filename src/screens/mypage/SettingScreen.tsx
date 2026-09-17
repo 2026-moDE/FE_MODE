@@ -19,6 +19,7 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {logoutApi, withdrawApi} from '../../api/auth';
 import {useAuth} from '../../context/AuthContext';
 import WithdrawModal from '../../components/mypage/WithdrawModal';
+import LogoutModal from '../../components/mypage/LogoutModal';
 
 const TOGGLE_TRACK_WIDTH = 44;
 const TOGGLE_TRACK_HEIGHT = 24;
@@ -66,31 +67,25 @@ export default function SettingScreen() {
   const [commentAllowed, setCommentAllowed] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogoutConfirm = async () => {
     if (isProcessing) {
       return;
     }
 
-    Alert.alert('로그아웃', '로그아웃 하시겠어요?', [
-      {text: '취소', style: 'cancel'},
-      {
-        text: '로그아웃',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            setIsProcessing(true);
-            await logoutApi();
-            setIsLoggedIn(false);
-          } catch (error) {
-            console.log('[로그아웃 실패]', error);
-            Alert.alert('로그아웃 실패', '잠시 후 다시 시도해주세요.');
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-      },
-    ]);
+    try {
+      setIsProcessing(true);
+      await logoutApi();
+      setLogoutModalVisible(false);
+      setIsLoggedIn(false);
+    } catch (error) {
+      console.log('[로그아웃 실패]', error);
+      setLogoutModalVisible(false);
+      Alert.alert('로그아웃 실패', '잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleWithdraw = async () => {
@@ -163,7 +158,7 @@ export default function SettingScreen() {
           activeOpacity={0.7}
           style={styles.linkRow}
           disabled={isProcessing}
-          onPress={handleLogout}>
+          onPress={() => setLogoutModalVisible(true)}>
           <Text style={styles.rowText}>로그아웃</Text>
         </TouchableOpacity>
 
@@ -182,6 +177,12 @@ export default function SettingScreen() {
         visible={withdrawModalVisible}
         onClose={() => setWithdrawModalVisible(false)}
         onWithdraw={handleWithdraw}
+      />
+
+      <LogoutModal
+        visible={logoutModalVisible}
+        onClose={() => setLogoutModalVisible(false)}
+        onLogout={handleLogoutConfirm}
       />
     </SafeAreaView>
   );
