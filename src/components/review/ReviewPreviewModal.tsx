@@ -15,9 +15,6 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import IconGlobe from '../../assets/icons/IconGlobe';
-import IconStar from '../../assets/icons/IconStar';
-
-export type ReviewVisibility = 'all' | 'friends';
 
 type ReviewPreviewModalProps = {
   visible: boolean;
@@ -25,7 +22,7 @@ type ReviewPreviewModalProps = {
   reviewText: string;
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: (visibility: ReviewVisibility) => void;
+  onSubmit: () => void;
 };
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -75,20 +72,10 @@ const ReviewPreviewModal = ({
               <Pressable
                 style={[styles.visibilityButton, isSubmitting && styles.visibilityButtonDisabled]}
                 disabled={isSubmitting}
-                onPress={() => onSubmit('all')}>
+                onPress={onSubmit}>
                 <IconGlobe size={16} color={colors.text.inverse} />
                 <Text allowFontScaling={false} style={styles.visibilityTextAll}>
                   전체 공개
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.visibilityButton, isSubmitting && styles.visibilityButtonDisabled]}
-                disabled={isSubmitting}
-                onPress={() => onSubmit('friends')}>
-                <IconStar size={16} color={colors.text.brand} filled />
-                <Text allowFontScaling={false} style={styles.visibilityTextFriends}>
-                  친구 공개
                 </Text>
               </Pressable>
             </View>
@@ -213,13 +200,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fontFamily.bold,
     color: colors.text.inverse,
-    includeFontPadding: false,
-  },
-
-  visibilityTextFriends: {
-    fontSize: 14,
-    fontFamily: fontFamily.bold,
-    color: colors.text.brand,
     includeFontPadding: false,
   },
 });

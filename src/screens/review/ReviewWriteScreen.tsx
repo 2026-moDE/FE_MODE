@@ -15,10 +15,7 @@ import {useLocation} from '../../context/LocationContext';
 import {createReview, verifyPlaceLocation, getReviewImagePresignedUrl, type CongestionLevel} from '../../api/review';
 import {uploadImageToS3} from '../../api/imageUpload';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
-import ReviewPreviewModal, {type ReviewVisibility} from '../../components/review/ReviewPreviewModal';
-
-const getVisibilityValue = (visibility: ReviewVisibility): 'PUBLIC' | 'FRIENDS' =>
-  visibility === 'all' ? 'PUBLIC' : 'FRIENDS';
+import ReviewPreviewModal from '../../components/review/ReviewPreviewModal';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
@@ -93,7 +90,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       navigation.navigate('ReviewCamera');
     };
 
-  const handleSubmit = async (visibility: ReviewVisibility) => {
+  const handleSubmit = async () => {
     if (isSubmitting) return;
 
     // 조용히 return하면 버튼이 안 눌리는 것처럼 보여서, 막힌 이유를 항상 알려줌
@@ -142,7 +139,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
         place_id: Number(placeId),
         image_url,
         congestion_level: getCongestionLevel(selectedCongestion),
-        visibility: getVisibilityValue(visibility),
+        visibility: 'PUBLIC' as const,
         latitude,
         longitude,
         ...(reviewText.trim() && {comment: reviewText.trim()}),
