@@ -1,6 +1,7 @@
 import axios, {InternalAxiosRequestConfig} from 'axios';
 import {getAccessToken} from '../storage/tokenStorage';
 import {refreshAccessTokenApi} from './auth';
+import {notifySessionExpired} from '../context/AuthContext';
 
 export const BASE_URL = 'http://moing.co.kr:8080';
 
@@ -70,7 +71,10 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
-        console.log('[토큰 재발급 실패]');
+        console.log('[토큰 재발급 실패] 로그인 페이지로 이동');
+        // refresh_token으로도 갱신이 안 되면 더 이상 재시도할 방법이 없으므로
+        // 로그인 상태를 끊어서 RootNavigation이 로그인 화면으로 전환하게 한다.
+        notifySessionExpired();
         return Promise.reject(refreshError);
       }
     }
