@@ -13,7 +13,7 @@ type Props = {
 export default function KakaoLoginButton({onPress, disabled, style}: Props) {
     return (
         <SocialLoginButton
-            label="카카오톡으로 계속하기"
+            label="카카오톡으로 로그인"
             icon={
                 <Image
                     source={kakaoLogo}
