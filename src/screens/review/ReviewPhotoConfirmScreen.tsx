@@ -52,6 +52,7 @@ const checkYellowIcon = require('../../assets/image/check_yellow.png');
 const mdiBlurIcon = require('../../assets/image/mdi_blur.png');
 const eraserIcon = require('../../assets/image/eraser.png');
 const blurRefreshIcon = require('../../assets/image/blur_refresh.png');
+const refreshCameraIcon = require('../../assets/image/refresh_camera.png');
 
 const DESIGN_WIDTH = 393;
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -94,6 +95,8 @@ export default function ReviewPhotoConfirmScreen() {
   const [showBlurToast, setShowBlurToast] = useState(true);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [aiBubbleWidth, setAiBubbleWidth] = useState(0);
+  // 말풍선 꼬리를 블러 버튼 중앙에 맞추기 위한 블러 버튼 영역의 중심 x (화면 기준)
+  const [blurButtonCenterX, setBlurButtonCenterX] = useState(0);
 
   const [exitModalVisible, setExitModalVisible] = useState(false);
 
@@ -242,6 +245,11 @@ const handleConfirm = async () => {
     navigation.navigate('ReviewWrite', {photoUri, placeId, placeName});
   }
 };
+
+  // 카메라 화면으로 돌아가서 다시 촬영 (장소 파라미터는 카메라 화면에 그대로 남아 있음)
+  const handleRetake = () => {
+    navigation.goBack();
+  };
 
   const handleBlurPress = () => {
     setSelectedTool('blur');
@@ -409,7 +417,7 @@ const handleConfirm = async () => {
         </View>
       </View>
 
-      {/* 하단 툴바: 블러 버튼 + 안내 말풍선(버튼 위 12px) */}
+      {/* 하단 툴바: 다시 찍기 / 블러 버튼 + 안내 말풍선(버튼 위 12px, 꼬리는 블러 버튼을 가리킴) */}
       {!isBlurMode ? (
         <View style={styles.toolSection}>
           {showBlurToast && (
@@ -419,24 +427,49 @@ const handleConfirm = async () => {
               <Text style={styles.aiBubbleText}>
                 블러 기능으로 가리고 싶은 부분을 가릴 수 있어요
               </Text>
-              {aiBubbleWidth > 0 && (
+              {aiBubbleWidth > 0 && blurButtonCenterX > 0 && (
                 <View
                   style={[
                     styles.aiBubbleTail,
-                    {left: aiBubbleWidth / 2 - px(8)},
+                    {
+                      // 말풍선은 화면 가운데 정렬이므로 왼쪽 끝 = (화면 너비 - 말풍선 너비) / 2
+                      left:
+                        blurButtonCenterX -
+                        (SCREEN_WIDTH - aiBubbleWidth) / 2 -
+                        px(8),
+                    },
                   ]}
                 />
               )}
             </View>
           )}
 
-          <TouchableOpacity
-            style={styles.toolButton}
-            activeOpacity={0.8}
-            onPress={handleBlurPress}>
-            <Image source={mdiBlurIcon} style={styles.toolIcon} />
-            <Text style={styles.toolText}>블러</Text>
-          </TouchableOpacity>
+          <View style={styles.toolRow}>
+            <View style={styles.toolCell}>
+              <TouchableOpacity
+                style={styles.toolButton}
+                activeOpacity={0.8}
+                onPress={handleRetake}>
+                <Image source={refreshCameraIcon} style={styles.toolIcon} />
+                <Text style={styles.toolText}>다시 찍기</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View
+              style={styles.toolCell}
+              onLayout={event => {
+                const {x, width} = event.nativeEvent.layout;
+                setBlurButtonCenterX(x + width / 2);
+              }}>
+              <TouchableOpacity
+                style={styles.toolButton}
+                activeOpacity={0.8}
+                onPress={handleBlurPress}>
+                <Image source={mdiBlurIcon} style={styles.toolIcon} />
+                <Text style={styles.toolText}>블러</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       ) : (
         <View style={styles.blurToolSection}>
@@ -620,6 +653,16 @@ const styles = StyleSheet.create({
     bottom: px(spacing['4xl']),
     flexDirection: 'column',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // 다시 찍기 / 블러 버튼을 화면 좌우 절반에 하나씩 가운데 배치
+  toolRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toolCell: {
+    flex: 1,
     alignItems: 'center',
   },
   toolButton: {
