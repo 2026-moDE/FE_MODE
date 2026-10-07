@@ -90,5 +90,5 @@ export type ReviewStackParamList = {
     reviewText?: string;
   };
   ReviewWrite: { photoUri: string; placeId?: number; placeName?: string; congestion?: string; reviewText?: string };
-  ReviewComplete: undefined;
+  ReviewComplete: { photoUri: string; placeId: number; placeName: string; reviewId: number };
 };

@@ -7,7 +7,7 @@ import type {ReviewStackParamList} from '../../types/navigation';
 import {CommonActions} from '@react-navigation/native';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -15,7 +15,6 @@ import {useLocation} from '../../context/LocationContext';
 import {createReview, verifyPlaceLocation, getReviewImagePresignedUrl, type CongestionLevel} from '../../api/review';
 import {uploadImageToS3} from '../../api/imageUpload';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
-import ReviewPreviewModal from '../../components/review/ReviewPreviewModal';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
@@ -47,6 +46,17 @@ const CHIP_WIDTHS: Record<CongestionType, number> = {
   '매우 붐벼요': 88,
 };
 
+// 선택된 칩의 혼잡도별 배경 / 테두리 / 글자 색
+const CHIP_SELECTED_COLORS: Record<
+  CongestionType,
+  {background: string; border: string; text: string}
+> = {
+  한산해요: {background: '#CFFFC1', border: '#78D73D', text: colors.text.subtle},
+  적당해요: {background: colors.brand.primary, border: colors.border.brand, text: colors.text.brandDarker},
+  붐벼요: {background: '#FFD18D', border: '#D7943D', text: colors.text.brandDarker},
+  '매우 붐벼요': {background: '#FFA1A1', border: '#D73D3D', text: colors.text.subtle},
+};
+
 const CONGESTION_DESCRIPTIONS: Record<CongestionType, string> = {
   한산해요: '대기 없이 바로 이용했어요',
   적당해요: '조금 붐볐지만 괜찮아요',
@@ -67,7 +77,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
   const [reviewText, setReviewText] = useState(savedReviewText ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exitModalVisible, setExitModalVisible] = useState(false);
-  const [previewModalVisible, setPreviewModalVisible] = useState(false);
 
   const now = new Date();
   const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -144,11 +153,35 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
         longitude,
         ...(reviewText.trim() && {comment: reviewText.trim()}),
       };
-      await createReview(reviewBody);
+      const createdReview = await createReview(reviewBody);
       console.log('[리뷰] 등록 완료');
 
-      setPreviewModalVisible(false);
-      navigation.navigate('ReviewComplete');
+      // 전체 스택을 [홈 탭, 리뷰 스택(완료 화면 하나)]으로 교체
+      // → 완료 화면에서 iOS 스와이프 / 안드로이드 뒤로가기 시 작성 화면이 아니라 홈으로 감
+      navigation.getParent()?.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            {name: 'Tab', params: {screen: 'Home'}},
+            {
+              name: 'ReviewStack',
+              state: {
+                routes: [
+                  {
+                    name: 'ReviewComplete',
+                    params: {
+                      photoUri,
+                      placeId: Number(placeId),
+                      placeName,
+                      reviewId: createdReview.id,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
     } catch (error: any) {
       Alert.alert('등록 실패', error?.response?.data?.message || error?.message || '알 수 없는 오류가 발생했어요.');
     } finally {
@@ -231,20 +264,31 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             <View style={styles.chipRow}>
               {CONGESTION_OPTIONS.map(option => {
                 const isSelected = selectedCongestion === option;
+                const selectedColors = CHIP_SELECTED_COLORS[option];
 
                 return (
                   <Pressable
                     key={option}
                     style={[
                       styles.chip,
-                      {width: CHIP_WIDTHS[option]},
-                      isSelected && styles.chipSelected,
+                      // 시안 너비를 최소값으로 두고, 글자가 더 길면(선택 시 굵어짐) 늘어나도록
+                      {minWidth: CHIP_WIDTHS[option]},
+                      isSelected && [
+                        styles.chipSelected,
+                        {
+                          backgroundColor: selectedColors.background,
+                          borderColor: selectedColors.border,
+                        },
+                      ],
                     ]}
                     onPress={() => setSelectedCongestion(option)}>
                     <Text
                       style={[
                         styles.chipText,
-                        isSelected && styles.chipTextSelected,
+                        isSelected && [
+                          styles.chipTextSelected,
+                          {color: selectedColors.text},
+                        ],
                       ]}>
                       {option}
                     </Text>
@@ -286,7 +330,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             styles.submitButton,
             isSubmitActive ? styles.submitButtonActive : styles.submitButtonDisabled,
           ]}
-          onPress={() => setPreviewModalVisible(true)}
+          onPress={handleSubmit}
           disabled={!isSubmitActive}>
           <Text
             style={[
@@ -296,14 +340,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             ✓  등록하기
           </Text>
         </Pressable>
-          <ReviewPreviewModal
-            visible={previewModalVisible}
-            photoUri={photoUri}
-            reviewText={reviewText}
-            isSubmitting={isSubmitting}
-            onClose={() => setPreviewModalVisible(false)}
-            onSubmit={handleSubmit}
-          />
           <ReviewExitModal
             visible={exitModalVisible}
             onClose={() => setExitModalVisible(false)}
@@ -507,23 +543,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  // 색은 혼잡도별로 CHIP_SELECTED_COLORS에서 지정
   chipSelected: {
-    backgroundColor: colors.brand.primary,
     borderWidth: 1.5,
-    borderColor: colors.border.brand,
   },
 
+  // Body/B6
   chipText: {
-    fontSize: 13,
-    fontFamily: fontFamily.medium,
+    ...typography.b6,
     color: '#4B5563',
-    lineHeight: 18,
     textAlign: 'center',
   },
 
+  // Body/B5 (색은 혼잡도별로 CHIP_SELECTED_COLORS에서 지정)
   chipTextSelected: {
-    color: colors.text.brandDarker,
-    fontFamily: fontFamily.bold,
+    ...typography.b5,
   },
 
   reviewSection: {
@@ -578,10 +612,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.button.secondaryFill,
   },
 
+  // Body/B3 - 리뷰 플로우 하단 버튼 공통
   submitText: {
-    fontSize: 18,
-    fontFamily: fontFamily.bold,
-    lineHeight: 21,
+    ...typography.b3,
   },
 
   submitTextDisabled: {

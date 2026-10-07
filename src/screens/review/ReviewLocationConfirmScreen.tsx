@@ -5,7 +5,7 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {NaverMapView, NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 
 import type {ReviewStackParamList} from '../../types/navigation';
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -376,10 +376,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     },
 
+    // Body/B3 - 리뷰 플로우 하단 버튼 공통
     noButtonText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 21,
+    ...typography.b3,
     color: '#B8BDC7',
     includeFontPadding: false,
     },
@@ -393,10 +392,9 @@ const styles = StyleSheet.create({
     marginRight: spacing.s,
     },
 
+    // Body/B3 - 리뷰 플로우 하단 버튼 공통
     yesButtonText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 21,
+    ...typography.b3,
     color: colors.text.inverse,
     includeFontPadding: false,
     },
@@ -459,10 +457,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // Body/B3 - 리뷰 플로우 하단 버튼 공통
   modalButtonText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 18,
-    lineHeight: 21,
+    ...typography.b3,
     color: colors.text.inverse,
     includeFontPadding: false,
   },
