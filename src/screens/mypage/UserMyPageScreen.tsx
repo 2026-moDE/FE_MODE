@@ -1,4 +1,4 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {StyleSheet, StatusBar, ScrollView, NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute, useFocusEffect} from '@react-navigation/native';
@@ -6,13 +6,14 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RouteProp} from '@react-navigation/native';
 
 import {colors} from '../../constants/colors';
-import ProfileHeaderCard from '../../components/mypage/ProfileHeaderCard';
+import PieceProfileHeader from '../../components/mypage/PieceProfileHeader';
 import FriendActionButton from '../../components/mypage/FriendActionButton';
 import RecentReviewSection, {RecentReviewSectionRef} from '../../components/mypage/RecentReviewSection';
 import FriendLiveReviewSection from '../../components/mypage/FriendLiveReviewSection';
 import FriendProfileMenu from '../../components/mypage/FriendProfileMenu';
 import {getUserProfile, getUserReviews, UserProfile, UserReview} from '../../api/user';
 import {sendFriendRequest, deleteFriend} from '../../api/friend';
+import {getUserPieces, type Piece} from '../../api/piece';
 import {AppStackParamList} from '../../types/navigation';
 
 const REVIEW_PAGE_LIMIT = 20;
@@ -37,6 +38,9 @@ export default function UserMyPageScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{top: number; right: number} | null>(null);
   const recentReviewSectionRef = useRef<RecentReviewSectionRef>(null);
+  const [pieces, setPieces] = useState<Piece[]>([]);
+  // 화면에 들어올 때마다 조각이 다시 떨어져 쌓이는 애니메이션을 보여주려고 보드를 새로 마운트시킨다
+  const [boardRunId, setBoardRunId] = useState(0);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -119,6 +123,29 @@ export default function UserMyPageScreen() {
 
   const isFriend = profile?.friend_status === 'ACCEPTED';
 
+  const loadPieces = useCallback(async () => {
+    try {
+      const data = await getUserPieces(userId);
+
+      setPieces(data.pieces);
+    } catch (error) {
+      console.log('[다른 유저 조각 목록 조회 실패]', error);
+      setPieces([]);
+    } finally {
+      setBoardRunId(prev => prev + 1);
+    }
+  }, [userId]);
+
+  // 친구가 아니면 조각 목록은 403이라 아예 부르지 않는다
+  useEffect(() => {
+    if (!isFriend) {
+      setPieces([]);
+      return;
+    }
+
+    loadPieces();
+  }, [isFriend, loadPieces]);
+
   // TODO: 유저 신고 api/화면 아직 없음 - 연결 준비되면 붙이기
   const handlePressReport = () => {
     console.log('[유저 신고] TODO: 아직 구현 안 됨', {userId});
@@ -134,7 +161,9 @@ export default function UserMyPageScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    // 조각 보드가 상태바 아래까지 올라붙어야 해서 위쪽 세이프에어리어는 주지 않는다
+    // (보드가 insets.top을 보고 자리를 잡음)
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background.white} />
 
       <ScrollView
@@ -143,13 +172,18 @@ export default function UserMyPageScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={200}>
-        <ProfileHeaderCard
+        <PieceProfileHeader
           profile={profile}
           isProfileLoading={isProfileLoading}
+          pieces={pieces}
+          boardRunId={boardRunId}
           showSettings={false}
           isFriend={isFriend}
+          // 남의 보드라 옮기거나 크기를 바꿀 수 없다 (위치 저장은 내 보드 전용 API)
+          readOnly
           onPressBack={() => navigation.goBack()}
-          onPressSettings={() => {}}
+          onPlacePieces={() => {}}
+          onEditPiece={() => {}}
           onPressMenu={
             isFriend
               ? anchor => {

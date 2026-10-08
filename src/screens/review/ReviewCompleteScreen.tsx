@@ -10,6 +10,7 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconArchive from '../../assets/icons/IconArchive';
 import ProfileAvatar from '../../components/common/ProfileAvatar';
 import {getMyProfile, type MyProfile} from '../../api/mypage';
+import {isSubjectExtractionAvailable} from '../../native/SubjectExtractor';
 import {fontFamily, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing, padding, gap} from '../../constants/spacing';
@@ -50,9 +51,20 @@ const ReviewCompleteScreen = ({navigation, route}: Props) => {
     );
   };
 
-  const handleCollectPieces = () => {
-    // TODO: 아카이빙 플로우 연결
-    Alert.alert('준비 중', '아카이빙 기능은 준비 중이에요.');
+  // 조각 누끼는 iOS 17의 Vision API로만 되므로, 안 되는 기기에서는 진입 자체를 막는다
+  const handleCollectPieces = async () => {
+    if (!(await isSubjectExtractionAvailable())) {
+      Alert.alert(
+        '사용할 수 없어요',
+        '조각 모으기는 iOS 17 이상에서만 사용할 수 있어요.',
+      );
+      return;
+    }
+
+    navigation.getParent()?.navigate('PieceStack', {
+      screen: 'PieceCamera',
+      params: {reviewId, placeId, placeName},
+    } as never);
   };
 
   return (
@@ -149,13 +161,12 @@ const styles = StyleSheet.create({
     paddingTop: 69,
   },
 
-  // 199x267 사진 + 1px 흰색 점선 테두리
+  // 199x267 사진 + 1px 흰색 실선 테두리
   photoWrapper: {
     width: 199,
     height: 267,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderStyle: 'dashed',
     borderColor: colors.border.inverse,
     overflow: 'hidden',
     backgroundColor: colors.surface.subtleDarker,

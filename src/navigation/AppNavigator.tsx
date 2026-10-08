@@ -8,7 +8,9 @@ import PlaceDetailScreen from '../screens/placeDetail/PlaceDetailScreen';
 import MyPageScreen from '../screens/mypage/MyPageScreen';
 import CustomTabBar from '../components/map/CustomTabBar';
 import ReviewStack from './ReviewStack';
+import PieceStack from './PieceStack';
 import ProfileEditScreen from '../screens/mypage/ProfileEditScreen';
+import PieceEditScreen from '../screens/mypage/PieceEditScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
 import MyMapScreen from '../screens/mypage/MyMapScreen';
@@ -47,7 +49,9 @@ export default function AppNavigator() {
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="PlaceDetail" component={PlaceDetailScreen} />
       <Stack.Screen name="ReviewStack" component={ReviewStack} />
+      <Stack.Screen name="PieceStack" component={PieceStack} />
       <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <Stack.Screen name="PieceEdit" component={PieceEditScreen} />
       <Stack.Screen name='Notification' component={NotificationScreen}/>
       <Stack.Screen name='ReviewReport' component={ReviewReportScreen}/>
       <Stack.Screen name='MyMap' component={MyMapScreen} options={{animation: 'fade'}} />

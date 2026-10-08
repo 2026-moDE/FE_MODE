@@ -40,9 +40,23 @@ export type AppStackParamList = {
     | {screen: keyof ReviewStackParamList; params?: object}
     | undefined;
 
+  PieceStack:
+    | {screen: keyof PieceStackParamList; params?: object}
+    | undefined;
+
   ProfileEdit: {
     nickname: string;
     profileImageUrl: string | null;
+  };
+
+  // 마이페이지 조각 보드에서 조각 이름표를 눌러 진입
+  PieceEdit: {
+    pieceId: number;
+    imageUrl: string;
+    name: string | null;
+    placeName: string;
+    createdAt: string;
+    visibility: 'PUBLIC' | 'PRIVATE';
   };
 
   Notification: undefined;
@@ -91,4 +105,23 @@ export type ReviewStackParamList = {
   };
   ReviewWrite: { photoUri: string; placeId?: number; placeName?: string; congestion?: string; reviewText?: string };
   ReviewComplete: { photoUri: string; placeId: number; placeName: string; reviewId: number };
+};
+
+// 조각 모으기 전용 스택 (후기 등록 완료 화면에서 진입)
+export type PieceStackParamList = {
+  // reviewId: 조각 등록은 "이 리뷰로 만든 조각"이라 리뷰 id가 필요하다 (리뷰 1건당 조각 1개)
+  PieceCamera: { reviewId: number; placeId: number; placeName: string };
+  // 촬영 직후 화면. 여기서 누끼를 따고, 성공하면 윤곽선을 띄운 뒤 확인을 받음
+  PieceDetect: { photoUri: string; reviewId: number; placeId: number; placeName: string };
+  PieceInfo: {
+    photoUri: string;
+    cutoutUri: string;
+    reviewId: number;
+    placeId: number;
+    placeName: string;
+    // 촬영 시각 (ISO). 정보 입력 화면의 날짜 표시에만 씀 -
+    // 서버에 저장되는 일시는 원본 리뷰의 작성 시각이라 따로 보내지 않는다
+    capturedAt: string;
+  };
+  PieceComplete: { cutoutUri: string; placeName: string; label: string };
 };
