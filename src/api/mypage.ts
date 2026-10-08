@@ -33,6 +33,7 @@ export type MyReview = {
   comment: string | null;
   created_at: string;
   visibility: 'PUBLIC' | 'FRIENDS';
+  comment_count: number;
 };
 
 export type MyReviewsResponse = {

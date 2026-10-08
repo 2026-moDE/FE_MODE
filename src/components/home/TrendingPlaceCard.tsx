@@ -21,8 +21,15 @@ export default function TrendingPlaceCard({place, onPressMore}: Props) {
     return (
         <View style={styles.card}>
             <View style={styles.header}>
-                <IconLocationOutline size={16} color={colors.icon.inverse} />
-                <Text style={styles.placeName} numberOfLines={1}>{place.name}</Text>
+                <View style={styles.placeNameGroup}>
+                    <IconLocationOutline size={16} color={colors.icon.inverse} />
+                    <Text style={styles.placeName} numberOfLines={1}>{place.name}</Text>
+                </View>
+                <Pressable
+                    style={styles.moreButton}
+                    onPress={() => onPressMore?.(place)}>
+                    <Text style={styles.moreButtonText}>더 알아보기 →</Text>
+                </Pressable>
             </View>
 
             <View style={styles.photoRow}>
@@ -46,11 +53,6 @@ export default function TrendingPlaceCard({place, onPressMore}: Props) {
                 })}
             </View>
 
-            <Pressable
-                style={styles.moreButton}
-                onPress={() => onPressMore?.(place)}>
-                <Text style={styles.moreButtonText}>더 알아보기 →</Text>
-            </Pressable>
         </View>
     );
 }
@@ -69,6 +71,13 @@ const styles = StyleSheet.create({
         shadowRadius: 20,       // Blur 20
     },
     header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: gap.xs,
+    },
+    placeNameGroup: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         gap: gap.xs,
@@ -93,7 +102,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface.muted,
     },
     moreButton: {
-        alignSelf: 'flex-end',
         backgroundColor: colors.surface.subtle,
         borderRadius: radius.full,
         paddingHorizontal: padding.sm,     // 10

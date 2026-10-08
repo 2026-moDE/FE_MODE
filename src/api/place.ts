@@ -9,7 +9,7 @@ type FetchNearbyPlacesParams = {
   radius?: number;                                // 반경
   query?: string;                                 // 카테고리
   filter?: 'all' | 'current' | 'archived';        // 리뷰 기준 필터 (기본 all)
-  visibility?: 'all' | 'friends';
+  visibility?: 'all'; // | 'friends' 친구 공개 임시 비활성화
 };
 
 // 현위치 기준 주변 장소 조회 api → GET /api/places/nearby

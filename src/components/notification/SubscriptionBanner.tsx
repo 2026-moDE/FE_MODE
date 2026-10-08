@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
     wrapper: {
         paddingHorizontal: spacing.xl,
         paddingVertical: spacing.lg,
-        backgroundColor: colors.surface.white,
     },
     banner: {
         flexDirection: 'row',

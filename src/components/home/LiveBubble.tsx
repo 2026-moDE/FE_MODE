@@ -90,7 +90,7 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                     collapsable={false}
                     style={[
                         styles.bubble,
-                        {borderColor: congestionColor ?? colors.surface.white},
+                        {borderColor: congestionColor ?? colors.border.black},
                     ]}>
                     {hasThumbnail ? (
                         <FastImage
@@ -120,7 +120,7 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                 <View
                     style={[
                         styles.tail,
-                        {borderTopColor: congestionColor ?? colors.surface.white},
+                        {borderTopColor: congestionColor ?? colors.border.black},
                     ]}
                 />
             </View>
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
         height: BUBBLE_SIZE,
         borderRadius: radius.md,
         borderWidth: 2,
-        borderColor: colors.surface.white,
+        borderColor: colors.border.black,
         backgroundColor: colors.surface.muted,
         overflow: 'hidden',
     },
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
         borderTopWidth: TAIL_HEIGHT,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        borderTopColor: colors.surface.white,
+        borderTopColor: colors.border.black,
         marginTop: -1,
     },
 });

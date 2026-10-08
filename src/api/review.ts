@@ -27,13 +27,14 @@ export type ReviewDetail = {
     profile_url: string;
   };
   created_at: string;
+  comment_count: number;
 };
 
 export type CreateReviewRequest = {
   place_id: number;
   image_url: string;
   congestion_level: CongestionLevel;
-  visibility: 'PUBLIC' | 'FRIENDS';
+  visibility: 'PUBLIC'; // | 'FRIENDS' 친구 공개 임시 비활성화
   quick_tag?: string;
   comment?: string;
   latitude: number;

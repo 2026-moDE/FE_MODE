@@ -1,9 +1,11 @@
 import React, {useRef, useState} from 'react';
-import {View, Text, Pressable, Animated, StyleSheet, Modal, TextInput, Platform, NativeModules} from 'react-native';
+import {View, Text, Pressable, Animated, StyleSheet, Modal, TextInput, Platform, NativeModules, findNodeHandle} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import BlurOverlay from '../common/BlurOverlay';
 import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
+import {radius} from '../../constants/radius';
+import {gap} from '../../constants/spacing';
 
 const chatIcon = require('../../assets/image/placeDeail_comment.png'); // 파일명에 오타 있음(Detail -> Deail)
 const emojiIcon = require('../../assets/image/placeDetail_emoji.png');       // 타인 리뷰 - 반응 남기기
@@ -17,12 +19,15 @@ const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Emoji_Co
 // 문서화된 값이 아니라 iOS 버전에 따라 안 먹을 수 있는데, 그 경우 평소 키보드가 뜰 뿐이라 앱은 정상 동작함
 const EMOJI_KEYBOARD_TYPE = 124;
 
-// 포커스된 입력창의 키보드를 이모지로 전환 (iOS 전용 네이티브 모듈).
+// 지정된 reactTag의 입력창(=우리가 만든 숨겨진 입력창)만 콕 집어서 키보드를 이모지로 전환 (iOS 전용 네이티브 모듈).
+// reactTag를 넘기는 이유: 예전엔 네이티브가 "지금 앱에서 포커스된 아무 입력창"을 찾아서 바꿨는데,
+// 타이밍이 어긋나면 엉뚱한 입력창(예: 댓글 입력창)을 붙잡아 그 키보드를 영구히 이모지로 고정시켜버리는
+// 버그가 있었음 - 정확히 "이 입력창"이라고 짚어줘서 엉뚱한 곳을 건드릴 수 없게 함
 // 모듈이 없거나 실패해도 그냥 기본 키보드가 뜰 뿐이라 앱 동작에는 지장 없음
-function openEmojiKeyboard() {
-    if (Platform.OS !== 'ios') return;
+function openEmojiKeyboard(reactTag: number | null) {
+    if (Platform.OS !== 'ios' || reactTag == null) return;
     // 실패해도 평소 키보드가 뜰 뿐이라 조용히 무시
-    NativeModules.EmojiKeyboard?.showEmojiKeyboard?.(EMOJI_KEYBOARD_TYPE)?.catch(() => {});
+    NativeModules.EmojiKeyboard?.showEmojiKeyboard?.(reactTag, EMOJI_KEYBOARD_TYPE)?.catch(() => {});
 }
 
 // 안드로이드는 시스템 키보드를 이모지 탭으로 강제 전환하는 공개 API가 없어서,
@@ -76,14 +81,17 @@ type ButtonsProps = {
     onPressEmojiButton: () => void;
     // 본인 리뷰면 "반응 조회", 남의 리뷰면 "반응 남기기" 텍스트 표시
     isOwner: boolean;
+    // 댓글 개수 - 채팅 아이콘 옆에 "댓글 N"으로 표시
+    commentCount: number;
 };
 
 // 리뷰 풀스크린 뷰어 우하단: 채팅 / 이모지 반응 버튼
-export function ReviewPhotoReactionButtons({onOpenChat, selectedEmoji, emojiPop, onPressEmojiButton, isOwner}: ButtonsProps) {
+export function ReviewPhotoReactionButtons({onOpenChat, selectedEmoji, emojiPop, onPressEmojiButton, isOwner, commentCount}: ButtonsProps) {
     return (
         <View style={styles.reactionButtons}>
-            <Pressable style={styles.reactionBtn} hitSlop={10} onPress={onOpenChat}>
+            <Pressable style={[styles.reactionBtn, styles.chatBtn]} hitSlop={10} onPress={onOpenChat}>
                 <FastImage source={chatIcon} style={styles.chatIcon} resizeMode={FastImage.resizeMode.contain} />
+                <Text style={styles.reactionLabel}>댓글 {commentCount}</Text>
             </Pressable>
             {/* 이미 반응을 남겼어도 여기선 바로 취소하지 않고 피커를 열어서, 취소/재선택을 피커 안에서만 하게 함.
                 취소 시 사라지는 애니메이션은 피커 안에서 이미 재생되므로 여기선 등장(선택)만 애니메이션함 */}
@@ -132,9 +140,10 @@ type EmojiPickerProps = {
 
 // 이모지 선택 화면
 export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoji = null, onCancel, anchor}: EmojiPickerProps) {
+    // 반응이 하나라도 선택되어있는지
     // 이미 남긴 반응이 있으면, 그 이모지 외엔 전부 비활성화 - 취소 없이 바로 다른 이모지로 못 바꾸게 함
     const hasSelection = selectedEmoji != null;
-    // 프리셋 4개에 없는 이모지(키보드로 직접 고른 것)를 선택 중인지 - 5번째 슬롯에 표시해야 함
+    // 키보드로 직접 고른 이모지를 선택 중인지 - 5번째 슬롯에 표시해야 함
     const isCustomSelected = hasSelection && !(EMOJIS as string[]).includes(selectedEmoji);
     // 맨 오른쪽 버튼을 누르면 OS 키보드를 띄움. 커스텀 피커가 아니라 애플이 그리는 진짜 이모지 키보드라
     // 검색/최근사용/스킨톤이 전부 시스템 기능 그대로 동작함.
@@ -181,6 +190,7 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoj
                 <BlurOverlay blurAmount={2} iosBlurType="ultraThinMaterial" pointerEvents="none" />
             </Pressable>
             <View style={[styles.picker, pickerPosition]}>
+                {/* // 이모지 돌아가면서 isSelected랑 disabled 확인 */}
                 {EMOJIS.map(emoji => {
                     const isSelected = emoji === selectedEmoji;
                     return (
@@ -204,8 +214,10 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoj
                     );
                 })}
                 {/* 5번째 슬롯: 프리셋 4개에 없는 이모지(키보드로 직접 고른 것)를 선택 중이면, 아이콘 대신
-                    그 이모지를 보여주고 눌러서 취소할 수 있게 함. 선택된 게 없으면 원래 "더보기" 아이콘 */}
+                    그 이모지를 보여주고 눌러서 취소할 수 있게 함. 선택된 게 없으면 원래 더보기 아이콘 */}
                 {isCustomSelected ? (
+                    // disabled는 Pressable이 원래 가지고 있는 prop
+                    // 취소중이라면 비활성화되게
                     <Pressable disabled={isCanceling} onPress={handleCancelPress}>
                         <Text style={styles.emojiText}>{selectedEmoji}</Text>
                     </Pressable>
@@ -231,7 +243,7 @@ export function ReviewPhotoEmojiPicker({visible, onClose, onSelect, selectedEmoj
                 style={styles.hiddenInput}
                 onChangeText={handleChangeText}
                 // focus() 직후엔 아직 first responder가 아니라서, 실제로 포커스된 뒤에 키보드를 전환해야 함
-                onFocus={openEmojiKeyboard}
+                onFocus={() => openEmojiKeyboard(findNodeHandle(inputRef.current))}
                 autoCorrect={false}
                 autoCapitalize="none"
                 caretHidden
@@ -253,7 +265,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        gap: 5,
+        gap: gap.lg, // 댓글(채팅) 버튼 ↔ 이모지 반응 버튼 사이 간격 - 피그마 기준
     },
     reactionBtn: {
         flexDirection: 'row',
@@ -262,6 +274,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 4,
+    },
+    // 채팅(댓글) 아이콘-텍스트 간격만 radius-sm(4) - 피그마 기준 (reactionBtn 기본 gap:4와 값은 같음)
+    chatBtn: {
+        gap: radius.sm,
     },
     reactionLabel: {
         ...typography.c2,

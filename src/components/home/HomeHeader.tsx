@@ -13,7 +13,7 @@ const SEARCH_ICON = require('../../assets/image/search_white.png');
 const IOS_LARGE_INSET = 50;
 const IOS_INSET_TRIM = 12;
 
-function trimInset(insetTop: number) {
+export function trimInset(insetTop: number) {
     return Platform.OS === 'ios' && insetTop >= IOS_LARGE_INSET ? insetTop - IOS_INSET_TRIM : insetTop;
 }
 

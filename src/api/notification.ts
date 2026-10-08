@@ -59,3 +59,22 @@ export async function readNotification(id: number): Promise<void> {
 
   console.log('[알림 읽음 처리 완료]', {id});
 }
+
+// 알림함 방문 기록 api (알림함 진입 시 목록 조회와 병렬로 호출)
+// 홈에서 알림 노란 점만 꺼짐 - 개별 알림의 is_read는 안 바뀌므로 목록의 안읽음 표시는 그대로 유지해야 함
+export async function visitNotifications(): Promise<void> {
+  console.log('[알림함 방문 기록 요청]');
+
+  await apiClient.post<ApiResponse<null>>('/api/notifications/visit');
+
+  console.log('[알림함 방문 기록 완료]');
+}
+
+// 알림 삭제 api (스와이프 삭제)
+export async function deleteNotification(id: number): Promise<void> {
+  console.log('[알림 삭제 요청]', {id});
+
+  await apiClient.delete<ApiResponse<null>>(`/api/notifications/${id}`);
+
+  console.log('[알림 삭제 완료]', {id});
+}

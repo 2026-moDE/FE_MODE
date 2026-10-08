@@ -1,7 +1,6 @@
 import React, {useEffect, useRef} from 'react';
-import {Text, Image, Pressable, StyleSheet, Keyboard} from 'react-native';
+import {Text, Image, Pressable, StyleSheet, Keyboard, View} from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
-import {LiquidGlassView} from 'react-native-liquid-glassmorphism';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
 import {padding, gap} from '../../constants/spacing';
@@ -60,7 +59,7 @@ export default function CommentInput({
     };
 
     return (
-        <LiquidGlassView variant="regular" borderRadius={radius.lg} dim={0.35} style={styles.row}>
+        <View style={styles.row}>
             {showSecretCheckbox && (
                 <Pressable style={styles.secretToggle} onPress={onToggleSecret} hitSlop={8}>
                     <Image
@@ -91,7 +90,7 @@ export default function CommentInput({
                     resizeMode="contain"
                 />
             </Pressable>
-        </LiquidGlassView>
+        </View>
     );
 }
 
@@ -101,6 +100,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: gap.sm,
         paddingHorizontal: padding.md,     // 12
+        backgroundColor: colors.background.dimDarker,
+        borderRadius: radius.lg,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.border.inverse,
     },
     input: {
         ...typography.b6,

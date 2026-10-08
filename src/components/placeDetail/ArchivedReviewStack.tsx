@@ -15,12 +15,15 @@ type StackPhoto = {
 type Props = {
     reviews: StackPhoto[];   // 최신순 정렬된 과거 리뷰 목록, 비어있으면 빈 카드 스택으로 표시
     onPress: () => void;
-    label?: string;
+    label?: string; // 과거 리뷰 확인하기 텍스트
     style?: StyleProp<ViewStyle>;
+    // 과거 리뷰 확인하기 텍스트 밑으로 말풍선 위치를 잡기 위한 ref
+    // 부모(PlaceDetailScreen)가 label의 화면상 위치를 measureInWindow로 재서 말풍선을 그 자리에 띄움
+    labelRef?: React.Ref<Text>;
 };
 
 
-export default function ArchivedReviewStack({reviews, onPress, label = '과거 리뷰 확인하기', style}: Props) {
+export default function ArchivedReviewStack({reviews, onPress, label = '과거 리뷰 확인하기', style, labelRef}: Props) {
     const [front, back1, back2] = reviews;
 
     return (
@@ -75,7 +78,7 @@ export default function ArchivedReviewStack({reviews, onPress, label = '과거 �
                     </View>
                 </View>
             </View>
-            <Text style={styles.label}>{label}</Text>
+            <Text ref={labelRef} style={styles.label}>{label}</Text>
         </Pressable>
     );
 }

@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 12,
         borderRadius: 9999,
-        backgroundColor: '#333333',
+        backgroundColor: colors.background.dimDarkest,
     },
     pressed: {
         opacity: 0.85,

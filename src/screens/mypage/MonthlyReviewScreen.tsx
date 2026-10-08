@@ -157,6 +157,7 @@ export default function MonthlyReviewScreen({navigation}: Props) {
             profile_url: profile?.profile_url ?? null,
           },
           created_at: r.created_at,
+          comment_count: r.comment_count,
         })),
     [reviews, profile],
   );
