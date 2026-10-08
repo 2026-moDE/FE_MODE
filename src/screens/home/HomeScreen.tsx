@@ -4,7 +4,7 @@ import FastImage from '@d11/react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NaverMapViewRef } from "@mj-studio/react-native-naver-map";
 import MapView from "../../components/map/MapView";
-import HomeHeader from "../../components/home/HomeHeader";
+import HomeHeader, {trimInset} from "../../components/home/HomeHeader";
 import LiveBubble from "../../components/home/LiveBubble";
 import ClusterBubble from "../../components/home/ClusterBubble";
 import { useNavigation, CompositeNavigationProp, useFocusEffect, useIsFocused } from '@react-navigation/native';
@@ -15,8 +15,9 @@ import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
 import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, fetchTrendingPlaces } from "../../api/place";
 import { fetchHasUnreadNotification } from "../../api/notification";
-import { NearbyPlace, PlaceDetail, TrendingPlace } from "../../types/place";
+import { NearbyPlace, PlaceDetail, TrendingPlace, CurrentReview } from "../../types/place";
 import { FriendReview, fetchFriendReviews } from "../../api/friend";
+import ReviewPhoto from "../../components/placeDetail/ReviewPhoto";
 import { colors } from '../../constants/colors';
 import IconCurrentLocation from "../../assets/icons/IconCurrentLocation";
 import HomeMiniCard from "../../components/home/HomeMiniCard";
@@ -286,13 +287,6 @@ export default function HomeScreen(){
     }, []);
 
 
-    // 미니카드 떠있을 때 하단 탭바 숨김 (카드 닫으면 복구)
-    useEffect(() => {
-        navigation.setOptions({
-            tabBarStyle: placeDetail ? { display: 'none' } : undefined,
-        });
-    }, [navigation, placeDetail]);
-
     // 홈 탭 다시 누르면 닫힌 바텀시트를 30% 단계로 다시 올리고, 기본 바텀시트로 되돌림
     useEffect(() => {
         const unsubscribe = navigation.addListener('tabPress', () => {
@@ -375,9 +369,58 @@ export default function HomeScreen(){
     const [friendReviews, setFriendReviews] = useState<FriendReview[]>([]);
     useEffect(() => {
         fetchFriendReviews()
-            .then(setFriendReviews)
+            .then(reviews => {
+                // TEMP TEST: 프로필 사진 미설정 유저 목데이터 - 확인 후 제거
+                const mockNoProfile: FriendReview = {
+                    id: -1,
+                    place_id: reviews[0]?.place_id ?? 0,
+                    place_name: '테스트 장소',
+                    congestion_level: 'RELAXED',
+                    comment: '프로필 사진 없는 유저 테스트',
+                    image_url: reviews[0]?.image_url ?? '',
+                    thumbnail_url: reviews[0]?.thumbnail_url ?? '',
+                    thumbnail_small_url: reviews[0]?.thumbnail_small_url ?? '',
+                    user: {user_id: -1, nickname: '테스트유저', profile_url: ''},
+                    created_at: new Date().toISOString(),
+                    comment_count: 0,
+                };
+                setFriendReviews([mockNoProfile, ...reviews]);
+            })
             .catch(error => console.warn('친구 리뷰 조회 실패:', error?.message));
     }, []);
+
+    // 친구가 최근에 작성한 리뷰 뷰어에서 넘기는 인덱스 - 사람/장소 안 가리고 friendReviews 배열 순서 그대로 왔다갔다
+    const [friendReviewViewerIndex, setFriendReviewViewerIndex] = useState<number | null>(null);
+
+    // 미니카드 또는 친구 리뷰 뷰어 떠있을 때 하단 탭바 숨김 (둘 다 닫으면 복구)
+    useEffect(() => {
+        navigation.setOptions({
+            tabBarStyle: (placeDetail || friendReviewViewerIndex !== null) ? { display: 'none' } : undefined,
+        });
+    }, [navigation, placeDetail, friendReviewViewerIndex]);
+
+    // FriendReview를 CurrentReview로 변환. ReviewPhoto는 FriendReview 모르고 CurrentReview 앎
+    const friendReviewPhotos: CurrentReview[] = useMemo(() => friendReviews.map(r => ({
+        id: r.id,
+        image_url: r.image_url,
+        thumbnail_url: r.thumbnail_url,
+        thumbnail_small_url: r.thumbnail_small_url,
+        congestion_level: r.congestion_level,
+        comment: r.comment,
+        is_mine: false, // 친구 리뷰는 항상 남의 글이라 
+        visibility: 'PUBLIC' as const,
+        is_friend: true,
+        user: {
+            user_id: r.user.user_id,
+            nickname: r.user.nickname,
+            profile_image_url: r.user.profile_url, // 원본 이미지
+            profile_url: r.user.profile_url, // 리사이즈된 이미지
+        },
+        created_at: r.created_at,
+        comment_count: r.comment_count,
+        place_name: r.place_name,
+        place_id: r.place_id,
+    })), [friendReviews]);
 
     // 화면 포커스 시 재조회 (리뷰 작성 후 썸네일 업데이트) - 다른 화면 갔다 돌아오면 기본 바텀시트로
     useFocusEffect(
@@ -437,10 +480,11 @@ export default function HomeScreen(){
         });
     }, [goTo]);
 
-    // 기본 바텀시트에서 특정 리뷰 사진 클릭 시  → 해당 장소 상세의 그 리뷰로 이동
-    const handleOpenReview = useCallback((placeId: number, placeName: string, reviewId: number) => {
-        goTo('PlaceDetail', {placeId, placeName, reviewId, notificationAction: undefined});
-    }, [goTo]);
+    // 기본 바텀시트에서 친구 리뷰 사진 클릭 시 → 장소 상세로 이동하지 않고, 목록 순서 그대로 뷰어에서 왔다갔다
+    const handleOpenReview = useCallback((reviewId: number) => {
+        const index = friendReviews.findIndex(r => r.id === reviewId);
+        if (index >= 0) setFriendReviewViewerIndex(index);
+    }, [friendReviews]);
 
     const handleBellPress = () => {
         setHasUnreadNotification(false);
@@ -525,7 +569,7 @@ export default function HomeScreen(){
 
             {/* 버블 필터 (전체/최근) - 로고 아래. 미니카드가 떠 있을 땐 숨김 */}
             {!placeDetail && (
-                <View style={[styles.bubbleFilterWrapper, {top: insets.top + 62}]} pointerEvents="box-none">
+                <View style={[styles.bubbleFilterWrapper, {top: trimInset(insets.top) + 76}]} pointerEvents="box-none">
                     <BubbleFilterToggle value={bubbleFilter} onChange={handleChangeBubbleFilter} />
                 </View>
             )}
@@ -596,7 +640,7 @@ export default function HomeScreen(){
                     onPressPlace={handleClusterItemPress}
                     friendReviews={friendReviews}
                     trendingPlaces={trendingPlaces}
-                    onPressFriendReview={item => handleOpenReview(item.place_id, item.place_name, item.id)}
+                    onPressFriendReview={item => handleOpenReview(item.id)}
                     onPressTrendingMore={place => {
                         // BottomSheetScrollView 안의 제스처가 덜 정리된 채로 화면 전환이 겹치면
                         // 전환이 깨져서 흰 화면에 멈추는 문제가 있어서, 제스처/터치 정리 후로 미룸
@@ -616,6 +660,35 @@ export default function HomeScreen(){
                 />
             )}
 
+            {/* 친구가 최근에 작성한 리뷰 뷰어 - 따로 PlaceDetail로 이동 안해서 REviewPhoto 화면 만듦 */}
+            <ReviewPhoto
+                reviews={friendReviewPhotos}
+                startIndex={friendReviewViewerIndex ?? 0}
+                visible={friendReviewViewerIndex !== null}
+                onClose={() => setFriendReviewViewerIndex(null)}
+                onPressUser={user => {
+                    if (user.user_id == null) return;
+                    setFriendReviewViewerIndex(null); // 이거 없으면 마이페이지에서 뒤로 가기해서 홈으로 돌아오면, 아직 리뷰 뷰어가 보임
+                    goTo('UserMyPage', {userId: user.user_id});
+                }}
+                onOpenReactionList={() => {}} // 반응 목록은 내 리뷰 아니니 조회할 수 없음
+                onDelete={() => {}} // 삭제하기는 내 리뷰 아니니 할 수 없음
+                onReport={reviewId => {
+                    setFriendReviewViewerIndex(null);
+                    goTo('ReviewReport', {reviewId});
+                }}
+                onPressPlace={(placeId, pName) => {
+                    setFriendReviewViewerIndex(null);
+                    InteractionManager.runAfterInteractions(() => {
+                        goTo('PlaceDetail', {
+                            placeId,
+                            placeName: pName,
+                            reviewId: undefined,
+                            notificationAction: undefined,
+                        });
+                    });
+                }}
+            />
         </View>
     );
 }

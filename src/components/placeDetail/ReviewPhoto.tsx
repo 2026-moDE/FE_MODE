@@ -38,6 +38,8 @@ type Props = {
     readOnlyComments?: boolean;
     // 댓글 알림 눌러서 들어온 경우, 댓글 모달도 자동으로 염
     autoOpenChat?: boolean;
+    // 장소명 탭 시 장소 상세 페이지로 이동 (place_id, place_name 전달)
+    onPressPlace?: (placeId: number, placeName: string) => void;
 };
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
@@ -49,7 +51,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, onPressUser, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, onPressUser, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat, onPressPlace}: Props) {
     const insets = useSafeAreaInsets();
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -353,20 +355,27 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                     {/* ── 이미지 바로 아래: 장소명 + 채팅/이모지 반응 버튼 (가로 배치) ── */}
                     <View style={styles.bottomRow}>
                         {/* place_name: 마이페이지/마이맵처럼 리뷰마다 장소가 다른 목록용, placeName: 장소상세처럼 장소가 고정인 경우용 */}
-                        {(('place_name' in review ? review.place_name : undefined) ?? placeName) ? (
-                            <View style={styles.placeGroup}>
-                                <IconPlaceLocation size={22} color={colors.icon.inverse} />
-                                <Text style={styles.placeName} numberOfLines={1}>
-                                    {('place_name' in review ? review.place_name : undefined) ?? placeName}
-                                </Text>
-                            </View>
-                        ) : <View />}
+                        {(('place_name' in review ? review.place_name : undefined) ?? placeName) ? (() => {
+                            const name = ('place_name' in review ? review.place_name : undefined) ?? placeName!;
+                            const placeId = 'place_id' in review ? review.place_id : undefined;
+                            const pressable = onPressPlace && placeId;
+                            return (
+                                <Pressable
+                                    style={styles.placeGroup}
+                                    onPress={pressable ? () => onPressPlace(placeId!, name) : undefined}
+                                    disabled={!pressable}>
+                                    <IconPlaceLocation size={22} color={colors.icon.inverse} />
+                                    <Text style={styles.placeName} numberOfLines={1}>{name}</Text>
+                                </Pressable>
+                            );
+                        })() : <View />}
 
                         <ReviewPhotoReactionButtons
                             onOpenChat={() => modalRef.current?.present()}
                             selectedEmoji={selectedEmoji}
                             emojiPop={emojiPop}
                             isOwner={isOwner}
+                            commentCount={review.comment_count}
                             onPressEmojiButton={
                                 isOwner
                                     ? () => onOpenReactionList?.(review.id)
