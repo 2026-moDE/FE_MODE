@@ -105,8 +105,10 @@ export type CurrentReview = {
     is_friend: boolean;
     user: ReviewUser;
     created_at: string;
+    comment_count: number;
     // 마이페이지/마이맵처럼 여러 장소가 섞여 있는 목록에서 ReviewPhoto가 리뷰별로 장소명을 보여줄 때만 사용 (API 필드 아님)
     place_name?: string;
+    place_id?: number;
 };
 
 export type CurrentReviewsResponse = {
@@ -125,9 +127,10 @@ export type ArchivedReview = {
     comment: string;
     is_mine : boolean;
     visibility : 'PUBLIC' | 'FRIENDS';
-    is_friend : boolean; 
+    is_friend : boolean;
     user: ReviewUser;
     created_at: string;
+    comment_count: number;
 };
 
 export type ArchivedReviewsResponse = {

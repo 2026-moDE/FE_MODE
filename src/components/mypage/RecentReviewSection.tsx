@@ -320,11 +320,9 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
 
       <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
 
-      {/* 친구공개(FRIENDS) 리뷰일 때만 댓글 입력창에 비밀 댓글 체크박스가 뜸 */}
       <ReviewChatModal
         ref={chatSheetRef}
         reviewId={activeChatReviewId ?? undefined}
-        reviewVisibility={recentReviews.find(r => r.id === activeChatReviewId)?.visibility}
       />
     </View>
   );
@@ -437,7 +435,7 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
 
       <View
         ref={photoRef}
-        style={[styles.cardPhoto, isFriendOnlyPost && styles.cardPhotoFriendBorder]}>
+        style={styles.cardPhoto}>
         {review.image_url ? (
           <FastImage
             source={{
@@ -503,6 +501,7 @@ const ReviewFeedCard = React.memo(function ReviewFeedCard({
           style={[styles.cardReactionBtn, styles.cardReactionIconFirst]}
           onPress={() => onPressChat(review.id)}>
           <Image source={chatIcon} style={styles.cardReactionIconImage} resizeMode="contain" />
+          <Text style={styles.cardReactionLabel}>댓글 {review.comment_count}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           hitSlop={10}
@@ -626,11 +625,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     overflow: 'hidden',
     backgroundColor: colors.surface.subtleDarker,
-  },
-
-  cardPhotoFriendBorder: {
-    borderWidth: 2,
-    borderColor: colors.brand.primary,
   },
 
   cardPhotoImage: {
