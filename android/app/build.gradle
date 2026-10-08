@@ -73,6 +73,37 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+/**
+ * iOS와 키를 공유한다. 원본은 ios/Config.xcconfig (gitignore 대상) 한 곳뿐이고,
+ * gradle이 이 값을 읽어 문자열 리소스로 생성한다. AndroidManifest가 참조하는
+ * naver_map_client_id / kakao_app_key / kakao_scheme 가 여기서 나온다.
+ */
+def sharedKeys = { ->
+    def props = new Properties()
+    def f = file("${rootDir}/../ios/Config.xcconfig")
+    if (f.exists()) {
+        f.eachLine { line ->
+            def clean = line.split("//")[0].trim()      // xcconfig 주석 제거
+            def idx = clean.indexOf("=")
+            if (idx > 0) {
+                props.setProperty(clean.substring(0, idx).trim(), clean.substring(idx + 1).trim())
+            }
+        }
+    }
+    return props
+}()
+
+def requireKey = { String name ->
+    def v = sharedKeys.getProperty(name)
+    if (!v) {
+        throw new GradleException(
+            "${name} 를 ios/Config.xcconfig 에서 찾을 수 없습니다. " +
+            "이 파일은 git에 올라가지 않으므로, 새로 클론한 경우 팀에서 받아 ios/Config.xcconfig 로 두세요. " +
+            "필요한 키: KAKAO_APP_KEY, NMF_CLIENT_ID")
+    }
+    return v
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -85,6 +116,11 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+
+        resValue "string", "naver_map_client_id", requireKey("NMF_CLIENT_ID")
+        resValue "string", "kakao_app_key", requireKey("KAKAO_APP_KEY")
+        // 카카오 로그인 리다이렉트 스킴은 "kakao" + 앱키 (iOS Info.plist 와 동일 규칙)
+        resValue "string", "kakao_scheme", "kakao" + requireKey("KAKAO_APP_KEY")
     }
     signingConfigs {
         debug {
