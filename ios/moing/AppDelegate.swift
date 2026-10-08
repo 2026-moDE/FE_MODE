@@ -3,6 +3,10 @@ import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
 import KakaoSDKAuth
+import KakaoSDKCommon
+import NMapsMap
+import FirebaseCore
+import GoogleSignIn
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,6 +19,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    FirebaseApp.configure()
+
+    if let kakaoAppKey = Bundle.main.object(forInfoDictionaryKey: "KAKAO_APP_KEY") as? String {
+      KakaoSDK.initSDK(appKey: kakaoAppKey)
+    }
+
+    NMFAuthManager.shared().ncpKeyId = "8hcvg54tuz"
+
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -37,8 +49,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     if AuthApi.isKakaoTalkLoginUrl(url) {
       return AuthController.handleOpenUrl(url: url)
     }
+    if GIDSignIn.sharedInstance.handle(url) {
+      return true
+    }
     return false
   }
+
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {

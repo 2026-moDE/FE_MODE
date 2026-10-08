@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { SearchHistory } from '../types/search';
 import {
     fetchSearchHistory,
+    saveSearchHistory,
     deleteSearchHistory,
     deleteAllSearchHistory,
 } from '../api/search';
@@ -29,17 +30,29 @@ export function useSearchHistory() {
         }
     }, []);
 
-    // 검색어 삭제
-    const deleteHistory = useCallback(async (id: number) => {
+    // 검색어 저장 (장소 선택 시 호출)
+    const saveHistory = useCallback(async (keyword: string) => {
         try {
-            await deleteSearchHistory(id);                          // 서버에서 삭제
-            setHistory(prev => prev.filter(item => item.id !== id)); // 화면에서 삭제
+            await saveSearchHistory(keyword);
         } catch (e) {
-            setError('검색어 삭제에 실패했습니다.');
+            console.warn('검색어 저장 실패:', e);
         }
     }, []);
 
-    // 전체 삭제 ( gui상 아직 없음)
+    // 검색어 삭제
+    const deleteHistory = useCallback(async (keyword: string) => {
+        try {
+            await deleteSearchHistory(keyword);
+            // 삭제된 항목을 즉시 화면에서 지움 (바로 반응하는 느낌)
+            setHistory(prev => prev.filter(item => item.keyword !== keyword));
+            // 서버 목록을 다시 불러와서, 5개 제한으로 안 보이던 다음 항목이 바로 채워지게 함
+            fetchHistory();
+        } catch (e) {
+            setError('검색어 삭제에 실패했습니다.');
+        }
+    }, [fetchHistory]);
+
+    // 전체 삭제
     const deleteAllHistory = useCallback(async () => {
         try {
             await deleteAllSearchHistory(); // 서버에서 전체 삭제
@@ -54,5 +67,5 @@ export function useSearchHistory() {
         fetchHistory();
     }, []);
 
-    return { history, isLoading, error, fetchHistory, deleteHistory, deleteAllHistory };
+    return { history, isLoading, error, fetchHistory, saveHistory, deleteHistory, deleteAllHistory };
 }

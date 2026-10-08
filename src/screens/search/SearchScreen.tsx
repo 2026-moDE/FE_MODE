@@ -1,11 +1,13 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, Keyboard, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
-import { Place } from '../../types/place';
+import { CATEGORY_LABEL, RegionResponse } from '../../types/place';
+import { Place } from '../../types/search';
+import { fetchRegion } from '../../api/place';
 import SearchHeader from '../../components/search/SearchHeader';
 import RecentSearchList from '../../components/search/RecentSearchList';
 import RecommendedSearchList from '../../components/search/RecommendedSearchList';
@@ -15,6 +17,10 @@ import { useSearchHistory } from '../../hooks/useSearchHistory';
 import { useAutocomplete } from '../../hooks/useAutocomplete';
 import SearchItemList from '../../components/search/SearchItemList';
 import LocationButton from '../../components/search/LocationButton';
+const currentLocationIcon = require('../../assets/image/place_pin.png');
+import { useLocation } from '../../context/LocationContext';
+import { getDistance, formatDistance } from '../../utils/distance';
+import { typography } from '../../constants/typography';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 // 디폴트(최근,추천 검색어) / 검색어 타이핑 / 검색 완료 / 현위치로 검색
@@ -24,35 +30,84 @@ export default function SearchScreen() {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProp<AppStackParamList, 'Search'>>();
     const reviewPhotoUri = route.params?.reviewPhotoUri;
+    const reviewCongestion = route.params?.reviewCongestion;
+    const reviewTextParam = route.params?.reviewText;
 
     // 검색창 텍스트 state
     const [searchText, setSearchText] = useState('');
     const [mode, setMode] = useState<Mode>('default');
+    // "현위치로 장소 찾기"를 누른 상태인지 (누른 뒤 이어서 검색해도 거리순 유지하려고)
+    const [isLocationMode, setIsLocationMode] = useState(false);
     // 글자 한 자 칠 때마다 api 불러오면 부담
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // 키보드 높이
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+    useEffect(() => {
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+        const showSub = Keyboard.addListener(showEvent, e => setKeyboardHeight(e.endCoordinates.height));
+        const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+
+        return () => {
+            showSub.remove();
+            hideSub.remove();
+        };
+    }, []);
 
     // 장소 검색 훅
-    const { search, places } = useSearchPlaces();
+    const { search, places, isLoading } = useSearchPlaces();
+    // 현재 위치
+    const { location } = useLocation();
+    // 현재 위치 행정동 (시/구/동) 
+    const [region, setRegion] = useState<RegionResponse | null>(null);
+    const [isRegionLoading, setIsRegionLoading] = useState(false);
+    // 카카오 API 호출돼서 이미 조회 중이면 재요청 막음 (연타 방지)
+    const regionFetchingRef = useRef(false);
+
+    const fetchCurrentRegion = useCallback(async (latitude: number, longitude: number) => {
+        if (regionFetchingRef.current) return;
+        regionFetchingRef.current = true;
+        setIsRegionLoading(true);
+        try {
+            const data = await fetchRegion({latitude, longitude});
+            setRegion(data);
+        } catch (e) {
+            console.warn('현재 위치 지역 조회 실패:', e);
+            setRegion(null);
+        } finally {
+            regionFetchingRef.current = false;
+            setIsRegionLoading(false);
+        }
+    }, []);
 
     // 최근 검색어 훅 → 화면 들어오면 자동으로 조회
-    const { history, fetchHistory, deleteHistory } = useSearchHistory();
+    const { history, fetchHistory, saveHistory, deleteHistory, deleteAllHistory } = useSearchHistory();
+
+    // 다른 화면(장소 상세 등) 갔다가 뒤로가기로 돌아올 때마다 최근 검색어 다시 불러옴
+    // (SearchScreen이 그대로 남아있어서 history가 예전 값에 머물러있는 문제 방지)
+    useFocusEffect(
+        useCallback(() => {
+            fetchHistory();
+        }, [fetchHistory]),
+    );
 
     // 검색어 자동 완성
     const { suggestions, search: searchAutocomplete } = useAutocomplete();
 
-    // 임시 추천 검색어 (나중에 API 연결)
-    const recommendedItems = [
-        { id: 1, keyword: '성수동', type: 'normal' as const },
-        { id: 2, keyword: '망원동', type: 'normal' as const },
-        { id: 3, keyword: '가나디 팝업', type: 'hot' as const },
-        { id: 4, keyword: '말빵', type: 'hot' as const },
-        { id: 5, keyword: '군자', type: 'normal' as const },
-        { id: 6, keyword: '서촌', type: 'normal' as const },
-        { id: 7, keyword: '콩국수', type: 'normal' as const },
-    ];
-
     // 뒤로가기
     const handleBack = () => navigation.goBack();
+
+    // 위치를 알면 일반 검색에도 항상 좌표를 같이 보내서 거리순으로 받음
+    // (isLocationMode는 "현재 위치" 칩 표시 같은 UI 용도로만 씀)
+    const searchWithLocation = useCallback((keyword: string) => {
+        if (location) {
+            search(keyword, { latitude: location.latitude, longitude: location.longitude });
+        } else {
+            search(keyword);
+        }
+    }, [search, location]);
 
     // 검색창에 글자 한 자 칠 때마다
     const handleChangeText = (text: string) => {
@@ -60,6 +115,7 @@ export default function SearchScreen() {
 
         if (!text) {
             setMode('default');
+            setIsLocationMode(false);
             if (debounceRef.current) clearTimeout(debounceRef.current);
             return;
         }
@@ -68,49 +124,68 @@ export default function SearchScreen() {
 
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-            searchAutocomplete(text);
-            search(text);
-        }, 300); // 3초마다 실행
+            // 자동완성도 장소 검색과 같은 좌표를 넘겨서 거리 기준으로 추려지게 함
+            searchAutocomplete(text, location ?? undefined);
+            searchWithLocation(text);
+        }, 300);
     };
 
     // 검색 실행
     const handleSubmit = useCallback(() => {
-        setMode('searched');
-        search(searchText);
+        setMode(isLocationMode ? 'location' : 'searched');
+        searchWithLocation(searchText);
         fetchHistory();
-    }, [searchText, search, fetchHistory]);
+    }, [searchText, searchWithLocation, fetchHistory, isLocationMode]);
 
-    // 최근/추천 검색어 클릭 → 검색 실행
+    // 최근/추천/자동완성 검색어 클릭 → 검색 실행 (일반 검색이므로 위치 모드 해제)
     const handleSelectKeyword = useCallback((keyword: string) => {
         setSearchText(keyword);
         setMode('searched');
-        search(keyword);
+        setIsLocationMode(false);
+        searchWithLocation(keyword);
         fetchHistory();
-    }, [search, fetchHistory]);
+    }, [searchWithLocation, fetchHistory]);
 
     // 검색창 X → 텍스트 초기화 (gui상 아직 없음)
     const handleClear = () => {
         setSearchText('');
         setMode('default');
+        setIsLocationMode(false);
     };
 
     // 특정 장소를 클릭하면 장소 상세페이지로 이동 (리뷰 모드면 ReviewWrite로)
     const handleSelectPlace = useCallback((place: Place) => {
+        saveHistory(place.name);
         if (reviewPhotoUri) {
             navigation.navigate('ReviewStack', {
-                screen: 'ReviewWrite',
-                params: { photoUri: reviewPhotoUri, placeId: place.id, placeName: place.name },
+                screen: 'ReviewLocationConfirm',
+                params: {
+                    photoUri: reviewPhotoUri,
+                    placeId: place.id,
+                    placeName: place.name,
+                    placeCategory: CATEGORY_LABEL[place.category] ?? place.category,
+                    placeDistance: (location && place.latitude != null && place.longitude != null)
+                        ? formatDistance(getDistance(location, {latitude: place.latitude, longitude: place.longitude}))
+                        : '',
+                    placeAddress: place.address,
+                    latitude: place.latitude ?? undefined,
+                    longitude: place.longitude ?? undefined,
+                    congestion: reviewCongestion,
+                    reviewText: reviewTextParam,
+                },
             } as never);
         } else {
-            navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name });
+            navigation.navigate('PlaceDetail', { placeId: place.id, placeName: place.name, reviewId: undefined, notificationAction: undefined });
         }
-    }, [navigation, reviewPhotoUri]);
+    }, [navigation, reviewPhotoUri, saveHistory]);
 
     // 현재 위치로 장소 찾기
     const handleLocationSearch = () => {
-        // TODO: 현재 위치 기반 검색
+        if (!location) return;
         setMode('location');
-        // search(...)
+        setIsLocationMode(true);
+        search(searchText, { latitude: location.latitude, longitude: location.longitude });
+        fetchCurrentRegion(location.latitude, location.longitude);
     };
 
     return (
@@ -125,8 +200,13 @@ export default function SearchScreen() {
                 onClear={handleClear}
             />
 
-            {/* 검색 결과 없을 때 해골 표시 */}
-            {mode === 'searched' && places.length === 0 ? (
+            {/* 검색 API 응답 기다리는 중 - 결과 없음 아이콘 대신 로딩 표시 (타이핑 중엔 자동완성 목록을 가리면 안 되니 제외) */}
+            {isLoading && mode !== 'typing' ? (
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator size="large" color="#999" />
+                </View>
+            ) : (mode === 'searched' || mode === 'location') && places.length === 0 ? (
+                /* 검색이 끝났는데 진짜 결과가 없을 때만 해골 표시 */
                 <View style={styles.emptyContainer}>
                     <Image
                         source={require('../../assets/icons/IconSkull.png')}
@@ -140,25 +220,21 @@ export default function SearchScreen() {
                     keyboardShouldPersistTaps="handled"
                 >
                     {/* 최근 검색어 → 서버에서 받아온 데이터 */}
-                    {/* 추천 검색어 (얘도 확정 아니고) */}
                     {mode === 'default' && (
                         <>
                             <RecentSearchList
                                 history={history}
                                 onSelect={handleSelectKeyword}
                                 onDelete={deleteHistory}
-                            />
-                            <RecommendedSearchList
-                                items={recommendedItems}
-                                onSelect={handleSelectKeyword}
+                                onDeleteAll={deleteAllHistory}
                             />
                         </>
                     )}
 
-                    {/* 자동완성 목록 → 글자 입력 중일 때만 표시 */}
+                    {/* 자동완성 목록 → 글자 입력 중일 때만, 최대 3개까지만 표시 */}
                     {mode === 'typing' && suggestions.length > 0 && (
                         <SearchItemList
-                            suggestions={suggestions}
+                            suggestions={suggestions.slice(0, 3)}
                             onSelect={handleSelectKeyword}
                         />
                     )}
@@ -168,19 +244,26 @@ export default function SearchScreen() {
                         <>
                             {mode === 'location' && (
                                 <View style={styles.locationChip}>
-                                    <Text style={styles.locationChipLabel}>⊙ 현재 위치</Text>
-                                    <Text style={styles.locationChipName}>자양동</Text>
+                                    <View style={styles.locationChipLabelRow}>
+                                        <Image source={currentLocationIcon} style={styles.locationChipIcon} resizeMode="contain" />
+                                        <Text style={styles.locationChipLabel}>현재 위치</Text>
+                                    </View>
+                                    <Text style={styles.locationChipName}>
+                                        {isRegionLoading
+                                            ? '위치 확인 중...'
+                                            : region?.region_3depth_name ?? '위치 확인 불가'}
+                                    </Text>
                                 </View>
                             )}
-                            <PlaceCardList places={places} onSelect={handleSelectPlace} />
+                            <PlaceCardList places={places} onSelect={handleSelectPlace} location={location} />
                         </>
                     )}
                 </ScrollView>
             )}
 
-            {/* 현재 위치로 장소 찾기*/}
-            {(mode === 'default' || mode === 'typing') && (
-                <View style={styles.locationButtonWrapper}>
+            {/* 현재 위치로 장소 찾기 */}
+            {(mode !== 'location') && (
+                <View style={[styles.locationButtonWrapper, keyboardHeight > 0 && {bottom: keyboardHeight + 12}]}>
                     <LocationButton onPress={handleLocationSearch} />
                 </View>
             )}
@@ -208,14 +291,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 12,
     },
+    locationChipLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    locationChipIcon: {
+        width: 14,
+        height: 14,
+    },
     locationChipLabel: {
         color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
+        ...typography.c1,
     },
     locationChipName: {
         color: '#fff',
-        fontSize: 14,
+        ...typography.c2,
     },
     locationButtonWrapper: {
         position: 'absolute',

@@ -1,95 +1,126 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../constants/colors';
+import { radius } from '../../constants/radius';
+import { spacing, gap } from '../../constants/spacing';
 import { typography } from '../../constants/typography';
-import { AppStackParamList } from '../../types/navigation';
+// import IconSharedMap from '../../assets/icons/IconSharedMap';   // 공유지도 탭 임시 제외
+import IconHome from '../../assets/icons/IconHome';
+import IconMyPage from '../../assets/icons/IconMyPage';
 
-type AppNav = NativeStackNavigationProp<AppStackParamList>;
+// 홈 → 마이페이지  (공유지도 임시 제외)
+const TAB_ORDER = [/* 'SharedMap', */ 'Home', 'Mypage'] as const;
 
-const TAB_LABELS: Record<string, string> = {
-  Home: '홈',
-  Mypage: '마이페이지',
+const TAB_LABEL: Record<string, string> = {
+    // SharedMap: '공유지도',
+    Home: '홈',
+    Mypage: '마이페이지',
 };
 
-const TAB_ORDER = ['ReviewBtn', 'Home', 'Mypage'];
+export default function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
+    const insets = useSafeAreaInsets();
 
-export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
-  const appNavigation = useNavigation<AppNav>();
+    // 현재 화면이 tabBarStyle을 'none'으로 설정했으면 탭바 숨김
+    const focusedRoute = state.routes[state.index]; // 현재 화면
+    const focusedOptions = descriptors[focusedRoute.key]?.options;
+    const tabBarStyle = focusedOptions?.tabBarStyle as { display?: string } | undefined;
+    if (tabBarStyle?.display === 'none') {
+        return null;
+    }
 
-  return (
-    <View style={styles.wrapper}>
-      <View style={styles.container}>
-        {TAB_ORDER.map((name) => {
+    // iOS 홈 인디케이터 영역(insets.bottom)이 있으면 그걸로 하단 여백을 대체
+    const bottomMargin = insets.bottom > 0 ? insets.bottom : 36;
 
-          if (name === 'ReviewBtn') {
-            return (
-              <TouchableOpacity
-                key="ReviewBtn"
-                style={styles.tab}
-                onPress={() => appNavigation.navigate('ReviewStack')}
-              >
-                <Text style={styles.label}>리뷰 쓰기</Text>
-              </TouchableOpacity>
-            );
-          }
+    return (
+        <View style={[styles.wrapper, { marginBottom: bottomMargin }]} pointerEvents="box-none">
+            <View style={styles.container}>
+                {/* 배경 블러는 뒤에 SurfaceView(지도/카메라)가 있을 때 화면 전환과 겹치면
+                    그쪽 렌더링을 깨트리는 문제가 있어서 빼고, 반투명 틴트만 남김 */}
+                <View style={[StyleSheet.absoluteFill, styles.tint]} />
 
-          const route = state.routes.find((r) => r.name === name);
-          if (!route) return null;
-          const index = state.routes.indexOf(route);
-          const isActive = state.index === index;
-          const label = TAB_LABELS[name] ?? name;
+                <View style={styles.row}>
+                {TAB_ORDER.map(name => {
+                    // 공유지도는 아직 연결할 화면이 없어서 임시 (지금은 탭에서 제외)
+                    // if (name === 'SharedMap') {
+                    //     return (
+                    //         <TouchableOpacity key="SharedMap" style={styles.tab} onPress={() => {}}>
+                    //             <IconSharedMap size={24} color={colors.icon.inverse} active={false} />
+                    //             <Text style={styles.label}>{TAB_LABEL.SharedMap}</Text>
+                    //         </TouchableOpacity>
+                    //     );
+                    // }
 
-          return (
-            <TouchableOpacity
-              key={route.key}
-              style={[styles.tab, isActive && styles.activeTab]}
-              onPress={() => navigation.navigate(name)}
-            >
-              <Text style={[styles.label, isActive && styles.activeLabel]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
+                    // 지금 탭이 가리키는 화면
+                    const route = state.routes.find(r => r.name === name);
+                    if (!route) return null;
+                    const index = state.routes.indexOf(route);
+                    const isFocused = state.index === index;
+
+                    // 탭 누르면 tabPress 이벤트 발생 (이미 활성 탭이어도 발생 → 화면이 감지 가능)
+                    const onPress = () => {
+                        const event = navigation.emit({
+                            type: 'tabPress',
+                            target: route.key,
+                            canPreventDefault: true, // 이동 거부권
+                        });
+
+                        // preventDefault()호출하면 defaultPrevented는 true
+                        // 근데 preventDefault() 호출 따로 안해서 event.defaultPrevented는 항상 false
+                        // 현재 화면과 다른 탭을 클릭하면 그 탭 화면으로 이동
+                        if (!isFocused && !event.defaultPrevented) {
+                            navigation.navigate(name);
+                        }
+                    };
+
+                    const IconComponent = name === 'Home' ? IconHome : IconMyPage;
+
+                    return (
+                        <TouchableOpacity key={route.key} style={styles.tab} onPress={onPress}>
+                            <IconComponent size={24} color={colors.icon.inverse} active={isFocused} />
+                            <Text style={styles.label}>{TAB_LABEL[name]}</Text>
+                        </TouchableOpacity>
+                    );
+                })}
+                </View>
+            </View>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 1000,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    gap: 4,
-  },
-  tab: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 1000,
-  },
-  activeTab: {
-    backgroundColor: colors.brand.primary,
-  },
-  label: {
-    ...typography.b4,
-    color: colors.text.inverse,
-  },
-  activeLabel: {
-    ...typography.b3,
-    color: colors.text.inverse,
-  },
+    wrapper: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        marginHorizontal: 46,
+    },
+    container: {
+        borderRadius: radius.full,
+        overflow: 'hidden',
+        // 진짜 inner shadow는 RN에 없어서, Figma의 두 Inner shadow(각각 X/Y ±1, blur 1, 흰색 20%)를
+        // 유리 테두리 느낌의 얇은 반투명 흰 테두리 하나로 근사함
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+    tint: {
+        backgroundColor: colors.background.dimDarker,
+    },
+    row: {
+        flexDirection: 'row',
+        paddingVertical: spacing.md,      // 12
+        paddingHorizontal: 24,
+    },
+    tab: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: gap.xs,
+    },
+    label: {
+        ...typography.c3,
+        color: colors.text.inverse,
+    },
 });

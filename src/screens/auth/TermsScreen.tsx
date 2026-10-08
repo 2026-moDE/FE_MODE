@@ -1,18 +1,15 @@
 import React, {useState} from 'react';
-import {
-  Image,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import {Image, Pressable, StatusBar, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import type {NativeStackScreenProps, NativeStackNavigationProp} from '@react-navigation/native-stack';
 
-import type {AuthStackParamList} from '../../types/navigation';
+import type {AuthStackParamList, AppStackParamList} from '../../types/navigation';
 import {colors} from '../../constants/colors';
-import {fontFamily, fontSize} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
+import IconChevronDown from '../../assets/icons/IconChevronDown';
+import IconCheck from '../../assets/icons/IconCheck';
 
 // api 연결시 삭제
 // const [terms, setTerms] = useState<TermItem[]>([]); 얘로 수정
@@ -23,13 +20,18 @@ const appliedFontFamily = fontFamily ?? {
   regular: 'Pretendard-Regular',
 };
 
-const logo = require('../../assets/image/logo_navy.png');
+const logo = require('../../assets/image/logo_new.png');
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Terms'>;
+// AuthStack('Terms')과 AppStack('TermsAgreement') 양쪽에서 재사용됨
+type Props =
+  | NativeStackScreenProps<AuthStackParamList, 'Terms'>
+  | NativeStackScreenProps<AppStackParamList, 'TermsAgreement'>;
 
-export default function TermsScreen({navigation}: Props) {
+export default function TermsScreen({navigation, route}: Props) {
+  // AppStack에서 열렸을 때(viewOnly)는 "다음"이 아니라 뒤로가기만 함
+  const viewOnly = route.params?.viewOnly ?? false;
   const [checkedTerms, setCheckedTerms] = useState<number[]>([]);
-  
+
   // termsMock 쓰던 부분은 api 연결 후 terms로 수정
   const requiredChecked = termsMock
     .filter(term => term.required)
@@ -52,12 +54,20 @@ export default function TermsScreen({navigation}: Props) {
         : [...prev, id],
     );
   };
+
   const handleNext = () => {
     if (!requiredChecked) {
       return;
     }
 
-    navigation.navigate('ProfileSetup', {
+    // 이미 로그인된 상태에서 약관만 다시 보러 온 경우(viewOnly) - 가입 플로우로 안 이어감
+    if (viewOnly) {
+      navigation.goBack();
+      return;
+    }
+
+    // 여기까지 왔다면 회원가입 중(AuthStack)이라는 뜻 - ProfileSetup은 AuthStack에만 있음
+    (navigation as NativeStackNavigationProp<AuthStackParamList, 'Terms'>).navigate('ProfileSetup', {
       terms_agreed: checkedTerms.includes(1),
       location_terms_agreed: checkedTerms.includes(2),
       privacy_agreed: checkedTerms.includes(3),
@@ -70,37 +80,54 @@ export default function TermsScreen({navigation}: Props) {
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
 
       <View style={styles.container}>
-        <View style={styles.content}>
-          <Image source={logo} style={styles.logo} resizeMode="contain" />
+        <View style={styles.topSection}>
+          <Image
+            source={logo}
+            tintColor={colors.brand.secondary}
+            style={styles.logo}
+            resizeMode="contain"
+          />
 
           <Text style={styles.title}>
             서비스 이용을 위한{'\n'}약관동의가 필요해요.
           </Text>
+        </View>
 
-          <View style={styles.agreementArea}>
-            <Pressable style={styles.allAgreeBox} onPress={handleAllCheck}>
-              <Text
-                style={[
-                  styles.checkIcon,
-                  allChecked && styles.checkIconActive,
-                ]}>
-                ✓
-              </Text>
+        <View style={styles.spacer} />
 
-              <Text style={styles.allAgreeText}>전체 동의하기</Text>
-            </Pressable>
+        <View style={styles.agreementArea}>
+          <Pressable style={styles.allAgreeBox} onPress={handleAllCheck}>
+            <IconCheck
+              size={18}
+              color={allChecked ? colors.navy[900] : colors.icon.tertiary}
+            />
 
-            <View style={styles.termList}>
-              {termsMock.map(term => (
-                <TermRow
-                  key={term.id}
-                  text={`[${term.required ? '필수' : '선택'}] ${term.title}`}
-                  checked={checkedTerms.includes(term.id)}
-                  onPress={() => handleTermCheck(term.id)}
-                />
-              ))}
-            </View>
-            </View>
+            <Text
+              style={[
+                styles.allAgreeText,
+                allChecked && styles.allAgreeTextActive,
+              ]}>
+              전체 동의하기
+            </Text>
+          </Pressable>
+
+          <View style={styles.termList}>
+            {termsMock.map(term => (
+              <TermRow
+                key={term.id}
+                text={`(${term.required ? '필수' : '선택'}) ${term.title}`}
+                checked={checkedTerms.includes(term.id)}
+                onCheckPress={() => handleTermCheck(term.id)}
+                onDetailPress={() =>
+                  (
+                    navigation as NativeStackNavigationProp<
+                      AuthStackParamList,
+                      'Terms'
+                    >
+                  ).navigate('TermsOfService', {initialOpenId: term.id})
+                }
+              />
+            ))}
           </View>
         </View>
 
@@ -111,8 +138,15 @@ export default function TermsScreen({navigation}: Props) {
           ]}
           onPress={handleNext}
           disabled={!requiredChecked}>
-          <Text style={styles.bottomButtonText}>동의하기</Text>
+          <Text
+            style={[
+              styles.bottomButtonText,
+              !requiredChecked && styles.bottomButtonTextDisabled,
+            ]}>
+            완료
+          </Text>
         </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
@@ -120,22 +154,30 @@ export default function TermsScreen({navigation}: Props) {
 type TermRowProps = {
   text: string;
   checked: boolean;
-  onPress: () => void;
+  onCheckPress: () => void;
+  onDetailPress: () => void;
 };
 
-function TermRow({text, checked, onPress}: TermRowProps) {
+function TermRow({text, checked, onCheckPress, onDetailPress}: TermRowProps) {
   return (
-    <Pressable style={styles.termRow} onPress={onPress}>
-      <View style={styles.termLeft}>
-        <Text style={[styles.termCheck, checked && styles.termCheckActive]}>
-          ✓
-        </Text>
+    <View style={styles.termRow}>
+      <Pressable style={styles.termLeft} onPress={onCheckPress}>
+        <IconCheck
+          size={18}
+          color={checked ? colors.icon.subtle : colors.gray[300]}
+        />
 
         <Text style={styles.termText}>{text}</Text>
-      </View>
+      </Pressable>
 
-      <Text style={styles.arrow}>›</Text>
-    </Pressable>
+      <Pressable onPress={onDetailPress}>
+        <IconChevronDown
+          size={20}
+          color={colors.icon.tertiary}
+          style={styles.chevronRight}
+        />
+      </Pressable>
+    </View>
   );
 }
 
@@ -143,7 +185,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.white,
-    justifyContent: 'space-between',
   },
 
   container: {
@@ -153,74 +194,66 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
 
-  content: {
+  topSection: {
+    paddingTop: 139,
     alignItems: 'center',
-    paddingTop: 160,
   },
 
+  // 타이틀~전체동의 박스 사이 남는 공간을 유동적으로 채워서, 화면 크기와 무관하게
+  // 약관 4개 + 버튼이 스크롤 없이 한 화면에 항상 들어오게 함
+  spacer: {
+    flex: 1,
+  },
 
   logo: {
     width: 94,
     height: 50,
-    marginBottom: 16,
+    marginBottom: spacing['2xl'],
   },
 
   title: {
+    ...typography.b3,
     color: colors.gray[900],
-    fontSize: 24,
-    fontWeight: '700',
-    lineHeight: 28,
-    letterSpacing: -0.48,
     textAlign: 'center',
-    fontFamily: appliedFontFamily.bold,
     includeFontPadding: false,
   },
 
   agreementArea: {
     width: '100%',
-    marginTop: 102,
     alignItems: 'center',
   },
 
   allAgreeBox: {
-    width: 360,
+    width: '100%',
     height: 52,
     borderWidth: 1,
-    borderColor: colors.gray[200],
-    borderRadius: 12,
+    borderColor: colors.border.default,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface.white,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
   },
 
-  checkIcon: {
-    width: 18,
-    height: 18,
-    color: colors.gray[300],
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-    fontFamily: appliedFontFamily.bold,
-  },
-
-  checkIconActive: {
-    color: colors.navy[900],
-  },
-
   allAgreeText: {
     marginLeft: 10,
-    color: colors.gray[500],
+    color: colors.text.disabled,
     fontSize: 14,
     fontWeight: '600',
     fontFamily: appliedFontFamily.bold,
   },
+
+  allAgreeTextActive: {
+    color: colors.navy[900],
+  },
+
   termList: {
-    width: 360,
-    marginTop: 40,
+    width: '100%',
+    marginTop: spacing['3xl'],
+    gap: 20,
   },
 
   termRow: {
-    height: 52,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -232,54 +265,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  termCheck: {
-    width: 18,
-    height: 18,
-    color: colors.gray[300],
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-    fontFamily: appliedFontFamily.bold,
-  },
-
-
-  termCheckActive: {
-    color: colors.navy[900],
-  },
-
   termText: {
+    ...typography.b6,
     marginLeft: 10,
-    color: colors.gray[600],
-    fontSize: 13,
-    fontWeight: '500',
-    fontFamily: appliedFontFamily.regular,
+    color: colors.text.subtle,
   },
-  arrow: {
-    color: colors.gray[300],
-    fontSize: 20,
-    fontWeight: '300',
+  chevronRight: {
+    transform: [{rotate: '-90deg'}],
   },
 
   bottomButton: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
+    marginTop: spacing['4xl'],
+    flexShrink: 0,
     height: 52,
     borderRadius: 12,
-    backgroundColor: colors.navy[900],
+    backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   bottomButtonDisabled: {
-    backgroundColor: colors.gray[200],
+    backgroundColor: colors.button.disabledFill,
   },
 
   bottomButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: appliedFontFamily.bold,
+    ...typography.b1,
+    color: colors.text.inverse,
+  },
+
+  bottomButtonTextDisabled: {
+    color: colors.gray[500],
   },
 });

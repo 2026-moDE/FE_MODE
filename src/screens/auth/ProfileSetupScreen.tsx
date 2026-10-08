@@ -6,19 +6,22 @@ import {
   TextInput,
   Pressable,
   StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-  Image
+  Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useRoute} from '@react-navigation/native';
 import type {RouteProp} from '@react-navigation/native';
 import {onboardingApi} from '../../api/onboardingApi';
+import {useProfileImageUpload, PickedProfileImage} from '../../hooks/useProfileImageUpload';
 import type {AuthStackParamList} from '../../types/navigation';
+import {useAuth} from '../../context/AuthContext';
+import ProfileAvatar from '../../components/common/ProfileAvatar';
 
-import {fontFamily, fontSize} from '../../constants/typography';
+import {fontFamily, fontSize, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
 const pencilIcon = require('../../assets/image/pencil.png');
 
@@ -30,24 +33,66 @@ const appliedFontFamily = fontFamily ?? {
 type Props = NativeStackScreenProps<AuthStackParamList, 'ProfileSetup'>;
 type ProfileSetupRouteProp = RouteProp<AuthStackParamList, 'ProfileSetup'>;
 
-const ProfileSetupScreen = ({navigation}: Props) => {
-  const route = useRoute<ProfileSetupRouteProp>();
-  const [nickname, setNickname] = useState('');
+const NICKNAME_PATTERN = /^[가-힣ㄱ-ㅎa-zA-Z0-9]+$/;
 
-  const isActive = nickname.trim().length > 0;
+const ProfileSetupScreen = (_props: Props) => {
+  const route = useRoute<ProfileSetupRouteProp>();
+  const {setIsLoggedIn} = useAuth();
+  const [nickname, setNickname] = useState('');
+  const [nicknameError, setNicknameError] = useState('');
+  const [pickedImage, setPickedImage] = useState<PickedProfileImage | null>(null);
+  const {pickProfileImage, uploadProfileImage, uploading} = useProfileImageUpload();
+
+  const isActive = nickname.trim().length > 0 && !uploading;
+
+  const handlePickImage = async () => {
+    const image = await pickProfileImage();
+    if (image) {
+      setPickedImage(image);
+    }
+  };
+
+  const handleNicknameChange = (text: string) => {
+    setNickname(text);
+    setNicknameError('');
+  };
 
   const handleNext = async () => {
     if (!isActive) {
       return;
     }
 
+    const trimmedNickname = nickname.trim();
+
+    if (trimmedNickname.length < 2 || trimmedNickname.length > 10) {
+      setNicknameError('닉네임은 2자 이상, 10자 이하만 사용 가능해요.');
+      return;
+    }
+
+    if (!NICKNAME_PATTERN.test(trimmedNickname)) {
+      setNicknameError('특수기호를 제외한 한글, 영문, 숫자만 사용 가능해요.');
+      return;
+    }
+
     try {
+      let profileImageUrl: string | undefined;
+
+      if (pickedImage) {
+        const url = await uploadProfileImage(pickedImage);
+        if (url) {
+          profileImageUrl = url;
+        }
+      }
+
       const body = {
-        nickname: nickname.trim(),
+        nickname: trimmedNickname,
         terms_agreed: route.params.terms_agreed,
         location_terms_agreed: route.params.location_terms_agreed,
         privacy_agreed: route.params.privacy_agreed,
         marketing_agreed: route.params.marketing_agreed,
+        // 사진 선택 안 하면 명시적으로 null을 보내서, 탈퇴 전 계정에 남아있던 예전 사진이
+        // PATCH의 "필드 생략 = 값 유지" 특성 때문에 그대로 남는 걸 막음
+        profile_image_url: profileImageUrl ?? null,
       };
 
       console.log('온보딩 요청 body:', body);
@@ -56,8 +101,13 @@ const ProfileSetupScreen = ({navigation}: Props) => {
 
       console.log('온보딩 성공:', result);
 
-      navigation.navigate('SignupComplete');
+      setIsLoggedIn(true);
     } catch (error: any) {
+      if (error?.status === 409) {
+        setNicknameError('이미 사용 중인 닉네임이에요.');
+        return;
+      }
+
       console.log('온보딩 실패:', error.message);
     }
 };
@@ -66,51 +116,72 @@ const ProfileSetupScreen = ({navigation}: Props) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>프로필설정</Text>
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>프로필설정</Text>
+      </View>
 
-        <View style={styles.content}>
-          <View style={styles.profileSection}>
-            <View style={styles.imageBox}>
-              <View style={styles.checkPattern} />
-            </View>
+      <View style={styles.content}>
+        <View style={styles.topSpacer} />
 
-            <Pressable style={styles.editButton}>
-              <Image source={pencilIcon} style={styles.pencilIcon} />
-            </Pressable>
+        <View style={styles.profileSection}>
+          <View style={styles.imageBox}>
+            {pickedImage ? (
+              <Image
+                source={{uri: pickedImage.uri}}
+                style={styles.profileImage}
+                resizeMode="cover"
+              />
+            ) : (
+              // 기본 이미지도 박스를 꽉 채워야 해서, 안에 테두리가 그려진 empty_profile.png
+              // 대신 공통 아바타(배경색 + 로고)를 씀
+              <ProfileAvatar style={styles.profileImage} />
+            )}
           </View>
 
-          <View style={styles.inputSection}>
-            <Text style={styles.label}>닉네임</Text>
-
-            <TextInput
-              style={styles.input}
-              value={nickname}
-              onChangeText={setNickname}
-              placeholder="닉네임을 입력해주세요."
-              placeholderTextColor="#A3A3AA"
-              maxLength={12}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-        </View>
-
-        <View style={styles.bottomArea}>
-          <Pressable
-            style={[
-              styles.nextButton,
-              !isActive && styles.nextButtonInactive,
-            ]}
-            onPress={handleNext}>
-            <Text style={styles.nextButtonText}>다음</Text>
+          <Pressable style={styles.editButton} onPress={handlePickImage}>
+            <Image source={pencilIcon} style={styles.pencilIcon} />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+
+        <View style={styles.midSpacer} />
+
+        <View style={styles.inputSection}>
+          <Text style={styles.label}>닉네임</Text>
+
+          <TextInput
+            style={styles.input}
+            value={nickname}
+            onChangeText={handleNicknameChange}
+            placeholder="닉네임을 입력해주세요."
+            placeholderTextColor={colors.text.disabled}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <Text
+            style={[styles.caution, !nicknameError && styles.cautionHidden]}>
+            {nicknameError || ' '}
+          </Text>
+        </View>
+
+        <View style={styles.bottomSpacer} />
+
+        <Pressable
+          style={[
+            styles.nextButton,
+            !isActive && styles.nextButtonInactive,
+          ]}
+          onPress={handleNext}
+          disabled={!isActive}>
+          <Text
+            style={[
+              styles.nextButtonText,
+              !isActive && styles.nextButtonTextInactive,
+            ]}>
+            완료
+          </Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -137,27 +208,42 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 27,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  // 안전영역(노치 아래) 기준 프로필 박스까지 89(헤더 30 포함, 피그마 실측) - 화면이 작으면
+  // 줄어들어서 완료 버튼이 항상 보이게 하되, 화면이 넉넉하면 딱 59만큼만 차지함
+  topSpacer: {
+    height: 59,
+    flexShrink: 1,
+  },
+
+  // 사진~닉네임 라벨 사이 51 - 화면이 작으면 이것도 같이 줄어들어서 완료 버튼(및 296 간격)이
+  // 항상 보이게 함
+  midSpacer: {
+    height: 51,
+    flexShrink: 1,
   },
   profileSection: {
     width: 178,
     height: 178,
     alignSelf: 'center',
-    marginTop: 116,
   },
   imageBox: {
-    width: 162,
-    height: 162,
-    borderRadius: 22,
+    width: 160,
+    height: 160,
+    borderRadius: radius['3xl'],
     borderWidth: 1,
-    borderColor: '#D2D5DA',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.gray[200],
+    backgroundColor: colors.surface.white,
+    alignItems: 'center',
+    justifyContent: 'center',
     overflow: 'hidden',
   },
-  checkPattern: {
-    flex: 1,
-    backgroundColor: '#F3F3F3',
-    opacity: 0.65,
+  // imageBox가 overflow: hidden으로 잘라주므로 안쪽 여백 없이 박스를 그대로 채움
+  profileImage: {
+    width: '100%',
+    height: '100%',
   },
   editButton: {
     position: 'absolute',
@@ -178,46 +264,51 @@ const styles = StyleSheet.create({
     height: 24,
     resizeMode: 'contain',
   },
-  inputSection: {
-    marginTop: 48,
+  inputSection: {},
+
+  // 닉네임 인풋~완료 버튼 사이 296 - 다른 spacer들과 같은 비율로 화면에 맞게 줄어듦
+  bottomSpacer: {
+    height: 296,
+    flexShrink: 1,
   },
   label: {
-    fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 22,
-    fontFamily: 'Pretendard',
-    color: '#111114',
-    marginBottom: 14,
+    ...typography.b1,
+    color: colors.gray[900],
+    marginBottom: spacing.md,
   },
   input: {
+    ...typography.b6,
     height: 52,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#C9CDD3',
+    borderColor: colors.gray[200],
+    backgroundColor: colors.gray[0],
     paddingHorizontal: 16,
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 18,
-    fontFamily: 'Pretendard',
-    color: '#111114',
+    color: colors.gray[900],
   },
-  bottomArea: {
-    paddingHorizontal: 27,
-    paddingBottom: 34,
+  caution: {
+    ...typography.c2,
+    color: '#EA0000',
+    marginTop: spacing.xs,
+  },
+  cautionHidden: {
+    opacity: 0,
   },
   nextButton: {
-    height: 60,
-    borderRadius: 11,
-    backgroundColor: '#1D232C',
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: colors.button.secondaryFill,
     justifyContent: 'center',
     alignItems: 'center',
   },
   nextButtonInactive: {
-    backgroundColor: '#1D232C',
+    backgroundColor: colors.button.disabledFill,
   },
   nextButtonText: {
-    fontSize: fontSize.xl,
-    fontFamily: appliedFontFamily.bold,
-    color: '#FFFFFF',
+    ...typography.b1,
+    color: colors.text.inverse,
+  },
+  nextButtonTextInactive: {
+    color: colors.gray[500],
   },
 });

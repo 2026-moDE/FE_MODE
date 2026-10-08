@@ -1,6 +1,27 @@
+/**
+ * 현위치 전역 관리 Context
+ *
+ * 앱 실행 동안 GPS로 사용자 위치를 실시간 추적(watchPosition)하고,
+ * 어느 화면에서든 useLocation()으로 꺼내 쓸 수 있게 전역으로 공유한다.
+ *
+ * 사용 예시:
+ *   const {location} = useLocation();
+ *   → {latitude: 37.54, longitude: 127.06} (위치 못 잡으면 null)
+ *
+ * 쓰는 곳: 홈 지도 현위치, 장소 거리 계산, 위치 인증, 현위치 기반 검색 등
+ */
+
 import React, {createContext, useContext, useState, useEffect} from 'react';
+import {Platform} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import {Location} from '../types/location';
+
+if (Platform.OS === 'ios') {
+    Geolocation.setRNConfiguration({
+        skipPermissionRequests: false,
+        authorizationLevel: 'whenInUse',
+    });
+}
 
 type LocationContextType = {
     location: Location | null;
@@ -37,7 +58,8 @@ export function LocationProvider({children}: {children: React.ReactNode}) {
                 setIsLoading(false);
             },
             {
-                enableHighAccuracy: false,     // GPS + WiFi + 셀룰러 다 사용 (실내도 ㄱㄴ)
+                // iOS: GPS 사용 (정확도 향상) / Android: WiFi·셀룰러도 사용 (실내에서도 위치 잡힘)
+                enableHighAccuracy: Platform.OS === 'ios',
                 distanceFilter: 50,            // 50m 이상 이동 시에만 업데이트 
             },
         );

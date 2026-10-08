@@ -1,26 +1,20 @@
 import React, {useMemo, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Image,
-  Pressable,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-  Alert,
-} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, Image, Pressable, TextInput, KeyboardAvoidingView, ScrollView, Platform, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import type {ReviewStackParamList} from '../../types/navigation';
+import {CommonActions} from '@react-navigation/native';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
-import {fontFamily} from '../../constants/typography';
-
-import {getPresignedUrl, uploadImageToS3, createReview, verifyPlaceLocation, type CongestionLevel,} from '../../api/review';
+import {fontFamily, typography} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
+import {useLocation} from '../../context/LocationContext';
+import {createReview, verifyPlaceLocation, getReviewImagePresignedUrl, type CongestionLevel} from '../../api/review';
+import {uploadImageToS3} from '../../api/imageUpload';
+import ReviewExitModal from '../../components/review/ReviewExitModal';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewWrite'>;
 
@@ -28,44 +22,76 @@ const refreshCameraIcon = require('../../assets/image/refresh_camera.png');
 const timerIcon = require('../../assets/image/timer.png');
 const pencilIcon = require('../../assets/image/pencil.png');
 
-const CONGESTION_OPTIONS = ['여유', '보통', '혼잡'] as const;
+const CONGESTION_OPTIONS = ['한산해요', '적당해요', '붐벼요', '매우 붐벼요'] as const;
 const getCongestionLevel = (
   congestion: CongestionType,
 ): CongestionLevel => {
   switch (congestion) {
-    case '여유':
-      return 'LOW';
-    case '보통':
+    case '한산해요':
+      return 'RELAXED';
+    case '적당해요':
       return 'MODERATE';
-    case '혼잡':
+    case '붐벼요':
       return 'CROWDED';
+    case '매우 붐벼요':
+      return 'VERY_CROWDED';
   }
 };
 type CongestionType = (typeof CONGESTION_OPTIONS)[number];
 
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const CHIP_WIDTHS: Record<CongestionType, number> = {
+  한산해요: 73,
+  적당해요: 73,
+  붐벼요: 61,
+  '매우 붐벼요': 88,
+};
 
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
+// 선택된 칩의 혼잡도별 배경 / 테두리 / 글자 색
+const CHIP_SELECTED_COLORS: Record<
+  CongestionType,
+  {background: string; border: string; text: string}
+> = {
+  한산해요: {background: '#CFFFC1', border: '#78D73D', text: colors.text.subtle},
+  적당해요: {background: colors.brand.primary, border: colors.border.brand, text: colors.text.brandDarker},
+  붐벼요: {background: '#FFD18D', border: '#D7943D', text: colors.text.brandDarker},
+  '매우 붐벼요': {background: '#FFA1A1', border: '#D73D3D', text: colors.text.subtle},
+};
 
-const MAX_REVIEW_LENGTH = 50;
+const CONGESTION_DESCRIPTIONS: Record<CongestionType, string> = {
+  한산해요: '대기 없이 바로 이용했어요',
+  적당해요: '조금 붐볐지만 괜찮아요',
+  붐벼요: '대기가 있었어요',
+  '매우 붐벼요': '오래 기다렸다가 이용했어요',
+};
+
+const MAX_REVIEW_LENGTH = 100;
 
 const ReviewWriteScreen = ({navigation, route}: Props) => {
-  const {photoUri, placeId, placeName} = route.params;
+  const {photoUri, placeId, placeName, congestion, reviewText: savedReviewText} = route.params;
+  const {location} = useLocation();
 
   const [selectedCongestion, setSelectedCongestion] =
-    useState<CongestionType | null>(null);
-  const [reviewText, setReviewText] = useState('');
+    useState<CongestionType | null>(
+      (congestion as CongestionType) ?? null,
+    );
+  const [reviewText, setReviewText] = useState(savedReviewText ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [exitModalVisible, setExitModalVisible] = useState(false);
 
+  const now = new Date();
+  const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  const formattedDate = `${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} (${DAYS[now.getDay()]}) ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  // placeId 없이 placeName만 있으면 등록 자체가 불가능하므로 버튼도 비활성화
   const isSubmitActive = useMemo(() => {
-    return !!placeName && !!selectedCongestion && !isSubmitting;
-  }, [placeName, selectedCongestion, isSubmitting]);
+    return !!placeId && !!placeName && !!selectedCongestion && !isSubmitting;
+  }, [placeId, placeName, selectedCongestion, isSubmitting]);
 
     const handlePressPlace = () => {
       navigation.getParent()?.navigate('Search', {
         reviewPhotoUri: photoUri,
+        reviewCongestion: selectedCongestion ?? undefined,
+        reviewText: reviewText || undefined,
       } as never);
     };
 
@@ -75,75 +101,89 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
-    if (!isSubmitActive || !selectedCongestion) return;
 
-    if (!placeId) {
-      console.log('placeId 없음. 장소 선택 먼저 필요');
+    // 조용히 return하면 버튼이 안 눌리는 것처럼 보여서, 막힌 이유를 항상 알려줌
+    if (!placeId || !placeName) {
+      Alert.alert('장소를 선택해주세요', '후기를 남길 장소를 먼저 설정해주세요.');
+      return;
+    }
+
+    if (!selectedCongestion) {
+      Alert.alert('혼잡도를 선택해주세요', '이용하신 곳의 혼잡도 상태를 골라주세요.');
+      return;
+    }
+
+    if (!location) {
+      Alert.alert('위치 확인 실패', '현재 위치를 확인한 뒤 다시 시도해주세요.');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      
-      const latitude = 37.5660;
-      const longitude = 126.9823;
 
-      const locationResult = await verifyPlaceLocation(
-        Number(placeId),
-        latitude,
-        longitude,
-      );
+      const {latitude, longitude} = location;
 
-      console.log('위치 인증 결과:', locationResult);
+      // 1. 위치 인증
+      console.log('[리뷰] 위치 인증 요청 placeId:', placeId, 'lat:', latitude, 'lng:', longitude);
+      const locationResult = await verifyPlaceLocation(Number(placeId), latitude, longitude);
+      console.log('[리뷰] 위치 인증 결과:', locationResult);
 
       if (!locationResult.verified) {
-        Alert.alert(
-          '위치 인증 실패',
-          `해당 장소에서 ${locationResult.distance}m 떨어져 있어요.`,
-        );
+        Alert.alert('위치 인증 실패', `해당 장소에서 ${locationResult.distance}m 떨어져 있어요.`);
         return;
       }
 
-      const fileName = `review_${Date.now()}.jpg`;
+      // 2. presigned-url 발급
+      console.log('[리뷰] presigned-url 요청');
+      const {presigned_url, image_url} = await getReviewImagePresignedUrl(`review_${Date.now()}.jpg`);
+      console.log('[리뷰] presigned-url 발급 완료');
 
-      // 1. presigned-url 발급
-      const {presigned_url, image_url} = await getPresignedUrl(fileName);
+      // 3. S3 업로드
+      console.log('[리뷰] S3 업로드 시작');
+      await uploadImageToS3({presignedUrl: presigned_url, imageUri: photoUri, contentType: 'image/jpeg'});
+      console.log('[리뷰] S3 업로드 완료 image_url:', image_url);
 
-      // 2. S3 업로드
-      await uploadImageToS3(photoUri, presigned_url);
-
-      console.log('S3 업로드 성공 image_url:', image_url);
-
-      // 3. 리뷰 등록
-      const trimmedComment = reviewText.trim();
-
-      const reviewBody: {
-        place_id: number;
-        image_url: string;
-        congestion_level: CongestionLevel;
-        latitude: number;
-        longitude: number;
-        comment?: string;
-      } = {
+      // 4. 리뷰 등록
+      const reviewBody = {
         place_id: Number(placeId),
         image_url,
         congestion_level: getCongestionLevel(selectedCongestion),
+        visibility: 'PUBLIC' as const,
         latitude,
         longitude,
+        ...(reviewText.trim() && {comment: reviewText.trim()}),
       };
+      const createdReview = await createReview(reviewBody);
+      console.log('[리뷰] 등록 완료');
 
-      if (trimmedComment.length > 0) {
-        reviewBody.comment = trimmedComment;
-      }
-
-      console.log('리뷰 등록 request body:', reviewBody);
-
-      const review = await createReview(reviewBody);
-
-      // 4. 완료 화면 이동
-      navigation.navigate('ReviewComplete');
-    } catch (error) {
-      console.log('리뷰 등록 실패:', error);
+      // 전체 스택을 [홈 탭, 리뷰 스택(완료 화면 하나)]으로 교체
+      // → 완료 화면에서 iOS 스와이프 / 안드로이드 뒤로가기 시 작성 화면이 아니라 홈으로 감
+      navigation.getParent()?.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            {name: 'Tab', params: {screen: 'Home'}},
+            {
+              name: 'ReviewStack',
+              state: {
+                routes: [
+                  {
+                    name: 'ReviewComplete',
+                    params: {
+                      photoUri,
+                      placeId: Number(placeId),
+                      placeName,
+                      reviewId: createdReview.id,
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+    } catch (error: any) {
+      Alert.alert('등록 실패', error?.response?.data?.message || error?.message || '알 수 없는 오류가 발생했어요.');
     } finally {
       setIsSubmitting(false);
     }
@@ -151,25 +191,28 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        
         {/* 헤더 */}
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => setExitModalVisible(true)}
             hitSlop={10}>
-            <IconArrowLeft size={px(24)} color="#1F2933" />
+            <IconArrowLeft size={24} color="#1F2933" />
           </Pressable>
 
           <Text style={styles.headerTitle}>후기 작성</Text>
         </View>
 
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentInner}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
 
           <View style={styles.placeSection}>
             <View style={styles.photoWrapper}>
@@ -202,30 +245,50 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
               <View style={styles.dateRow}>
                 <Image source={timerIcon} style={styles.timerIcon} />
-                <Text style={styles.dateText}>2026.4.23 (목) 20:11</Text>
+                <Text style={styles.dateText}>{formattedDate}</Text>
               </View>
             </Pressable>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>혼잡도 상태</Text>
+            <View style={styles.congestionTitleRow}>
+              <Text style={styles.sectionTitle}>혼잡도 상태</Text>
+
+              {selectedCongestion && (
+                <Text style={styles.congestionDescription} numberOfLines={1}>
+                  {CONGESTION_DESCRIPTIONS[selectedCongestion]}
+                </Text>
+              )}
+            </View>
 
             <View style={styles.chipRow}>
               {CONGESTION_OPTIONS.map(option => {
                 const isSelected = selectedCongestion === option;
+                const selectedColors = CHIP_SELECTED_COLORS[option];
 
                 return (
                   <Pressable
                     key={option}
                     style={[
                       styles.chip,
-                      isSelected && styles.chipSelected,
+                      // 시안 너비를 최소값으로 두고, 글자가 더 길면(선택 시 굵어짐) 늘어나도록
+                      {minWidth: CHIP_WIDTHS[option]},
+                      isSelected && [
+                        styles.chipSelected,
+                        {
+                          backgroundColor: selectedColors.background,
+                          borderColor: selectedColors.border,
+                        },
+                      ],
                     ]}
                     onPress={() => setSelectedCongestion(option)}>
                     <Text
                       style={[
                         styles.chipText,
-                        isSelected && styles.chipTextSelected,
+                        isSelected && [
+                          styles.chipTextSelected,
+                          {color: selectedColors.text},
+                        ],
                       ]}>
                       {option}
                     </Text>
@@ -234,7 +297,6 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
               })}
             </View>
           </View>
-
 
           <View style={styles.reviewSection}>
             <Text style={styles.sectionTitle}>이용 후기를 작성해주세요.</Text>
@@ -248,7 +310,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
                     setReviewText(text);
                   }
                 }}
-                placeholder="50자 이내로 짧은 코멘트 작성해주세요."
+                placeholder="100자 이내로 짧은 코멘트 작성해주세요."
                 placeholderTextColor="#C8CDD4"
                 multiline
                 maxLength={MAX_REVIEW_LENGTH}
@@ -260,7 +322,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
               </Text>
             </View>
           </View>
-        </View>
+        </ScrollView>
 
         {/* 하단 버튼 */}
        <Pressable
@@ -275,9 +337,30 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
               styles.submitText,
               isSubmitActive ? styles.submitTextActive : styles.submitTextDisabled,
             ]}>
-            {isSubmitting ? '등록 중...' : '✓  등록하기'}
+            ✓  등록하기
           </Text>
         </Pressable>
+          <ReviewExitModal
+            visible={exitModalVisible}
+            onClose={() => setExitModalVisible(false)}
+            onExit={() => {
+              setExitModalVisible(false);
+
+              navigation.getParent()?.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: 'Tab',
+                      params: {
+                        screen: 'Home',
+                      },
+                    },
+                  ],
+                }),
+              );
+            }}
+          />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -288,101 +371,105 @@ export default ReviewWriteScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   keyboardView: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   header: {
-    height: 56,
+    height: 52,
+    paddingVertical: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   backButton: {
     position: 'absolute',
-    left: px(16),
-    width: px(32),
-    height: px(32),
+    left: spacing.lg,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   headerTitle: {
-    fontSize: px(18),
+    fontSize: 18,
     fontFamily: fontFamily.bold,
     color: '#111827',
-    lineHeight: px(21),
+    lineHeight: 21,
   },
 
   content: {
     flex: 1,
-    paddingHorizontal: px(16),
-    paddingTop: px(16),
-    paddingBottom: px(90),
+    paddingHorizontal: spacing.lg,
+  },
+
+  contentInner: {
+    paddingTop: spacing.lg,
+    paddingBottom: 90,
   },
 
   placeSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: px(32),
+    marginBottom: spacing['3xl'],
   },
 
   photoWrapper: {
-    width: px(105),
-    height: px(105),
-    borderRadius: px(12),
+    width: 105,
+    height: 105,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     position: 'relative',
   },
 
   photo: {
-    width: px(105),
-    height: px(105),
-    borderRadius: px(12),
+    width: 105,
+    height: 105,
+    borderRadius: radius.lg,
   },
 
   retakeButton: {
     position: 'absolute',
-    left: px(12),
-    top: px(40),
-    width: px(81),
-    height: px(24),
-    borderRadius: px(8),
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    left: spacing.md,
+    top: spacing['4xl'],
+    width: 81,
+    height: 24,
+    borderRadius: radius.md,
+    backgroundColor: colors.background.dimDarker,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: px(4),
+    gap: spacing.xs,
   },
 
   retakeIcon: {
-    width: px(12),
-    height: px(12),
+    width: 12,
+    height: 12,
     resizeMode: 'contain',
   },
 
   retakeText: {
-    fontSize: px(12),
+    fontSize: 12,
     fontFamily: fontFamily.medium,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   placeInfo: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: spacing.lg,
     paddingTop: 6,
   },
 
   placeTitle: {
     fontFamily: fontFamily.bold,
-    fontSize: px(20),
-    color: '#111114',
-    lineHeight: px(24),
-    marginRight: px(4),
+    fontSize: 20,
+    color: colors.text.basic,
+    lineHeight: 24,
+    marginRight: spacing.xs,
     flexShrink: 1,
   },
 
@@ -397,66 +484,80 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: px(9.5),
+    marginTop: 9.5,
   },
 
   timerIcon: {
-    width: px(14),
-    height: px(14),
-    marginRight: px(8),
+    width: 14,
+    height: 14,
+    marginRight: spacing.s,
     resizeMode: 'contain',
-    transform: [{translateY: px(1)}],
+    transform: [{translateY: 1}],
   },
 
   dateText: {
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.bold,
     color: '#374151',
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   section: {
-    marginBottom: 32,
+    marginBottom: spacing['3xl'],
   },
 
   sectionTitle: {
-    fontSize: px(22),
+    fontSize: 22,
     fontFamily: fontFamily.bold,
     color: '#111827',
-    lineHeight: px(26),
+    lineHeight: 26,
+  },
+
+  congestionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  congestionDescription: {
+    marginLeft: spacing.md, 
+    flexShrink: 1,
+    fontSize: 12,
+    fontFamily: fontFamily.medium,
+    color: colors.text.brandDarker
   },
 
   chipRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
+    gap: spacing.xs,
+    marginTop: spacing.s,
   },
 
   chip: {
-    height: 33,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F1F3F5',
+    minHeight: 33,
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.s,
+    borderRadius: radius.md,
+    backgroundColor: colors.navy[50],
     justifyContent: 'center',
     alignItems: 'center',
   },
 
+  // 색은 혼잡도별로 CHIP_SELECTED_COLORS에서 지정
   chipSelected: {
-    backgroundColor: '#83A6FF',
+    borderWidth: 1.5,
   },
 
+  // Body/B6
   chipText: {
-    fontSize: 14,
-    fontFamily: fontFamily.medium,
+    ...typography.b6,
     color: '#4B5563',
-    lineHeight: 17,
+    textAlign: 'center',
   },
 
+  // Body/B5 (색은 혼잡도별로 CHIP_SELECTED_COLORS에서 지정)
   chipTextSelected: {
-    color: '#FFFFFF',
-    fontFamily: fontFamily.bold,
+    ...typography.b5,
   },
 
   reviewSection: {
@@ -468,37 +569,37 @@ const styles = StyleSheet.create({
     height: 121,
     borderWidth: 1,
     borderColor: '#DADDE2',
-    borderRadius: 12,
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
+    borderRadius: radius.lg,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface.white,
   },
 
   textInput: {
     flex: 1,
     padding: 0,
     margin: 0,
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.medium,
     color: '#111827',
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   countText: {
     alignSelf: 'flex-end',
-    fontSize: px(14),
+    fontSize: 14,
     fontFamily: fontFamily.medium,
     color: '#6B7280',
-    lineHeight: px(17),
+    lineHeight: 17,
   },
 
   submitButton: {
     position: 'absolute',
-    left: px(16),
-    right: px(16),
-    bottom: px(33),
-    height: px(48),
-    borderRadius: px(8),
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 33,
+    height: 48,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -508,22 +609,21 @@ const styles = StyleSheet.create({
   },
 
   submitButtonActive: {
-    backgroundColor: '#2C343F',
+    backgroundColor: colors.button.secondaryFill,
   },
 
+  // Body/B3 - 리뷰 플로우 하단 버튼 공통
   submitText: {
-    fontSize: px(18),
-    fontFamily: fontFamily.bold,
-    lineHeight: px(21),
+    ...typography.b3,
   },
 
   submitTextDisabled: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     opacity: 0.7,
   },
 
   submitTextActive: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
 
   placeTitleRow: {
@@ -534,21 +634,21 @@ const styles = StyleSheet.create({
   editPlaceButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: px(6),
-    gap: px(3),
+    marginLeft: 6,
+    gap: 3,
   },
 
   editPlaceIcon: {
-    width: px(12),
-    height: px(12),
+    width: 12,
+    height: 12,
     resizeMode: 'contain',
     tintColor: '#8A919E',
   },
 
   editPlaceText: {
     fontFamily: fontFamily.medium,
-    fontSize: px(12),
-    lineHeight: px(14),
+    fontSize: 12,
+    lineHeight: 14,
     color: '#8A919E',
     includeFontPadding: false,
   },

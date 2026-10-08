@@ -1,58 +1,77 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Pressable,
-  TextInput,
-  FlatList,
-  Dimensions,
-  Image,
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, Text, StyleSheet, StatusBar, Pressable, TextInput, FlatList, Image, ActivityIndicator} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 import type {ReviewStackParamList} from '../../types/navigation';
+import type {NearbyPlace} from '../../types/place';
+import {CATEGORY_LABEL} from '../../types/place';
+import {fetchNearbyPlaces} from '../../api/place';
+import {useLocation} from '../../context/LocationContext';
+import {getDistance, formatDistance} from '../../utils/distance';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {fontFamily} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewLocationSelect'>;
 
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
-
-const pinIcon = require('../../assets/image/pin.png');
 const placePinIcon = require('../../assets/image/place_pin.png');
 const searchIcon = require('../../assets/image/search.png');
 
-const CURRENT_PLACES = [
-  {id: 1, category: '음식점', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 2, category: '소품', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 3, category: '카페', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 4, category: '소품', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-  {id: 5, category: '소품', name: '명화당', distance: '30m', address: '서울특별시 광진구 능동로 175 1층', thumbnail: require('../../assets/image/pin.png')},
-];
-
 const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
   const {photoUri} = route.params;
+  const {location} = useLocation();
 
-  const handleSelectPlace = (place: (typeof CURRENT_PLACES)[number]) => {
+  const [places, setPlaces] = useState<NearbyPlace[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!location) return;
+
+    setIsLoading(true);
+    fetchNearbyPlaces({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      radius: 150000,
+    })
+      .then(res => {
+        const unique = (res.places ?? [])
+          .filter(p => p.latitude != null && p.longitude != null)
+          .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+        setPlaces(unique);
+      })
+      .catch(err => {
+        console.warn('주변 장소 조회 실패:', err?.message);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [location]);
+
+  const handleSelectPlace = (place: NearbyPlace) => {
+    if (place.latitude == null || place.longitude == null) return;
+
+    const distanceM = location
+      ? getDistance(location, {latitude: place.latitude, longitude: place.longitude})
+      : 0;
+
     navigation.navigate('ReviewLocationConfirm', {
       photoUri,
       placeId: place.id,
       placeName: place.name,
-      placeCategory: place.category,
-      placeDistance: place.distance,
-      placeAddress: place.address,
+      placeCategory: place.category ? CATEGORY_LABEL[place.category] : '',
+      placeDistance: formatDistance(distanceM),
+      placeAddress: place.address ?? '',
+      latitude: place.latitude,
+      longitude: place.longitude,
     });
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       {/* 헤더 */}
       <View style={styles.header}>
@@ -60,7 +79,7 @@ const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           hitSlop={10}>
-          <IconArrowLeft size={px(22)} color="#1F2933" />
+          <IconArrowLeft size={22} color="#1F2933" />
         </Pressable>
 
         <View style={styles.searchBox}>
@@ -83,32 +102,54 @@ const ReviewLocationSelectScreen = ({navigation, route}: Props) => {
       </View>
 
       {/* 장소 리스트 */}
-      <FlatList
-        data={CURRENT_PLACES}
-        keyExtractor={item => String(item.id)}
-        contentContainerStyle={styles.listContent}
-        renderItem={({item}) => (
-          <Pressable
-            style={styles.placeItem}
-            onPress={() => handleSelectPlace(item)}>
-            <View style={styles.placeTextBox}>
-              <View style={styles.placeTitleRow}>
-                <View style={styles.placeCategoryBadge}>
-                  <Text style={styles.placeCategory}>{item.category}</Text>
-                </View>
-                <View style={{flex: 1}}>
-                  <View style={styles.placeNameRow}>
-                    <Text style={styles.placeName}>{item.name}</Text>
-                    <Text style={styles.placeDistance}>{item.distance}</Text>
+      {isLoading ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator color={colors.text.brand} />
+        </View>
+      ) : (
+        <FlatList
+          data={places}
+          keyExtractor={item => String(item.id)}
+          contentContainerStyle={styles.listContent}
+          renderItem={({item}) => {
+            const distanceM =
+              location && item.latitude != null && item.longitude != null
+                ? getDistance(location, {latitude: item.latitude, longitude: item.longitude})
+                : 0;
+
+            return (
+              <Pressable
+                style={styles.placeItem}
+                onPress={() => handleSelectPlace(item)}>
+                <View style={styles.placeTextBox}>
+                  <View style={styles.placeTitleRow}>
+                    {!!item.category && (
+                      <View style={styles.placeCategoryBadge}>
+                        <Text style={styles.placeCategory}>{CATEGORY_LABEL[item.category]}</Text>
+                      </View>
+                    )}
+                    <View style={styles.placeNameRow}>
+                      <Text style={styles.placeName}>{item.name}</Text>
+                      <Text style={styles.placeDistance}>{formatDistance(distanceM)}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.placeAddress}>{item.address}</Text>
+                  {!!item.address && (
+                    <Text style={styles.placeAddress}>{item.address}</Text>
+                  )}
                 </View>
-              </View>
-            </View>
-            <Image source={item.thumbnail} style={styles.placeThumbnail} />
-          </Pressable>
-        )}
-      />
+                {item.thumbnail_url ? (
+                  <Image
+                    source={{uri: item.thumbnail_url}}
+                    style={styles.placeThumbnail}
+                  />
+                ) : (
+                  <View style={[styles.placeThumbnail, styles.placeThumbnailEmpty]} />
+                )}
+              </Pressable>
+            );
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -118,35 +159,35 @@ export default ReviewLocationSelectScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   header: {
-    height: px(64),
-    paddingHorizontal: px(16),
-    paddingBottom: px(16),
+    height: 64,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E4',
+    borderBottomColor: colors.border.default,
   },
 
   backButton: {
-    width: px(32),
-    height: px(32),
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: px(8),
+    marginRight: spacing.s,
   },
 
   searchBox: {
     flex: 1,
-    height: px(40),
-    borderRadius: px(12),
-    backgroundColor: '#F1F1F4',
-    paddingLeft: px(12),
-    paddingRight: px(16),
+    height: 40,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface.default,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -156,25 +197,25 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     fontFamily: fontFamily.regular,
-    fontSize: px(12),
+    fontSize: 12,
     color: '#111827',
-    lineHeight: px(14),
+    lineHeight: 14,
   },
 
   searchIcon: {
-    width: px(24),
-    height: px(24),
+    width: 24,
+    height: 24,
     resizeMode: 'contain',
-    marginLeft: px(6),
+    marginLeft: 6,
   },
 
   locationBar: {
-    height: px(44),
-    marginHorizontal: px(16),
-    marginTop: px(12),
-    borderRadius: px(8),
-    backgroundColor: '#2C343F',
-    paddingHorizontal: px(16),
+    height: 44,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface.subtle,
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -183,106 +224,115 @@ const styles = StyleSheet.create({
   locationLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(6),
+    gap: 6,
   },
 
   locationIcon: {
-    width: px(14),
-    height: px(14),
+    width: 14,
+    height: 14,
     resizeMode: 'contain',
   },
 
   locationText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(13),
-    color: '#FFFFFF',
+    fontSize: 13,
+    color: colors.text.inverse,
   },
 
   savedText: {
     fontFamily: fontFamily.medium,
-    fontSize: px(13),
-    color: '#FFFFFF',
+    fontSize: 13,
+    color: colors.text.inverse,
+  },
+
+  loadingBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   listContent: {
-    paddingTop: px(8),
-    paddingBottom: px(24),
+    paddingTop: spacing.s,
+    paddingBottom: spacing['2xl'],
   },
 
   placeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: px(14),
-    paddingHorizontal: px(16),
+    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: '#EEF0F3',
   },
 
   placeTextBox: {
     flex: 1,
-    marginRight: px(12),
-    flexDirection: 'column',
+    marginRight: spacing.md,
   },
 
   placeTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: px(4),
-    marginBottom: px(2),
+    gap: spacing.xs,
+    marginBottom: 2,
   },
 
   placeCategoryBadge: {
-    height: px(22),
-    paddingHorizontal: px(8),
-    borderRadius: px(8),
-    backgroundColor: '#E1E9FF',
+    height: 22,
+    paddingHorizontal: spacing.s,
+    borderRadius: radius.md,
+    backgroundColor: colors.button.primaryLighter,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: px(8),
+    marginRight: spacing.s,
   },
 
   placeCategory: {
     fontFamily: fontFamily.bold,
-    fontSize: px(12),
-    color: '#6489F2',
-    lineHeight: px(14),
+    fontSize: 12,
+    color: colors.text.brand,
+    lineHeight: 14,
+  },
+
+  placeAddress: {
+    marginTop: spacing.s,
+    fontFamily: fontFamily.medium,
+    fontSize: 14,
+    color: '#8A919E',
+    lineHeight: 17,
   },
 
   placeNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: px(6),
+    gap: 6,
   },
 
   placeName: {
     fontFamily: fontFamily.bold,
-    fontSize: px(20),
-    color: '#111114',
-    lineHeight: px(24),
-    marginRight: px(8),
+    fontSize: 20,
+    color: colors.text.basic,
+    lineHeight: 24,
+    marginRight: spacing.s,
   },
 
   placeDistance: {
     fontFamily: fontFamily.regular,
-    fontSize: px(14),
-    color: '#6489F2',
-    lineHeight: px(17),
-  },
-
-  placeAddress: {
-    marginTop: px(8),
-    fontFamily: fontFamily.medium,
-    fontSize: px(14),
-    color: '#8A919E',
-    lineHeight: px(17),
+    fontSize: 14,
+    color: colors.text.brand,
+    lineHeight: 17,
   },
 
   placeThumbnail: {
-    width: px(80),
-    height: px(80),
-    borderRadius: px(12),
+    width: 80,
+    height: 80,
+    borderRadius: radius.lg,
     resizeMode: 'cover',
-    backgroundColor: '#F1F3F5',
+    backgroundColor: colors.navy[50],
+  },
+
+  placeThumbnailEmpty: {
+    backgroundColor: colors.navy[50],
   },
 });

@@ -1,37 +1,67 @@
 import {apiClient} from './client';
-import {PlaceResponse} from '../types/place';
 import {AutocompleteResponse} from '../types/autocomplete';
-import {SearchHistoryResponse} from '../types/search';
+import {PlaceResponse, SearchHistoryResponse} from '../types/search';
 
-// 장소 검색 API → GET /api/places/search?keyword=...
-export async function searchPlaces(keyword: string): Promise<PlaceResponse> {
-  const response = await apiClient.get<PlaceResponse>('/api/search', {
-    params: {keyword},
+type ApiResponse<T> = {success: boolean; message: string | null; data: T};
+
+// 장소 검색 API → GET /api/places/search?keyword=... (keyword 없이 좌표만 보내도 됨)
+export async function searchPlaces(
+  keyword?: string,
+  options?: { latitude?: number; longitude?: number },
+): Promise<PlaceResponse> {
+  const trimmedKeyword = keyword?.trim();
+
+  const response = await apiClient.get<ApiResponse<PlaceResponse>>('/api/places/search', {
+    params: {
+      // 빈 문자열이면 keyword 자체를 안 보냄
+      ...(trimmedKeyword && { keyword: trimmedKeyword }),
+      ...(options?.latitude != null && { latitude: options.latitude }),
+      ...(options?.longitude != null && { longitude: options.longitude }),
+    },
   });
-  return response.data;
+  return response.data.data;
 }
 
 // 최근 검색어 조회 API → GET /api/search/history
 export async function fetchSearchHistory(): Promise<SearchHistoryResponse> {
-  const response = await apiClient.get<SearchHistoryResponse>('/api/search/history');
-  return response.data;
+  const response = await apiClient.get<ApiResponse<SearchHistoryResponse>>('/api/search/history');
+  return response.data.data;
 }
 
-// 최근 검색어 삭제 API → DELETE /api/search/history/{id}
-export async function deleteSearchHistory(id: number): Promise<void> {
-  await apiClient.delete(`/api/search/history/${id}`);
+// 검색어 저장 API → POST /api/search/history?keyword=...
+export async function saveSearchHistory(keyword: string): Promise<void> {
+  await apiClient.post('/api/search/history', null, {
+    params: { keyword },
+  });
 }
 
-// 전체 검색어 삭제 API → DELETE /api/search/history
+// 검색어 개별 삭제 API → DELETE /api/search/history?keyword=...
+export async function deleteSearchHistory(keyword: string): Promise<void> {
+  await apiClient.delete('/api/search/history', {
+    params: { keyword },
+  });
+}
+
+// 전체 검색어 삭제 API → DELETE /api/search/history/all
 export async function deleteAllSearchHistory(): Promise<void> {
-  await apiClient.delete('/api/search/history');
+  await apiClient.delete('/api/search/history/all');
 }
 
-// 검색 자동완성 API → GET /api/places/search/autocomplete?keyword=...
-export async function fetchAutocomplete(keyword: string): Promise<AutocompleteResponse> {
-  const response = await apiClient.get<AutocompleteResponse>(
+// 검색 자동완성 API → GET /api/search/autocomplete?keyword=...
+// 좌표를 같이 보내야 거리 기준으로 추려짐 (없으면 전국 정확도순이라 가까운 장소가 안 뜸)
+export async function fetchAutocomplete(
+  keyword: string,
+  options?: { latitude?: number; longitude?: number },
+): Promise<AutocompleteResponse> {
+  const response = await apiClient.get<ApiResponse<AutocompleteResponse>>(
     '/api/search/autocomplete',
-    {params: {keyword}},
+    {
+      params: {
+        keyword,
+        ...(options?.latitude != null && { latitude: options.latitude }),
+        ...(options?.longitude != null && { longitude: options.longitude }),
+      },
+    },
   );
-  return response.data;
+  return response.data.data;
 }

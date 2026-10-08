@@ -5,28 +5,45 @@ import {
   Image,
   StyleSheet,
   StatusBar,
-  Pressable,
   Alert,
+  Platform,
 } from 'react-native';
 import {loginWithKakaoAccount} from '@react-native-seoul/kakao-login';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
+import {appleAuth} from '@invertase/react-native-apple-authentication';
 import {socialLoginApi} from '../../api/auth';
 import {saveTokens} from '../../storage/tokenStorage';
 import {useAuth} from '../../context/AuthContext';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
-import type {AuthStackParamList} from '../../types/navigation';
-import {fontFamily} from '../../constants/typography';
+import {getFcmToken} from '../../utils/fcm';
 
-const kakaoLogo = require('../../assets/image/kakao_logo.png');
-const logo = require('../../assets/image/logo.png');
-const iphoneMockup = require('../../assets/image/iphone_mockup.png');
+import type {AuthStackParamList} from '../../types/navigation';
+import {typography} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {gap} from '../../constants/spacing';
+import KakaoLoginButton from '../../components/auth/KakaoLoginButton';
+import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
+import AppleLoginButton from '../../components/auth/AppleLoginButton';
+
+const logo = require('../../assets/image/logo_new.png');
+
+const LOGO_TOP = 139;
+const LOGO_WIDTH = 83;
+const LOGO_HEIGHT = 52;
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({navigation}: Props) {
   const [isLoginLoading, setIsLoginLoading] = React.useState(false);
   const {setIsLoggedIn} = useAuth();
+  const insets = useSafeAreaInsets();
 
   const handleKakaoLogin = async () => {
     try {
@@ -37,9 +54,12 @@ export default function LoginScreen({navigation}: Props) {
       const kakaoToken = await loginWithKakaoAccount();
       console.log('[2] 카카오 토큰 획득:', kakaoToken.accessToken);
 
+      const fcmToken = await getFcmToken();
+
       const result = await socialLoginApi({
         provider: 'KAKAO',
         accessToken: kakaoToken.accessToken,
+        fcmToken,
       });
 
       console.log('[3] 백엔드 응답:', JSON.stringify(result));
@@ -64,6 +84,123 @@ export default function LoginScreen({navigation}: Props) {
       setIsLoggedIn(true);
     } catch (error: any) {
       console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
+
+      Alert.alert(
+        '로그인 실패',
+        error?.message || '로그인 중 문제가 발생했습니다.',
+      );
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoginLoading(true);
+
+      await GoogleSignin.hasPlayServices({showPlayServicesUpdateDialog: true});
+
+      const response = await GoogleSignin.signIn();
+
+      if (!isSuccessResponse(response)) {
+        // 사용자가 로그인을 취소한 경우 별도 안내 없이 종료
+        return;
+      }
+
+      // 백엔드 access_token 필드에는 Google의 idToken을 담아 전달함(백엔드 스펙 확인 완료).
+      const idToken = response.data.idToken;
+
+      if (!idToken) {
+        throw new Error('Google ID 토큰을 가져오지 못했습니다.');
+      }
+
+      const fcmToken = await getFcmToken();
+
+      const result = await socialLoginApi({
+        provider: 'GOOGLE',
+        accessToken: idToken,
+        fcmToken,
+      });
+
+      if (!result.success || !result.data) {
+        throw new Error(result.message || '로그인 응답이 올바르지 않습니다.');
+      }
+
+      const {access_token, refresh_token, is_new_user, user} = result.data;
+
+      await saveTokens(access_token, refresh_token);
+
+      if (is_new_user) {
+        navigation.navigate('Terms');
+        return;
+      }
+
+      setIsLoggedIn(true);
+    } catch (error: any) {
+      if (isErrorWithCode(error) && error.code === statusCodes.IN_PROGRESS) {
+        return;
+      }
+
+      console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
+
+      Alert.alert(
+        '로그인 실패',
+        error?.message || '로그인 중 문제가 발생했습니다.',
+      );
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      setIsLoginLoading(true);
+
+      const appleAuthRequestResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
+
+      const {identityToken} = appleAuthRequestResponse;
+
+      if (!identityToken) {
+        throw new Error('Apple ID 토큰을 가져오지 못했습니다.');
+      }
+
+      const fcmToken = await getFcmToken();
+
+      const result = await socialLoginApi({
+        provider: 'APPLE',
+        accessToken: identityToken,
+        fcmToken,
+      });
+
+      if (!result.success || !result.data) {
+        throw new Error(result.message || '로그인 응답이 올바르지 않습니다.');
+      }
+
+      const {access_token, refresh_token, is_new_user, user} = result.data;
+
+      await saveTokens(access_token, refresh_token);
+
+      if (is_new_user) {
+        navigation.navigate('Terms');
+        return;
+      }
+
+      setIsLoggedIn(true);
+    } catch (error: any) {
+      if (error?.code === appleAuth.Error.CANCELED) {
+        return;
+      }
+
+      console.log('[ERROR] message:', error?.message);
+      console.log('[ERROR] status:', error?.response?.status);
+      console.log('[ERROR] data:', JSON.stringify(error?.response?.data));
 
       Alert.alert(
         '로그인 실패',
@@ -75,41 +212,39 @@ export default function LoginScreen({navigation}: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#2C343F" />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.background.dark} />
 
-      <View style={styles.topSection}>
-        <Image source={logo} style={styles.logo} resizeMode="contain" />
-
+      <View style={styles.logoSection} pointerEvents="none">
         <Image
-          source={iphoneMockup}
-          style={styles.mockupImage}
+          source={logo}
+          tintColor={colors.brand.primary}
+          style={{width: LOGO_WIDTH, height: LOGO_HEIGHT, marginTop: LOGO_TOP}}
           resizeMode="contain"
         />
+
+        <Text style={styles.description}>실시간 장소 정보 공유 플랫폼, 모잉</Text>
       </View>
 
-      <View style={styles.bottomSection}>
-        <View style={styles.textGroup}>
-          <Text style={styles.title}>실시간으로 탐색하는 장소 정보</Text>
-
-          <Text style={styles.description}>
-            혼잡도 정보부터 장소 사진 확인까지{'\n'}모잉에서 한 번에!
-          </Text>
-        </View>
-
-        <Pressable
-          style={({pressed}) => [
-            styles.kakaoButton,
-            pressed && styles.kakaoButtonPressed,
-            isLoginLoading && styles.kakaoButtonPressed,
-          ]}
+      <View
+        style={[
+          styles.socialButtonGroup,
+          {paddingBottom: insets.bottom + 16},
+        ]}>
+        <KakaoLoginButton
           onPress={handleKakaoLogin}
-          disabled={isLoginLoading}>
-          <View style={styles.kakaoContent}>
-            <Image source={kakaoLogo} style={styles.kakaoLogo} />
-            <Text style={styles.kakaoButtonText}>카카오 로그인</Text>
-          </View>
-        </Pressable>
+          disabled={isLoginLoading}
+        />
+        <GoogleLoginButton
+          onPress={handleGoogleLogin}
+          disabled={isLoginLoading}
+        />
+        {Platform.OS === 'ios' && (
+          <AppleLoginButton
+            onPress={handleAppleLogin}
+            disabled={isLoginLoading}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -118,96 +253,24 @@ export default function LoginScreen({navigation}: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2C343F',
+    backgroundColor: colors.background.dark,
   },
 
-  topSection: {
-    flex: 1,
-    backgroundColor: '#2C343F',
+  logoSection: {
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 36,
-  },
-
-  logo: {
-    width: 75,
-    height: 40,
-    position: 'absolute',
-    top: 78,
-  },
-
-  mockupImage: {
-    width: 262,
-    height: 397,
-    marginBottom: 0
-  },
-
-  bottomSection: {
-    width: '100%',
-    height: 254,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 30,
-    paddingBottom: 41,
-    alignItems: 'center',
-  },
-
-  textGroup: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-
-  title: {
-    color: '#000000',
-    fontSize: 20,
-    fontFamily: fontFamily.bold,
-    lineHeight: 24,
-    textAlign: 'center',
-    marginBottom: 8,
+    gap: gap['2xl'],
   },
 
   description: {
-    color: '#000000',
-    fontSize: 14,
-    fontFamily: fontFamily.regular,
-    lineHeight: 18,
+    ...typography.b4,
+    color: colors.text.inverse,
     textAlign: 'center',
   },
 
-  kakaoButton: {
+  socialButtonGroup: {
     width: '100%',
-    height: 45,
-    borderRadius: 6,
-    backgroundColor: '#FEE500',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-  },
-
-  kakaoButtonPressed: {
-    opacity: 0.75,
-  },
-
-  kakaoContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  kakaoLogo: {
-    width: 18,
-    height: 17,
-    marginRight: 6,
-    resizeMode: 'contain',
-  },
-
-  kakaoButtonText: {
-    color: 'rgba(0, 0, 0, 0.85)',
-    fontSize: 15,
-    fontFamily: fontFamily.bold,
-    lineHeight: 22,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
+    marginTop: 'auto',
+    paddingHorizontal: 16,
+    gap: 12,
   },
 });

@@ -1,53 +1,102 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Pressable,
-  Dimensions,
-} from 'react-native';
+import React, {useRef, useState} from 'react';
+import {View, Text, StyleSheet, StatusBar, Pressable, Modal, Image} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
+import {NaverMapView, NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 
 import type {ReviewStackParamList} from '../../types/navigation';
-import {fontFamily} from '../../constants/typography';
+import {fontFamily, typography} from '../../constants/typography';
+import {colors} from '../../constants/colors';
+import {spacing} from '../../constants/spacing';
+import {radius} from '../../constants/radius';
+import IconLocationPin from '../../assets/icons/IconLocationPin';
+const cautionIcon = require('../../assets/image/caution_yellow.png');
+const reviewMapMarker = require('../../assets/image/review_mapMarker.png');
 
 type Props = NativeStackScreenProps<
   ReviewStackParamList,
   'ReviewLocationConfirm'
 >;
 
-const DESIGN_WIDTH = 393;
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-const scale = SCREEN_WIDTH / DESIGN_WIDTH;
-const px = (value: number) => value * scale;
-
 const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
   const {
     photoUri,
     placeId,
     placeName,
-    placeCategory,
     placeDistance,
     placeAddress,
+    latitude,
+    longitude,
+    congestion,
+    reviewText,
   } = route.params;
 
-  const handleNo = () => {
-    navigation.goBack();
-  };
+const mapRef = useRef<NaverMapViewRef>(null);
 
-  const handleYes = () => {
-    navigation.navigate('ReviewWrite', {
-      photoUri,
-      placeId,
-      placeName,
-    });
-  };
+const [locationFailVisible, setLocationFailVisible] = useState(false);
+
+const LOCATION_LIMIT_M = 200;
+
+const getDistanceNumber = (distance: string | number | undefined) => {
+  if (typeof distance === 'number') {
+    return distance;
+  }
+
+  if (!distance) {
+    return 9999;
+  }
+
+  const lowerDistance = distance.toLowerCase();
+
+  const onlyNumber = lowerDistance.replace(/[^0-9.]/g, '');
+  const numberValue = Number(onlyNumber);
+
+  if (Number.isNaN(numberValue)) {
+    return 9999;
+  }
+
+  // 혹시 "1.2km" 이런 식으로 들어오면 m로 변환
+  if (lowerDistance.includes('km')) {
+    return numberValue * 1000;
+  }
+
+  return numberValue;
+};
+
+const handleNo = () => {
+  navigation.goBack();
+};
+
+const handleConfirmLocation = () => {
+  const distanceNumber = getDistanceNumber(placeDistance);
+
+  if (distanceNumber > LOCATION_LIMIT_M) {
+    setLocationFailVisible(true);
+    return;
+  }
+
+  navigation.navigate('ReviewWrite', {
+    photoUri,
+    placeId,
+    placeName,
+    congestion,
+    reviewText,
+  });
+};
+
+const handleLocationFailConfirm = () => {
+  setLocationFailVisible(false);
+
+  navigation.navigate('ReviewWrite', {
+    photoUri,
+    congestion,
+    reviewText,
+  });
+};
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
       <View style={styles.container}>
         <Pressable
@@ -64,21 +113,43 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
 
         <View style={styles.placeCard}>
             <View style={styles.mapBox}>
-            <Text style={styles.mapPlaceholderText}>지도 영역</Text>
+              {latitude != null && longitude != null && latitude !== 0 && longitude !== 0 ? (
+                <NaverMapView
+                  ref={mapRef}
+                  style={styles.naverMap}
+                  initialCamera={{latitude, longitude, zoom: 16}}
+                  isShowCompass={false}
+                  isShowScaleBar={false}
+                  isShowZoomControls={false}
+                  isScrollGesturesEnabled={false}
+                  isZoomGesturesEnabled={false}
+                  isTiltGesturesEnabled={false}
+                  isRotateGesturesEnabled={false}>
+                  <NaverMapMarkerOverlay
+                    latitude={latitude}
+                    longitude={longitude}
+                    image={reviewMapMarker}
+                    width={50}
+                    height={50}
+                    anchor={{x: 0.5, y: 1}}
+                  />
+                </NaverMapView>
+              ) : (
+                <View style={styles.mapFallback} />
+              )}
             </View>
 
           <View style={styles.placeInfoBox}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{placeCategory}</Text>
-            </View>
+            <IconLocationPin size={24} color="#4B566D" />
 
             <View style={styles.placeTextBox}>
               <View style={styles.placeNameRow}>
-                <Text style={styles.placeName}>{placeName}</Text>
-                <Text style={styles.placeDistance}>{placeDistance}</Text>
+                <Text style={styles.placeName} numberOfLines={1} ellipsizeMode="tail">{placeName}</Text>
               </View>
 
-              <Text style={styles.placeAddress}>{placeAddress}</Text>
+              {!!placeAddress && (
+                <Text style={styles.placeAddress}>{placeAddress}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -86,18 +157,43 @@ const ReviewLocationConfirmScreen = ({navigation, route}: Props) => {
         <View style={styles.bottomButtonBox}>
             <Pressable
                 style={styles.noButton}
-                onPress={() => navigation.goBack()}>
-                <Text style={styles.noButtonText}>아니에요</Text>
+                onPress={handleNo}>
+                <Text style={styles.noButtonText} numberOfLines={1} ellipsizeMode="tail">아니에요</Text>
             </Pressable>
 
-            <Pressable style={styles.yesButton} onPress={handleYes}>
+            <Pressable style={styles.yesButton} onPress={handleConfirmLocation}>
                 <View style={styles.yesButtonContent}>
                 <Text style={styles.checkText}>✓</Text>
-                <Text style={styles.yesButtonText}>네 맞아요</Text>
+                <Text style={styles.yesButtonText} numberOfLines={1} ellipsizeMode="tail">네 맞아요</Text>
                 </View>
             </Pressable>
         </View>
       </View>
+
+      <Modal
+        visible={locationFailVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLocationFailVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.locationFailModal}>
+            <Image source={cautionIcon} style={styles.cautionIcon} />
+
+            <Text style={styles.modalTitle}>위치 인증에 실패했어요</Text>
+
+            <Text style={styles.modalDescription}>
+              내 위치 기준 200m 이내의 장소만{'\n'}
+              리뷰 작성이 가능해요
+            </Text>
+
+            <Pressable
+              style={styles.modalButton}
+              onPress={handleLocationFailConfirm}>
+            <Text style={styles.modalButtonText}>확인했어요</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -107,22 +203,22 @@ export default ReviewLocationConfirmScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.white,
   },
 
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: px(16),
+    backgroundColor: colors.background.white,
+    paddingHorizontal: spacing.lg,
   },
 
   // 우상단 × 닫기 버튼
   closeButton: {
     position: 'absolute',
-    top: px(20),
-    right: px(16),
-    width: px(32),
-    height: px(32),
+    top: spacing.xl,
+    right: spacing.lg,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -130,96 +226,83 @@ const styles = StyleSheet.create({
 
   closeText: {
     fontFamily: fontFamily.regular,
-    fontSize: px(30),
-    lineHeight: px(30),
+    fontSize: 30,
+    lineHeight: 30,
     color: '#1F2933',
     includeFontPadding: false,
   },
 
   titleBox: {
-    marginTop: px(116),
+    marginTop: 116,
     alignItems: 'center',
   },
 
   // 메인 질문 텍스트
   title: {
     fontFamily: fontFamily.bold,
-    fontSize: px(22),
-    lineHeight: px(26),
-    color: '#111114',
+    fontSize: 22,
+    lineHeight: 26,
+    color: colors.text.basic,
     includeFontPadding: false,
+    textAlign: 'center',
   },
 
   // 안내 부제목
   subTitle: {
-    marginTop: px(8),
+    marginTop: spacing.s,
     fontFamily: fontFamily.bold,
-    fontSize: px(14),
-    lineHeight: px(17),
+    fontSize: 14,
+    lineHeight: 17,
     color: '#4B5563',
     includeFontPadding: false,
+    textAlign: 'center',
   },
 
   // 장소 카드 전체 컨테이너
   placeCard: {
-    width: px(360),
-    height: px(329),
-    alignSelf: 'center',
-    marginTop: px(40),
+    alignSelf: 'stretch',
+    height: 329,
+    marginTop: spacing['4xl'],
     borderWidth: 1,
-    borderColor: '#E0E0E4',
-    borderRadius: px(12),
-    padding: px(4),
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.border.default,
+    borderRadius: radius.lg,
+    padding: spacing.xs,
+    backgroundColor: colors.surface.white,
   },
 
-  // 지도 표시 영역 (회색 플레이스홀더)
+  // 지도 표시 영역
   mapBox: {
-    height: px(244),
-    borderRadius: px(8),
-    backgroundColor: '#F1F3F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    width: '100%',
+    height: 244,
+    borderRadius: radius.md,
+  },
+
+  naverMap: {
+    flex: 1,
+  },
+
+  mapFallback: {
+    flex: 1,
+    backgroundColor: colors.navy[50],
   },
 
   // 지도 준비 전 임시 안내 문구
   mapPlaceholderText: {
     fontFamily: fontFamily.medium,
-    fontSize: px(14),
+    fontSize: 14,
     color: '#9CA3AF',
     includeFontPadding: false,
   },
 
-  // 카테고리 배지 + 장소명/주소 가로 배치
+  // 위치 아이콘 + 장소명/주소 가로 배치
   placeInfoBox: {
     flex: 1,
-    paddingTop: px(12),
-    paddingHorizontal: px(8),
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.s,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-  },
-
-  // 카테고리 배지
-  categoryBadge: {
-    height: px(22),
-    paddingHorizontal: px(8),
-    borderRadius: px(8),
-    backgroundColor: '#E1E9FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: px(8),
-    marginTop: px(2),
-  },
-
-  // 카테고리 텍스트 (파란 계열)
-  categoryText: {
-    fontFamily: fontFamily.bold,
-    fontSize: px(12),
-    lineHeight: px(14),
-    color: '#6489F2',
-    includeFontPadding: false,
+    gap: spacing.s,
+    backgroundColor: colors.surface.white,
   },
 
   // 장소명·거리·주소를 세로로 쌓는 flex 컨테이너
@@ -235,29 +318,21 @@ const styles = StyleSheet.create({
 
   // 장소명 — 굵고 큰 텍스트
   placeName: {
+    flexShrink: 1,
     fontFamily: fontFamily.bold,
-    fontSize: px(20),
-    lineHeight: px(24),
-    color: '#111114',
+    fontSize: 20,
+    lineHeight: 24,
+    color: colors.text.basic,
     includeFontPadding: false,
-    marginRight: px(8),
-  },
-
-  // 거리 표시 (연파란 계열)
-  placeDistance: {
-    fontFamily: fontFamily.medium,
-    fontSize: px(14),
-    lineHeight: px(18),
-    color: '#83A6FF',
-    includeFontPadding: false,
+    marginRight: spacing.s,
   },
 
   // 도로명 주소 — 작은 회색 텍스트
   placeAddress: {
-    marginTop: px(8),
+    marginTop: spacing.s,
     fontFamily: fontFamily.medium,
-    fontSize: px(13),
-    lineHeight: px(17),
+    fontSize: 13,
+    lineHeight: 17,
     color: '#6B7280',
     includeFontPadding: false,
   },
@@ -265,33 +340,33 @@ const styles = StyleSheet.create({
   // 하단 버튼 영역
   bottomButtonBox: {
     position: 'absolute',
-    left: px(16),
-    right: px(16),
-    bottom: px(33),
-    height: px(48),
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 33,
+    height: 48,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
 
-  // '아니에요' 버튼
+  // '아니에요' 버튼 — yesButton과 14:25 비율(기존 126dp:225dp) 유지
   noButton: {
-    width: px(126),
-    height: px(48),
-    borderRadius: px(12),
+    flex: 14,
+    height: 48,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.button.tertiaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  // '네 맞아요' 버튼
+  // '네 맞아요' 버튼 — noButton과 25:14 비율(기존 225dp:126dp) 유지
   yesButton: {
-    width: px(225),
-    height: px(48),
-    borderRadius: px(12),
-    backgroundColor: '#DCE6FF',
+    flex: 25,
+    height: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.button.secondaryFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -301,28 +376,91 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     },
 
+    // Body/B3 - 리뷰 플로우 하단 버튼 공통
     noButtonText: {
-    fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(21),
+    ...typography.b3,
     color: '#B8BDC7',
     includeFontPadding: false,
     },
 
     checkText: {
     fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(21),
-    color: '#6489F2',
+    fontSize: 24,
+    lineHeight: 21,
+    color: colors.text.inverse,
     includeFontPadding: false,
-    marginRight: px(8),
+    marginRight: spacing.s,
     },
 
+    // Body/B3 - 리뷰 플로우 하단 버튼 공통
     yesButtonText: {
-    fontFamily: fontFamily.bold,
-    fontSize: px(18),
-    lineHeight: px(21),
-    color: '#6489F2',
+    ...typography.b3,
+    color: colors.text.inverse,
     includeFontPadding: false,
     },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'flex-end',
+  },
+
+  locationFailModal: {
+    width: '100%',
+    height: 358,
+    backgroundColor: colors.surface.white,
+
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+
+    paddingTop: 45,
+    paddingRight: spacing.lg,
+    paddingBottom: 44,
+    paddingLeft: 17,
+
+    alignItems: 'center',
+  },
+
+  cautionIcon: {
+    width: 74,
+    height: 74,
+    resizeMode: 'contain',
+    marginBottom: spacing.lg,
+  },
+
+  modalTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 24,
+    lineHeight: 29,
+    color: colors.text.basic,
+    textAlign: 'center',
+    includeFontPadding: false,
+    marginBottom: spacing.md,
+  },
+
+  modalDescription: {
+    fontFamily: fontFamily.medium,
+    fontSize: 18,
+    lineHeight: 22,
+    color: colors.text.subtle,
+    textAlign: 'center',
+    includeFontPadding: false,
+    marginBottom: 44,
+  },
+
+  modalButton: {
+    alignSelf: 'stretch',
+    height: 52,
+    borderRadius: radius.lg,
+    backgroundColor: colors.button.secondaryFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Body/B3 - 리뷰 플로우 하단 버튼 공통
+  modalButtonText: {
+    ...typography.b3,
+    color: colors.text.inverse,
+    includeFontPadding: false,
+  },
 });

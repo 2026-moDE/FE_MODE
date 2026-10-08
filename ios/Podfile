@@ -17,6 +17,18 @@ end
 target 'moing' do
   config = use_native_modules!
 
+  # Firebase Swift 호환성을 위해 modular headers 설정
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'GoogleDataTransport', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
+
+  # Google Sign-In(AppCheckCore)이 Swift 정적 라이브러리로 통합되려면 필요
+  pod 'RecaptchaInterop', :modular_headers => true
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
