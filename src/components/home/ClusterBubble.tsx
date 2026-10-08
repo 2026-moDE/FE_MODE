@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
         height: BUBBLE_SIZE,
         borderRadius: radius.md,
         borderWidth: 2,
-        borderColor: colors.surface.white,
+        borderColor: colors.border.black,
         backgroundColor: colors.surface.muted,
         overflow: 'hidden',
     },
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
         borderTopWidth: TAIL_HEIGHT,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        borderTopColor: colors.surface.white,
+        borderTopColor: colors.border.black,
         marginTop: -1,
     },
 });
