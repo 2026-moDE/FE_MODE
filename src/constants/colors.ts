@@ -72,7 +72,7 @@ export const colors = {
         primaryFill:      palette.yellow[300],  // #FFFD6D
         primaryLighter:   palette.yellow[100],  // #FFFDBF
         primaryPressed:   palette.yellow[500],  // #D7D33D
-        secondaryFill:    palette.navy[800],    // #2C343F
+        secondaryFill:    palette.navy[700],    // #3B4456 (시안 Button/btn-secondary-fill)
         secondaryLighter: palette.navy[50],     // #F1F3F5
         tertiaryFill:     palette.gray[0],      // #FFFFFF
         darkFill:         palette.gray[900],    // #111114

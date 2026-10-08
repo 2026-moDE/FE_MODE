@@ -1,3 +1,5 @@
+import {colors} from '../constants/colors';
+
 // ─────────────────── 공용 Union 타입 ───────────────────
 
 // 장소 카테고리
@@ -5,9 +7,6 @@ export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'POPUP' | 'CONCERT' | 'ETC';
 
 // 혼잡도 레벨
 export type CongestionLevel = 'RELAXED' | 'MODERATE' | 'CROWDED' | 'VERY_CROWDED';
-
-// 혼잡도 버블 색상
-export type BubbleColor = 'GREEN' | 'YELLOW' | 'RED';
 
 // 요일
 export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
@@ -21,28 +20,34 @@ export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
     ETC:        '기타',
 };
 
-// 혼잡도 한글 레이블 매핑 (서버는 congestion_level만 내려주고 문구는 FE에서 만듦)
+// 혼잡도 한글 레이블 (서버는 congestion_level만 내려주고 문구는 FE에서 만듦).
+// 지도 버블·장소 상세 칩·리뷰 작성 칩이 전부 이 문구를 쓴다
 export const CONGESTION_LABEL: Record<CongestionLevel, string> = {
-    RELAXED:      '한산해요',
-    MODERATE:     '적당해요',
-    CROWDED:      '붐벼요',
-    VERY_CROWDED: '매우 붐벼요',
+    RELAXED:      '여유',
+    MODERATE:     '보통',
+    CROWDED:      '약간 붐빔',
+    VERY_CROWDED: '붐빔',
 };
 
-// 혼잡도 → 버블 색상 매핑 (서버는 congestion_level만 내려주고 색은 FE에서 정함)
-export const CONGESTION_BUBBLE_COLOR: Record<CongestionLevel, BubbleColor> = {
-    RELAXED:      'GREEN',
-    MODERATE:     'GREEN',
-    CROWDED:      'YELLOW',
-    VERY_CROWDED: 'RED',
+// 혼잡도별 색. 네 단계가 각자 다른 색을 가진다.
+// fill/text는 리뷰 작성 칩처럼 면을 채울 때, stroke는 지도 버블 테두리처럼 선만 쓸 때
+export const CONGESTION_COLOR: Record<
+    CongestionLevel,
+    {fill: string; stroke: string; text: string}
+> = {
+    RELAXED:      {fill: '#CFFFC1',            stroke: '#78D73D',           text: colors.text.subtle},
+    MODERATE:     {fill: colors.brand.primary, stroke: colors.border.brand, text: colors.text.brandDarker},
+    CROWDED:      {fill: '#FFD18D',            stroke: '#D7943D',           text: colors.text.brandDarker},
+    VERY_CROWDED: {fill: '#FFA1A1',            stroke: '#D73D3D',           text: colors.text.subtle},
 };
 
-// 버블 색상 → 실제 컬러값
-export const BUBBLE_COLOR_HEX: Record<BubbleColor, string> = {
-    GREEN:  '#84E588',
-    YELLOW: '#FFD75E',
-    RED:    '#FF685D',
-};
+// 화면에 칩으로 늘어놓을 때의 순서 (여유 → 붐빔)
+export const CONGESTION_LEVELS: CongestionLevel[] = [
+    'RELAXED',
+    'MODERATE',
+    'CROWDED',
+    'VERY_CROWDED',
+];
 
 // ─────────────────── 장소 상세 조회 api (GET /api/places/:id) ───────────────────
 export type PlaceDetail = {

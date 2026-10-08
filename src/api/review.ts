@@ -1,11 +1,11 @@
 import {apiClient} from './client';
 import {getPresignedUrl} from './imageUpload';
-import type {BubbleColor, CongestionLevel} from '../types/place';
+import type {CongestionLevel} from '../types/place';
 
 type ApiResponse<T> = {success: boolean; message: string | null; data: T};
 
 // 혼잡도 타입은 types/place.ts 한 곳에서 관리 - 기존 import 경로 호환을 위해 재수출
-export type {BubbleColor, CongestionLevel};
+export type {CongestionLevel};
 
 // 리뷰 상세 조회 응답
 export type ReviewDetail = {

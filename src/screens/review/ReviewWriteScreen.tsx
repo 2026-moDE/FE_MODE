@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {View, Text, StyleSheet, StatusBar, Image, Pressable, TextInput, KeyboardAvoidingView, ScrollView, Platform, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -13,6 +13,7 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import {useLocation} from '../../context/LocationContext';
 import {createReview, verifyPlaceLocation, getReviewImagePresignedUrl, type CongestionLevel} from '../../api/review';
+import {CONGESTION_COLOR, CONGESTION_LABEL, CONGESTION_LEVELS} from '../../types/place';
 import {uploadImageToS3} from '../../api/imageUpload';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
 
@@ -22,46 +23,19 @@ const refreshCameraIcon = require('../../assets/image/refresh_camera.png');
 const timerIcon = require('../../assets/image/timer.png');
 const pencilIcon = require('../../assets/image/pencil.png');
 
-const CONGESTION_OPTIONS = ['한산해요', '적당해요', '붐벼요', '매우 붐벼요'] as const;
-const getCongestionLevel = (
-  congestion: CongestionType,
-): CongestionLevel => {
-  switch (congestion) {
-    case '한산해요':
-      return 'RELAXED';
-    case '적당해요':
-      return 'MODERATE';
-    case '붐벼요':
-      return 'CROWDED';
-    case '매우 붐벼요':
-      return 'VERY_CROWDED';
-  }
-};
-type CongestionType = (typeof CONGESTION_OPTIONS)[number];
-
-const CHIP_WIDTHS: Record<CongestionType, number> = {
-  한산해요: 73,
-  적당해요: 73,
-  붐벼요: 61,
-  '매우 붐벼요': 88,
+// 레이블과 색은 types/place.ts 한 곳에서 관리한다 (지도 버블·장소 상세 칩과 같은 값)
+const CHIP_WIDTHS: Record<CongestionLevel, number> = {
+  RELAXED: 49,
+  MODERATE: 49,
+  CROWDED: 76,
+  VERY_CROWDED: 49,
 };
 
-// 선택된 칩의 혼잡도별 배경 / 테두리 / 글자 색
-const CHIP_SELECTED_COLORS: Record<
-  CongestionType,
-  {background: string; border: string; text: string}
-> = {
-  한산해요: {background: '#CFFFC1', border: '#78D73D', text: colors.text.subtle},
-  적당해요: {background: colors.brand.primary, border: colors.border.brand, text: colors.text.brandDarker},
-  붐벼요: {background: '#FFD18D', border: '#D7943D', text: colors.text.brandDarker},
-  '매우 붐벼요': {background: '#FFA1A1', border: '#D73D3D', text: colors.text.subtle},
-};
-
-const CONGESTION_DESCRIPTIONS: Record<CongestionType, string> = {
-  한산해요: '대기 없이 바로 이용했어요',
-  적당해요: '조금 붐볐지만 괜찮아요',
-  붐벼요: '대기가 있었어요',
-  '매우 붐벼요': '오래 기다렸다가 이용했어요',
+const CONGESTION_DESCRIPTIONS: Record<CongestionLevel, string> = {
+  RELAXED: '대기 없이 바로 이용했어요',
+  MODERATE: '조금 붐볐지만 괜찮아요',
+  CROWDED: '대기가 있었어요',
+  VERY_CROWDED: '오래 기다렸다가 이용했어요',
 };
 
 const MAX_REVIEW_LENGTH = 100;
@@ -70,9 +44,11 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
   const {photoUri, placeId, placeName, congestion, reviewText: savedReviewText} = route.params;
   const {location} = useLocation();
 
+  const scrollRef = useRef<ScrollView>(null);
+
   const [selectedCongestion, setSelectedCongestion] =
-    useState<CongestionType | null>(
-      (congestion as CongestionType) ?? null,
+    useState<CongestionLevel | null>(
+      (congestion as CongestionLevel) ?? null,
     );
   const [reviewText, setReviewText] = useState(savedReviewText ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,7 +123,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
       const reviewBody = {
         place_id: Number(placeId),
         image_url,
-        congestion_level: getCongestionLevel(selectedCongestion),
+        congestion_level: selectedCongestion,
         visibility: 'PUBLIC' as const,
         latitude,
         longitude,
@@ -209,6 +185,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           style={styles.content}
           contentContainerStyle={styles.contentInner}
           keyboardShouldPersistTaps="handled"
@@ -262,9 +239,9 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
             </View>
 
             <View style={styles.chipRow}>
-              {CONGESTION_OPTIONS.map(option => {
+              {CONGESTION_LEVELS.map(option => {
                 const isSelected = selectedCongestion === option;
-                const selectedColors = CHIP_SELECTED_COLORS[option];
+                const selectedColors = CONGESTION_COLOR[option];
 
                 return (
                   <Pressable
@@ -276,8 +253,8 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
                       isSelected && [
                         styles.chipSelected,
                         {
-                          backgroundColor: selectedColors.background,
-                          borderColor: selectedColors.border,
+                          backgroundColor: selectedColors.fill,
+                          borderColor: selectedColors.stroke,
                         },
                       ],
                     ]}
@@ -290,7 +267,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
                           {color: selectedColors.text},
                         ],
                       ]}>
-                      {option}
+                      {CONGESTION_LABEL[option]}
                     </Text>
                   </Pressable>
                 );
@@ -315,6 +292,12 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
                 multiline
                 maxLength={MAX_REVIEW_LENGTH}
                 textAlignVertical="top"
+                // 입력창이 화면 맨 아래라, 키보드가 올라오면 끝까지 스크롤해서 가려지지 않게 한다
+                onFocus={() =>
+                  requestAnimationFrame(() =>
+                    scrollRef.current?.scrollToEnd({animated: true}),
+                  )
+                }
               />
 
               <Text style={styles.countText}>

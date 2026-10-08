@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, Image, Pressable, TouchableOpacity, StyleSheet} from 'react-native';
-import {CATEGORY_LABEL, CongestionLevel, PlaceDetail} from '../../types/place';
+import {CATEGORY_LABEL, CONGESTION_LABEL, PlaceDetail} from '../../types/place';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconClock from '../../assets/icons/IconClock';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
@@ -11,15 +11,6 @@ import {typography} from '../../constants/typography';
 const crowdIcon = require('../../assets/image/crowd.png');
 const notificationOnIcon = require('../../assets/image/notification_on.png');
 const notificationOffIcon = require('../../assets/image/notification_off.png');
-
-// 혼잡도 레벨 → 한글 레이블
-// CONGESTION_LABEL('한산해요' 등)은 문장형이라, 칩에는 짧은 형태로 표시
-const CONGESTION_SHORT_LABEL: Record<CongestionLevel, string> = {
-    RELAXED:      '여유',
-    MODERATE:     '보통',
-    CROWDED:      '혼잡',
-    VERY_CROWDED: '매우 혼잡',
-};
 
 type Props = {
     place: PlaceDetail;
@@ -37,7 +28,7 @@ export default function PlaceDetailInfo({
     const {name, address, category, business_hours, is_subscribed, congestion_level} = place;
     const categoryLabel = CATEGORY_LABEL[category] ?? category;
     const congestionLabel = congestion_level
-        ? CONGESTION_SHORT_LABEL[congestion_level] ?? congestion_level
+        ? CONGESTION_LABEL[congestion_level] ?? congestion_level
         : '집계중';
 
     return (

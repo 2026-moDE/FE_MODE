@@ -4,8 +4,7 @@ import FastImage from '@d11/react-native-fast-image';
 import {NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import {
     NearbyPlace,
-    BUBBLE_COLOR_HEX,
-    CONGESTION_BUBBLE_COLOR,
+    CONGESTION_COLOR,
 } from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
@@ -67,13 +66,12 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
         return null;
     }
 
-    // 혼잡도 있으면 색상, 없으면 null
-    // 응답에 bubble_color는 없어서 혼잡도 레벨로 매핑
-    const bubbleColor = place.congestion_level
-        ? CONGESTION_BUBBLE_COLOR[place.congestion_level]
-        : null;
+    // 혼잡도 있으면 그 단계의 색, 없으면 null (없을 때 색은 아래 기본값 border-strong)
+    // 응답에 색은 없어서 혼잡도 레벨로 매핑
     const congestionColor =
-        !monochrome && bubbleColor ? BUBBLE_COLOR_HEX[bubbleColor] : null;
+        !monochrome && place.congestion_level
+            ? CONGESTION_COLOR[place.congestion_level].stroke
+            : null;
 
     return (
         <NaverMapMarkerOverlay
@@ -90,7 +88,7 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                     collapsable={false}
                     style={[
                         styles.bubble,
-                        {borderColor: congestionColor ?? colors.border.black},
+                        {borderColor: congestionColor ?? colors.border.strong},
                     ]}>
                     {hasThumbnail ? (
                         <FastImage
@@ -116,11 +114,11 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                         />
                     )}
                 </View>
-                {/* 꼬리: 혼잡도 있으면 같은 색, 없으면 흰색 */}
+                {/* 꼬리: 버블 테두리와 항상 같은 색 */}
                 <View
                     style={[
                         styles.tail,
-                        {borderTopColor: congestionColor ?? colors.border.black},
+                        {borderTopColor: congestionColor ?? colors.border.strong},
                     ]}
                 />
             </View>
@@ -141,7 +139,8 @@ const styles = StyleSheet.create({
         height: BUBBLE_SIZE,
         borderRadius: radius.md,
         borderWidth: 2,
-        borderColor: colors.border.black,
+        // 혼잡도 색이 있으면 위에서 덮어씀 - 여긴 색이 없을 때의 기본값
+        borderColor: colors.border.strong,
         backgroundColor: colors.surface.muted,
         overflow: 'hidden',
     },
@@ -160,7 +159,7 @@ const styles = StyleSheet.create({
         borderTopWidth: TAIL_HEIGHT,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        borderTopColor: colors.border.black,
+        borderTopColor: colors.border.strong,
         marginTop: -1,
     },
 });
