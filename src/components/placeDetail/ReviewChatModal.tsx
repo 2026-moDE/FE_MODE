@@ -1,6 +1,7 @@
 import { BottomSheetModal, BottomSheetFlatList, BottomSheetFooter, BottomSheetFooterProps, BottomSheetBackdrop, BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { View, Text, Image, StyleSheet, Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors } from "../../constants/colors";
@@ -28,6 +29,7 @@ type Props = {
 // ref로 present()/dismiss()를 ReviewPhoto에 노출
 export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, ref}: Props) {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+    const insets = useSafeAreaInsets();
     const snapPoints = useMemo(() => ['50%', '85%'], []);
 
     const sheetRef = useRef<BottomSheetModal>(null);
@@ -249,12 +251,6 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         (props: BottomSheetFooterProps) => (
             <BottomSheetFooter {...props} bottomInset={27}>
                 <View style={styles.inputWrapper}>
-                    {showDeleteToast && (
-                        <View style={styles.deleteToast}>
-                            <Image source={checkWhiteIcon} style={styles.deleteToastIcon} resizeMode="contain" />
-                            <Text style={styles.deleteToastText}>댓글이 삭제되었어요</Text>
-                        </View>
-                    )}
                     <CommentInput
                         onSubmit={handleSubmitComment}
                         showSecretCheckbox={reviewVisibility === 'FRIENDS'}
@@ -264,10 +260,23 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                 </View>
             </BottomSheetFooter>
         ),
-        [handleSubmitComment, reviewVisibility, isSecret, showDeleteToast],
+        [handleSubmitComment, reviewVisibility, isSecret],
     );
 
+    const footerVisible = !readOnly && !isReplyFocused;
+    // footer 높이: bottomInset(27) + paddingTop(16) + 입력창 한 줄(~40) + paddingBottom(16)
+    const toastBottom = insets.bottom + gap.lg + (footerVisible ? 27 + 16 + 40 + 16 : 0);
+
     return (
+        <>
+        <Modal visible={showDeleteToast} transparent animationType="none" statusBarTranslucent>
+            <View style={[styles.toastOverlay, {paddingBottom: toastBottom}]} pointerEvents="none">
+                <View style={styles.deleteToast}>
+                    <Image source={checkWhiteIcon} style={styles.deleteToastIcon} resizeMode="contain" />
+                    <Text style={styles.deleteToastText}>댓글이 삭제되었어요</Text>
+                </View>
+            </View>
+        </Modal>
         <BottomSheetModal
             ref={sheetRef}
             snapPoints={snapPoints}
@@ -308,6 +317,7 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                 )}
             />
         </BottomSheetModal>
+        </>
     );
 }
 
@@ -337,22 +347,22 @@ const styles = StyleSheet.create({
         paddingTop: gap.lg,                // 16 - 리스트 ↔ 입력창
         // bottomInset은 키보드가 내려갔을 때만 적용돼서(라이브러리 구현), 키보드 ↔ 입력창 간격은 여기서 줘야 함
         paddingBottom: gap.lg,             // 16 - 키보드 ↔ 입력창
-        position: 'relative',              // 토스트를 얹을 기준점 (레이아웃 흐름엔 안 끼게)
+        position: 'relative',
+    },
+    toastOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
     },
     deleteToast: {
-        position: 'absolute',
-        bottom: '100%',
-        left: spacing.xl,
-        right: spacing.xl,
-        marginBottom: gap.lg,              // 16 - 토스트 ↔ 입력창
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: gap.sm,                       // 8
-        paddingVertical: padding.sm,        // 10
-        paddingHorizontal: padding.lg,      // 16
+        gap: gap.sm,
+        paddingVertical: padding.sm,
+        paddingHorizontal: padding.lg,
         backgroundColor: colors.background.dimDarker,
-        borderRadius: radius.md,            // 8
+        borderRadius: radius.md,
     },
     deleteToastIcon: {
         width: 16,
