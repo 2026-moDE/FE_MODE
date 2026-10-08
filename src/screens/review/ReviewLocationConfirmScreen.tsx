@@ -2,7 +2,10 @@ import React, {useRef, useState} from 'react';
 import {View, Text, StyleSheet, StatusBar, Pressable, Modal, Image} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {NaverMapView, NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
+import {NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
+// 현위치 마커(locationOverlay) 설정이 여기 들어있다 - iOS 에셋 카탈로그 처리까지 포함이라
+// NaverMapView를 직접 쓰면 현위치 마커가 아예 안 뜬다
+import MapView from '../../components/map/MapView';
 
 import type {ReviewStackParamList} from '../../types/navigation';
 import {fontFamily, typography} from '../../constants/typography';
@@ -114,13 +117,9 @@ const handleLocationFailConfirm = () => {
         <View style={styles.placeCard}>
             <View style={styles.mapBox}>
               {latitude != null && longitude != null && latitude !== 0 && longitude !== 0 ? (
-                <NaverMapView
+                <MapView
                   ref={mapRef}
-                  style={styles.naverMap}
                   initialCamera={{latitude, longitude, zoom: 16}}
-                  isShowCompass={false}
-                  isShowScaleBar={false}
-                  isShowZoomControls={false}
                   isScrollGesturesEnabled={false}
                   isZoomGesturesEnabled={false}
                   isTiltGesturesEnabled={false}
@@ -133,7 +132,7 @@ const handleLocationFailConfirm = () => {
                     height={50}
                     anchor={{x: 0.5, y: 1}}
                   />
-                </NaverMapView>
+                </MapView>
               ) : (
                 <View style={styles.mapFallback} />
               )}
@@ -277,9 +276,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
 
-  naverMap: {
-    flex: 1,
-  },
 
   mapFallback: {
     flex: 1,

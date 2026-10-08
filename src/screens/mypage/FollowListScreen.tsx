@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {View, Text, StyleSheet, StatusBar, TouchableOpacity, Pressable, TextInput, FlatList, Image} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, TouchableOpacity, TextInput, FlatList} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {AppStackParamList} from '../../types/navigation';
@@ -299,7 +299,10 @@ export default function FollowListScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background.white} />
 
-      <Pressable style={styles.flexFill} onPress={() => setOpenFriendId(null)}>
+      {/* 예전엔 이 영역 전체가 Pressable이었는데(바깥 탭으로 메뉴 닫기용),
+          Pressable이 터치를 먼저 잡아서 목록 스크롤이 제대로 안 먹었다.
+          메뉴 닫기는 아래 FlatList의 onScrollBeginDrag로 대신한다 */}
+      <View style={styles.flexFill}>
         <View style={styles.header}>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -381,8 +384,11 @@ export default function FollowListScreen() {
               />
             )
           }
+          onScrollBeginDrag={() => setOpenFriendId(null)}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         />
-      </Pressable>
+      </View>
 
       <FriendDeleteModal
         visible={deleteTargetId !== null}
