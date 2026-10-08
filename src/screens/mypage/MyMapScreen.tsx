@@ -203,6 +203,7 @@ export default function MyMapScreen({navigation}: Props) {
           profile_url: profile?.profile_url ?? null,
         },
         created_at: r.created_at,
+        comment_count: r.comment_count,
       })),
     [visibleReviews, profile, viewerMonthKey],
   );

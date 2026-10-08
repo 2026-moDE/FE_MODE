@@ -12,7 +12,7 @@ import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
 import TabBar, {Tab} from '../../components/notification/TabBar';
 import SubscriptionBanner from '../../components/notification/SubscriptionBanner';
-import {fetchNotifications, fetchSubscriptions, readNotification} from '../../api/notification';
+import {fetchNotifications, fetchSubscriptions, readNotification, visitNotifications, deleteNotification} from '../../api/notification';
 import {subscribe, unsubscribe} from '../../api/place';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Notification'>;
@@ -34,11 +34,15 @@ export default function NotificationScreen({navigation}: Props) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [places, setPlaces] = useState<Subscription[]>([]);
     const [openPlaceId, setOpenPlaceId] = useState<number | null>(null);
+    const [openNotificationId, setOpenNotificationId] = useState<number | null>(null);
 
+    // 알림함 진입 시 목록 조회 + 방문 기록을 병렬로 호출 (서로 무관한 요청이라 순서 안 따짐)
+    // 방문 기록은 배지(종 아이콘 안읽음 여부)만 꺼지게 하는 용도라 실패해도 목록 조회엔 지장 없음
     useEffect(() => {
         fetchNotifications()
             .then(res => setNotifications(res.notifications ?? []))
             .catch(err => console.warn('알림 조회 실패:', err?.message));
+        visitNotifications().catch(err => console.warn('알림함 방문 기록 실패:', err?.message));
     }, []);
 
     useFocusEffect(useCallback(() => {
@@ -83,6 +87,12 @@ export default function NotificationScreen({navigation}: Props) {
         unsubscribe(placeId).catch(err => console.warn('구독 취소 실패:', err?.message));
     }, []);
 
+    // 알림 카드 스와이프 후 "삭제" - 목록에서 바로 제거하고 서버에도 삭제 요청
+    const handleDeleteNotification = useCallback((id: number) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        deleteNotification(id).catch(err => console.warn('알림 삭제 실패:', err?.message));
+    }, []);
+
     const today = notifications.filter(n => getDateLabel(n.created_at) === '오늘');
     const yesterday = notifications.filter(n => getDateLabel(n.created_at) === '어제');
     const before = notifications.filter(n => getDateLabel(n.created_at) === '이전');
@@ -103,16 +113,37 @@ export default function NotificationScreen({navigation}: Props) {
             {activeTab === 'notification' && (
                 <ScrollView contentContainerStyle={styles.content} style={styles.scroll}>
                     {today.length > 0 && (
-                        <NotificationSection label="오늘" items={today} onPressItem={handleNotificationPress} />
+                        <NotificationSection
+                            label="오늘"
+                            items={today}
+                            onPressItem={handleNotificationPress}
+                            openId={openNotificationId}
+                            onOpenChange={setOpenNotificationId}
+                            onDelete={handleDeleteNotification}
+                        />
                     )}
                     {yesterday.length > 0 && (
                         <View style={styles.sectionGap}>
-                            <NotificationSection label="어제" items={yesterday} onPressItem={handleNotificationPress} />
+                            <NotificationSection
+                                label="어제"
+                                items={yesterday}
+                                onPressItem={handleNotificationPress}
+                                openId={openNotificationId}
+                                onOpenChange={setOpenNotificationId}
+                                onDelete={handleDeleteNotification}
+                            />
                         </View>
                     )}
                     {before.length > 0 && (
                         <View style={styles.sectionGap}>
-                            <NotificationSection label="이전" items={before} onPressItem={handleNotificationPress} />
+                            <NotificationSection
+                                label="이전"
+                                items={before}
+                                onPressItem={handleNotificationPress}
+                                openId={openNotificationId}
+                                onOpenChange={setOpenNotificationId}
+                                onDelete={handleDeleteNotification}
+                            />
                         </View>
                     )}
                 </ScrollView>
@@ -152,7 +183,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface.default,
     },
     content: {
-        paddingTop: spacing.s * 2,
         paddingBottom: spacing['3xl'],
     },
     sectionGap: {

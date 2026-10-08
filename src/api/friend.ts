@@ -122,6 +122,7 @@ export type FriendReview = {
   thumbnail_small_url: string;
   user: FriendReviewUser;
   created_at: string;
+  comment_count: number;
 };
 
 // 친구 최근 리뷰 목록 조회 api (홈바텀시트)

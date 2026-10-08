@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {View, Text, FlatList, StyleSheet, Pressable, ActivityIndicator} from 'react-native';
+import {View, Text, FlatList, StyleSheet, Pressable, ActivityIndicator, Dimensions} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -15,7 +15,6 @@ import ReviewCard from '../../components/placeDetail/ReviewCard';
 import ArchivedReviewStack from '../../components/placeDetail/ArchivedReviewStack';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
-import {radius} from '../../constants/radius';
 import {typography} from '../../constants/typography';
 import ReviewPhoto from '../../components/placeDetail/ReviewPhoto';
 import ReviewReactionsModal from '../../components/mypage/ReviewReactionsModal';
@@ -29,13 +28,24 @@ import {
 } from '../../api/place';
 import { deleteReview, changeReview, fetchEmojis, EmojiReaction } from '../../api/review';
 import QuickReviewButton from '../../components/home/QuickReviewButton';
+import SpeechBubbleHint from '../../components/placeDetail/SpeechBubbleHint';
 
 
 type Props = NativeStackScreenProps<AppStackParamList, 'PlaceDetail'>;
 
-// "사진 클릭 시 자세한 후기 확인이 가능해요" 안내 말풍선 — 설치 이후 장소 상관없이 총 5번까지만
+// "사진 클릭 시 과거 후기 확인이 가능해요" 말풍선 (과거 리뷰 1개 이상일 때) —  총 5번까지만
 const PHOTO_HINT_STORAGE_KEY = '@place_detail_photo_hint_shown_count';
 const PHOTO_HINT_MAX_COUNT = 5;
+
+// "첫번째 리뷰를 작성해보세요!" 말풍선 (과거/현재 합친 리뷰 0개인 빈 상태) — 총 5번까지만
+const EMPTY_HINT_STORAGE_KEY = '@place_detail_empty_hint_shown_count';
+const EMPTY_HINT_MAX_COUNT = 5;
+
+// "사진 클릭 시 실시간 후기 확인이 가능해요" 말풍선 (과거 리뷰 없이 실시간 리뷰 1개 이상일 때) — 총 5번까지만
+const LIVE_HINT_STORAGE_KEY = '@place_detail_live_hint_shown_count';
+const LIVE_HINT_MAX_COUNT = 5;
+
+const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 export default function PlaceDetailScreen({route, navigation}: Props) {
     const {placeId, placeName, initialTab, reviewId, notificationAction} = route.params;
@@ -128,14 +138,17 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
 
     // 알림에서 특정 리뷰로 들어온 경우, 리뷰 상세 페이지가 아닌 해당 리뷰로
     const openedFromNotificationRef = useRef(false);
-    // "찾아서 열었다" 또는 "다 뒤졌는데 없어서 포기했다" 중 하나로 결론 났는지 - 그리드를 계속 숨길지 말지 이 값 하나로만 판단
+    // notificationTargetResolved는 "알림이 가리키는 리뷰를 찾는 작업에 대한 결론이 났는가"
+    // true면 "다 끝났다"(찾았거나, 없어서 포기했거나, 애초에 알림으로 들어온 게 아니거나), false면 "아직 진행 중"
     // (reviewsLoaded만 보면, reviewsLoaded=true 되는 시점과 실제 imageIndex가 세팅되는 시점이 한 프레임 어긋나서 그 사이에 그리드가 잠깐 보이는 문제가 있었음)
-    const [notificationHandled, setNotificationHandled] = useState(false);
+    const [notificationTargetResolved, setNotificationTargetResolved] = useState(false);
 
     // 같은 화면 인스턴스가 재사용되면서 다른 알림을 또 눌러 reviewId가 바뀐 경우, 위 상태들을 초기화
+    // reviewId가 없으면(알림 없이 정상적으로 들어온 경우) → !reviewId는 true → notificationTargetResolved는 처음부터 true. ("애초에 찾을 게 없으니 결론 난 거나 마찬가지")
+    // reviewId가 있으면(알림을 눌러서 들어온 경우) → !reviewId는 false → notificationTargetResolved는 false로 시작. ("아직 못 찾음")
     useEffect(() => {
         openedFromNotificationRef.current = false;
-        setNotificationHandled(!reviewId);
+        setNotificationTargetResolved(!reviewId);
     }, [reviewId]);
 
     useEffect(() => {
@@ -148,7 +161,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             setActiveTab('current');
             setImageIndex(currentIdx);
             if (notificationAction === 'reactions') openReactions(reviewId);
-            setNotificationHandled(true);
+            setNotificationTargetResolved(true);
             return;
         }
 
@@ -158,12 +171,12 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             setActiveTab('archived');
             setImageIndex(archivedIdx);
             if (notificationAction === 'reactions') openReactions(reviewId);
-            setNotificationHandled(true);
+            setNotificationTargetResolved(true);
             return;
         }
 
         // 둘 다 로딩 끝났는데도 못 찾았으면 포기하고 그리드를 보여줌
-        if (reviewsLoaded) setNotificationHandled(true);
+        if (reviewsLoaded) setNotificationTargetResolved(true);
     }, [reviewId, currentReviews, archivedReviews, reviewsLoaded, notificationAction, openReactions]);
 
     // 거리 텍스트 (계산된 경우만)
@@ -173,14 +186,27 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
     // 실시간 탭 + 과거 리뷰가 있을 때만 "과거 리뷰 확인하기" ui
     const hasArchiveTile = activeTab === 'current' && archivedReviews.length > 0;
 
-    // 알림(댓글/반응)에서 특정 리뷰로 들어온 경우, "찾아서 열었다/포기했다" 결론 나기 전까지 그리드 화면을 숨김
-    // -> 장소 상세 그리드가 잠깐 보였다가 리뷰 사진 모달로 넘어가는 게 아니라, 곧바로 모달이 뜸
-    const isResolvingNotificationTarget = !!reviewId && !notificationHandled;
+    // isWaitingForNotificationTarget은 "지금 알림이 가리키는 리뷰를 찾는 중이라, 그리드를 숨겨야 하는 상황인가"
+    // -> 장소 상세 그리드가 잠깐 보였다가 리뷰 사진 모달로 넘어가는 게 아니라, 곧바로 모달이 뜨드록
+    // "알림으로 들어왔고 + 아직 결론 안 남" 이 한 가지 경우만 true
+    const isWaitingForNotificationTarget = !!reviewId && !notificationTargetResolved;
 
-    // 과거 리뷰 확인하기 말풍선 (ReviewPhotoConfirmScreen의 블러 안내와 동일하게 3초간)
+    // 그리드에 뿌릴 데이터 (타일 추가 + 홀수면 null로 빈 자리 추가 → 마지막 카드 커지는 거 방지)
+    // 아래 힌트 노출 조건(isEmpty)에서 먼저 써야 해서 원래 위치(그리드 바로 위)보다 앞으로 옮김
+    const displayReviews = useMemo<(((CurrentReview | ArchivedReview) | null) | 'archive-entry')[]>(() => {
+        const list: (((CurrentReview | ArchivedReview) | null) | 'archive-entry')[] =
+            hasArchiveTile ? ['archive-entry', ...reviews] : [...reviews];
+        return list.length % 2 === 1 ? [...list, null] : list;
+    }, [reviews, hasArchiveTile]);
+
+    // "사진 클릭 시 과거 후기 확인이 가능해요" 말풍선 노출 횟수 관련 (ReviewPhotoConfirmScreen의 블러 안내 말풍선과 동일하게 3초간)
     // 앱 설치 이후 장소 상관없이 장소 상세 화면 방문 총 5번까지만 노출
+
+    // hint1 보여주고 있는지 여부
     const [showArchiveHint, setShowArchiveHint] = useState(false);
+    // 3초 뒤 자동으로 숨기기 위해 걸어둔 타이머의 ID를 저장하는 ref. 나중에 취소할 때 씀
     const archiveHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // AsyncStorage 확인 결과("5번 안 넘었으니 보여줘도 됨" true / "다 썼음" false)
     const hintAllowedRef = useRef<boolean | null>(null); // null = 아직 AsyncStorage 확인 전
     useEffect(() => {
         if (!hasArchiveTile) return;
@@ -209,12 +235,100 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
         };
     }, [hasArchiveTile]);
 
-    // 그리드에 뿌릴 데이터 (타일 추가 + 홀수면 null로 빈 자리 추가 → 마지막 카드 커지는 거 방지)
-    const displayReviews = useMemo<(((CurrentReview | ArchivedReview) | null) | 'archive-entry')[]>(() => {
-        const list: (((CurrentReview | ArchivedReview) | null) | 'archive-entry')[] =
-            hasArchiveTile ? ['archive-entry', ...reviews] : [...reviews];
-        return list.length % 2 === 1 ? [...list, null] : list;
-    }, [reviews, hasArchiveTile]);
+    // "사진 클릭 시 과거 후기 확인이 가능해요" 말풍선 UI(위치) 관련
+    // "과거 리뷰 확인하기" label의 화면상 실제 위치를 재서, 그 바로 50px 아래 + 화면 전체 폭 기준
+    // 가운데(가로)에 말풍선을 절대 위치로 띄움. label은 그리드 1번째 칸 안에 있어서 카드 폭에 갇혀있지만,
+    // 말풍선은 카드 폭과 무관하게 화면 전체 기준으로 가운데 있어야 해서 좌표를 직접 씀.
+    const archiveLabelRef = useRef<Text>(null);
+    const [archiveHintTop, setArchiveHintTop] = useState<number | null>(null);
+    useEffect(() => {
+        if (!showArchiveHint) {
+            setArchiveHintTop(null);
+            return;
+        }
+        // label이 이번 렌더에서 막 마운트된 직후라 한 프레임 뒤에 재야 정확함
+        // requestAnimationFrame가 콜백함수
+        const raf = requestAnimationFrame(() => {
+            archiveLabelRef.current?.measureInWindow((_x, y, _width, height) => {
+                setArchiveHintTop(y + height + 50);
+            });
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [showArchiveHint]);
+
+    // "첫번째 리뷰를 작성해보세요!" 말풍선 - 실시간 탭 그리드가 비어있어도 과거 리뷰가 있으면 안 뜸.
+    // (그리드 자체의 "첫 리뷰를 남겨주세요!" 문구는 지금 보고 있는 탭 기준(isEmpty)이라 여기와 다름)
+
+    //hint2를 지금 보여주고 있는지 여부
+    const [showEmptyHint, setShowEmptyHint] = useState(false);
+    // 3초 뒤 자동으로 숨기기 위해 걸어둔 타이머의 ID를 저장하는 ref. 나중에 취소할 때 씀
+    const emptyHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // AsyncStorage 확인 결과("5번 안 넘었으니 보여줘도 됨" true / "다 썼음" false)
+    const emptyHintAllowedRef = useRef<boolean | null>(null);
+    // isEmpty는 장소 상세 화면 안의 문구 판별 위함
+    const isEmpty = !isWaitingForNotificationTarget && displayReviews.length === 0;
+    // isTotallyEmpty는 말풍선 판별 위함
+    // reviewsLoaded 없이 배열 길이만 보면, 아직 로딩 중이라 currentReviews/archivedReviews가
+    // 초기값(빈 배열)인 순간까지 "진짜 0개"로 착각해서 실시간 리뷰가 있는 곳에서도
+    // 데이터 도착 직전에 hint2가 잘못 켜지는 문제가 있었음
+    const isTotallyEmpty = reviewsLoaded && !isWaitingForNotificationTarget && currentReviews.length === 0 && archivedReviews.length === 0;
+    useEffect(() => {
+        if (!isTotallyEmpty) return;
+
+        let cancelled = false;
+
+        (async () => {
+            if (emptyHintAllowedRef.current === null) {
+                const countStr = await AsyncStorage.getItem(EMPTY_HINT_STORAGE_KEY);
+                const count = countStr ? Number(countStr) : 0;
+                emptyHintAllowedRef.current = count < EMPTY_HINT_MAX_COUNT;
+                if (emptyHintAllowedRef.current) {
+                    await AsyncStorage.setItem(EMPTY_HINT_STORAGE_KEY, String(count + 1));
+                }
+            }
+            if (cancelled || !emptyHintAllowedRef.current) return;
+
+            setShowEmptyHint(true);
+            emptyHintTimerRef.current = setTimeout(() => setShowEmptyHint(false), 3000);
+        })();
+
+        return () => {
+            cancelled = true;
+            if (emptyHintTimerRef.current) clearTimeout(emptyHintTimerRef.current);
+        };
+    }, [isTotallyEmpty]);
+
+    // "사진 클릭 시 실시간 후기 확인이 가능해요" 말풍선 
+    const [showLiveHint, setShowLiveHint] = useState(false);
+    const liveHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const liveHintAllowedRef = useRef<boolean | null>(null);
+    // 실시간 리뷰가 1개 이상일 때만. 과거 리뷰 힌트와 같은 자리에 겹칠 수 있어 그게 떠있는 동안은 같이 안 띄움
+    const hasLiveReview = !hasArchiveTile && activeTab === 'current' && currentReviews.length >= 1;
+    useEffect(() => {
+        if (!hasLiveReview) return;
+
+        let cancelled = false;
+
+        (async () => {
+            if (liveHintAllowedRef.current === null) {
+                const countStr = await AsyncStorage.getItem(LIVE_HINT_STORAGE_KEY);
+                const count = countStr ? Number(countStr) : 0;
+                liveHintAllowedRef.current = count < LIVE_HINT_MAX_COUNT;
+                if (liveHintAllowedRef.current) {
+                    await AsyncStorage.setItem(LIVE_HINT_STORAGE_KEY, String(count + 1));
+                }
+            }
+            if (cancelled || !liveHintAllowedRef.current) return;
+
+            setShowLiveHint(true);
+            liveHintTimerRef.current = setTimeout(() => setShowLiveHint(false), 3000);
+        })();
+
+        return () => {
+            cancelled = true;
+            if (liveHintTimerRef.current) clearTimeout(liveHintTimerRef.current);
+        };
+    }, [hasLiveReview]);
 
     // 뒤로가기 (과거 리뷰 화면이면 실시간 화면으로만 복귀, 그게 아니면 이전 화면으로)
     const handleBack = useCallback(() => {
@@ -282,19 +396,9 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                     onBack={handleBack}
                     onToggleSubscribe={handleToggleSubscribe}
                 />
-
-                {/* 실시간 탭 + 과거 리뷰 있을 때만: 과거 리뷰 안내 말풍선 (자리 차지 안 하고 리뷰 위에 떠 있음) */}
-                {showArchiveHint && (
-                    <View style={styles.archiveHintWrapper}>
-                        <View style={styles.archiveHintBubble}>
-                            <Text style={styles.archiveHintText}>사진 클릭 시 자세한 후기 확인이 가능해요</Text>
-                        </View>
-                        <View style={styles.archiveHintTail} />
-                    </View>
-                )}
             </View>
 
-            {isResolvingNotificationTarget ? (
+            {isWaitingForNotificationTarget ? (
                 // 알림에서 들어온 경우 그리드 대신 로딩만 보여주고, 로딩 끝나면 위 useEffect가 바로 리뷰 사진 모달을 띄움
                 <View style={styles.notificationLoadingWrapper}>
                     <ActivityIndicator size="large" color={colors.brand.primary} />
@@ -309,6 +413,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             {/* 리뷰 그리드 */}
             <FlatList
                 data={displayReviews}
+                style={styles.gridList}
                 keyExtractor={(item, index) =>
                     item === 'archive-entry' ? 'archive-entry' : item ? String(item.id) : `placeholder-${index}`
                 }
@@ -322,6 +427,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                             <ArchivedReviewStack
                                 reviews={archivedReviews.slice(0, 3)}
                                 onPress={() => setActiveTab('archived')}
+                                labelRef={archiveLabelRef}
                             />
                         );
                     }
@@ -343,13 +449,15 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                         />
                     );
                 }}
-                ListEmptyComponent={
-                    <View style={styles.emptyWrapper}>
-                        <Text style={styles.emptyText}>첫 리뷰를 남겨주세요!</Text>
-                    </View>
-                }
             />
             </>
+            )}
+
+            {/* 리뷰가 하나도 없을 때 - 헤더 포함 화면 전체 정중앙에 고정 */}
+            {isEmpty && (
+                <View style={styles.emptyWrapper} pointerEvents="none">
+                    <Text style={styles.emptyText}>아직 리뷰가 작성되지 않았어요</Text>
+                </View>
             )}
 
             {/* 리뷰 사진 풀스크린 뷰어  */}
@@ -393,6 +501,12 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             {/* 리뷰 바로 쓰기 버튼 (사진 클릭시 숨김) */}
             {imageIndex === null && (
                 <View style={styles.quickReviewRow} pointerEvents="box-none">
+                    {/* 리뷰가 하나도 없을 때만: 버튼 바로 위, 버튼 폭 기준 가운데 (버튼과 같은 컬럼 안에 순서대로 놓여서 자동 정렬) */}
+                    {showEmptyHint && (
+                        <View style={styles.emptyHintWrapper}>
+                            <SpeechBubbleHint text="첫번째 리뷰를 작성해보세요!" />
+                        </View>
+                    )}
                     <QuickReviewButton onPress={handleQuickReview} />
                 </View>
             )}
@@ -400,6 +514,19 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             {/* 내 리뷰 이모지 반응 목록 */}
             <ReviewReactionsModal ref={reactionsSheetRef} reactions={reactions} isLoading={isReactionsLoading} />
 
+            {/* 과거 리뷰 안내 말풍선 - label 실제 화면 위치(archiveHintTop) 기준으로 화면 전체 폭 가운데에 절대 위치 */}
+            {showArchiveHint && archiveHintTop !== null && (
+                <View style={[styles.archiveHintOverlay, {top: archiveHintTop}]} pointerEvents="none">
+                    <SpeechBubbleHint text="사진 클릭 시 과거 후기 확인이 가능해요" direction="up" tailOffsetX={-90} />
+                </View>
+            )}
+
+            {/* 실시간 후기 안내 말풍선 - 화면 전체 높이 기준 정중앙(hasLiveReview 자체가 !hasArchiveTile을 포함해서 hint1과 겹칠 일이 없음) */}
+            {showLiveHint && (
+                <View style={[styles.archiveHintOverlay, {top: SCREEN_HEIGHT / 2 - insets.top}]} pointerEvents="none">
+                    <SpeechBubbleHint text="사진 클릭 시 실시간 후기 확인이 가능해요" direction="up" />
+                </View>
+            )}
         </View>
     );
 }
@@ -419,10 +546,13 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(20, 20, 20, 0.98)',
     },
     emptyWrapper: {
-        flex: 1,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: spacing['3xl'],
     },
     notificationLoadingWrapper: {
         flex: 1,
@@ -431,11 +561,15 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         color: colors.text.subtle,
-        fontSize: 14,
+        ...typography.b3,
+    },
+    gridList: {
+        flex: 1,
     },
     gridContent: {
-        padding: spacing.lg,               
-        gap: spacing.md,                      
+        flexGrow: 1,
+        padding: spacing.lg,
+        gap: spacing.md,
     },
     gridRow: {
         gap: spacing.md,                          
@@ -449,36 +583,13 @@ const styles = StyleSheet.create({
     infoWrapper: {
         position: 'relative',
     },
-    // 과거 리뷰 타일 안내 말풍선 
-    archiveHintWrapper: {
+    // hint1 전용 - label을 measureInWindow로 잰 y좌표(top)를 그대로 씀. 화면 전체 폭 기준 가운데.
+    archiveHintOverlay: {
         position: 'absolute',
-        top: '100%',
         left: 0,
         right: 0,
-        marginTop: -spacing.lg,     
-        alignItems: 'center',       
+        alignItems: 'center',
         zIndex: 10,
-    },
-    archiveHintBubble: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: radius.md,
-        backgroundColor: colors.surface.brand,
-    },
-    archiveHintText: {
-        ...typography.c1,
-        color: colors.text.basic,
-    },
-    archiveHintTail: {
-        marginTop: -1,          // 말풍선 박스와의 서브픽셀 틈 방지
-        width: 0,
-        height: 0,
-        borderLeftWidth: 8,
-        borderRightWidth: 8,
-        borderTopWidth: 10,
-        borderLeftColor: 'transparent',
-        borderRightColor: 'transparent',
-        borderTopColor: colors.surface.brand,
     },
     quickReviewRow: {
         position: 'absolute',
@@ -486,5 +597,11 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 30,
         alignItems: 'center',
+    },
+    // 빈 상태 힌트 - quickReviewRow가 이미 alignItems:'center'인 컬럼이라, 버튼보다 먼저 렌더하면
+    // 자동으로 버튼 바로 위, 버튼과 같은 가로 중심에 놓임 (좌표 계산 필요 없음)
+    emptyHintWrapper: {
+        alignItems: 'center',
+        marginBottom: spacing.sm,
     },
 });
