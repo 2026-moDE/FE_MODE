@@ -369,23 +369,7 @@ export default function HomeScreen(){
     const [friendReviews, setFriendReviews] = useState<FriendReview[]>([]);
     useEffect(() => {
         fetchFriendReviews()
-            .then(reviews => {
-                // TEMP TEST: 프로필 사진 미설정 유저 목데이터 - 확인 후 제거
-                const mockNoProfile: FriendReview = {
-                    id: -1,
-                    place_id: reviews[0]?.place_id ?? 0,
-                    place_name: '테스트 장소',
-                    congestion_level: 'RELAXED',
-                    comment: '프로필 사진 없는 유저 테스트',
-                    image_url: reviews[0]?.image_url ?? '',
-                    thumbnail_url: reviews[0]?.thumbnail_url ?? '',
-                    thumbnail_small_url: reviews[0]?.thumbnail_small_url ?? '',
-                    user: {user_id: -1, nickname: '테스트유저', profile_url: ''},
-                    created_at: new Date().toISOString(),
-                    comment_count: 0,
-                };
-                setFriendReviews([mockNoProfile, ...reviews]);
-            })
+            .then(setFriendReviews)
             .catch(error => console.warn('친구 리뷰 조회 실패:', error?.message));
     }, []);
 
