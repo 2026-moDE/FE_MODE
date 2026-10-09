@@ -11,7 +11,6 @@ import {
   Animated,
   Alert,
   KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -156,7 +155,7 @@ const PieceEditScreen = ({navigation, route}: Props) => {
 
       <KeyboardAvoidingView
         style={styles.keyboardArea}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior="padding">
         <ScrollView
           ref={scrollRef}
           style={styles.body}
