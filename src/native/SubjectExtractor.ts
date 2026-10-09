@@ -1,6 +1,7 @@
-import {NativeModules, Platform} from 'react-native';
+import {NativeModules} from 'react-native';
 
 // ios/moing/SubjectExtractorModule.m
+// android/app/src/main/java/com/moing/subjectextractor/SubjectExtractorModule.kt
 type SubjectExtractorNativeModule = {
   isAvailable(): Promise<boolean>;
   extract(imagePath: string): Promise<ExtractedSubject>;
@@ -30,6 +31,8 @@ export type SubjectExtractionErrorCode =
   | 'NO_SUBJECT'
   | 'EXTRACT_FAILED'
   | 'WRITE_FAILED'
+  // 안드로이드 전용. ML Kit 모델을 Play 서비스가 아직 안 내려준 상태
+  | 'MODEL_NOT_READY'
   | 'UNAVAILABLE';
 
 export const getSubjectExtractionErrorCode = (
@@ -44,6 +47,7 @@ export const getSubjectExtractionErrorCode = (
     case 'NO_SUBJECT':
     case 'EXTRACT_FAILED':
     case 'WRITE_FAILED':
+    case 'MODEL_NOT_READY':
       return code;
 
     default:
@@ -51,10 +55,11 @@ export const getSubjectExtractionErrorCode = (
   }
 };
 
-// 안드로이드는 아직 네이티브 구현이 없고, iOS도 17 미만은 Vision API가 없어서 못 쓴다.
+// iOS 17 미만은 Vision API가 없고, 안드로이드는 Play 서비스가 없는 기기(ML Kit 모델을
+// 못 받음)에서 못 쓴다. 판단은 각 네이티브의 isAvailable에 맡기고,
 // 진입점(조각 모으기 버튼)에서 이걸로 먼저 걸러야 함.
 export const isSubjectExtractionAvailable = async (): Promise<boolean> => {
-  if (Platform.OS !== 'ios' || nativeModule == null) {
+  if (nativeModule == null) {
     return false;
   }
 

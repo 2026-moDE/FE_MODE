@@ -156,4 +156,8 @@ dependencies {
 
     // 구글 공식 Jetpack 이모지 피커 - EmojiKeyboardModule(안드로이드 쪽)에서 씀
     implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
+
+    // ML Kit 피사체 분리 - SubjectExtractorModule(조각 모으기 누끼)에서 씀.
+    // iOS의 Vision VNGenerateForegroundInstanceMaskRequest 대응. 모델은 Play 서비스가 내려준다.
+    implementation("com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1")
 }

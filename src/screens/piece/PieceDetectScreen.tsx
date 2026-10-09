@@ -89,10 +89,12 @@ const PieceDetectScreen = ({navigation, route}: Props) => {
         }
 
         // 어떤 실패든 사용자가 할 수 있는 건 다시 찍는 것뿐이라 문구는 시안 그대로 두고,
-        // 기기가 아예 지원하지 않는 경우만 따로 안내한다
+        // 기기가 아예 지원하지 않는 경우와 (안드로이드) 모델 다운로드 대기만 따로 안내한다
         setFailureMessage(
           code === 'UNSUPPORTED_OS' || code === 'UNAVAILABLE'
             ? '이 기기에서는 조각을 만들 수 없어요'
+            : code === 'MODEL_NOT_READY'
+            ? '조각 인식 준비 중이에요. 잠시 후 다시 시도해주세요'
             : '조각 인식이 불가능해요',
         );
         setStatus('failed');

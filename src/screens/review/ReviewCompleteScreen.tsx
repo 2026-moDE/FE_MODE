@@ -51,12 +51,12 @@ const ReviewCompleteScreen = ({navigation, route}: Props) => {
     );
   };
 
-  // 조각 누끼는 iOS 17의 Vision API로만 되므로, 안 되는 기기에서는 진입 자체를 막는다
+  // 조각 누끼는 iOS 17 Vision / 안드로이드 ML Kit에 기대므로, 안 되는 기기에서는 진입 자체를 막는다
   const handleCollectPieces = async () => {
     if (!(await isSubjectExtractionAvailable())) {
       Alert.alert(
         '사용할 수 없어요',
-        '조각 모으기는 iOS 17 이상에서만 사용할 수 있어요.',
+        '이 기기에서는 조각 모으기를 사용할 수 없어요.',
       );
       return;
     }
