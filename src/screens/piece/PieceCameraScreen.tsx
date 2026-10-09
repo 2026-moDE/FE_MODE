@@ -23,11 +23,11 @@ import type {PieceStackParamList} from '../../types/navigation';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconFlashOn from '../../assets/icons/IconFlashOn';
 import IconFlashOff from '../../assets/icons/IconFlashOff';
-import {PHOTO_WIDTH, PHOTO_HEIGHT} from './photoFrame';
+import {px, PHOTO_WIDTH, PHOTO_HEIGHT} from './photoFrame';
 import DashedBorder from '../../components/common/DashedBorder';
-import {typography, fontFamily} from '../../constants/typography';
+import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
-import {padding, gap} from '../../constants/spacing';
+import {padding} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
 type Props = NativeStackScreenProps<PieceStackParamList, 'PieceCamera'>;
@@ -38,10 +38,28 @@ const refreshIcon = require('../../assets/image/refresh.png');
 // 시안 background/bg-dark
 const BACKGROUND_COLOR = colors.background.dark;
 
-// 조각은 가운데 영역을 기준으로 고르므로(네이티브 MoingDominantInstanceLabel),
-// 가이드 프레임도 그 중앙 50%와 대략 맞춰 둔다
-const GUIDE_WIDTH_RATIO = 0.62;
-const GUIDE_HEIGHT_RATIO = 0.56;
+// 조각을 가운데 두도록 유도하는 가이드 박스 (시안 Rectangle 4305: 사진 안 22, 79 위치의 285x411)
+const GUIDE_WIDTH = px(285);
+const GUIDE_HEIGHT = px(411);
+const GUIDE_TOP = px(79);
+// 시안 가이드 박스 안쪽 채움 (흰색 20%, 디자인 토큰에 없는 값)
+const GUIDE_FILL = 'rgba(255, 255, 255, 0.2)';
+
+// 말풍선(bubbleChip) 박스 높이와 아래 꼬리 크기
+const TOOLTIP_HEIGHT = 28;
+const TOOLTIP_TAIL_WIDTH = 14;
+const TOOLTIP_TAIL_HEIGHT = 12;
+// 시안은 꼬리 끝이 가이드 박스에 6만큼 걸치는데, 가이드와 겹쳐 보여서
+// 꼬리 끝이 가이드 박스 위로 이만큼 떨어지게 올린다
+const TOOLTIP_GAP = -4;
+// 꼬리는 박스와의 틈을 막으려고 1 겹쳐 그린다 (tooltipTail의 marginTop)
+const TOOLTIP_TOP =
+  GUIDE_TOP - TOOLTIP_GAP - (TOOLTIP_HEIGHT + TOOLTIP_TAIL_HEIGHT - 1);
+
+// 시안 줌 컨트롤은 사진 위에서 525 내려온 곳의 100x40
+const ZOOM_TOP = px(525);
+// 시안 활성 줌 글자색 (ReviewScreen 줌 버튼과 같은 값, 디자인 토큰에 없음)
+const ZOOM_ACTIVE_COLOR = '#FFD400';
 
 const ZOOM_LEVELS = [
   {label: '1x', value: 1},
@@ -186,11 +204,14 @@ const PieceCameraScreen = ({navigation, route}: Props) => {
 
           {/* 조각을 가운데 두도록 유도하는 점선 가이드 */}
           <View pointerEvents="none" style={styles.guideFrame}>
-            <DashedBorder radius={radius.md} color={colors.border.inverse} />
+            <DashedBorder radius={radius['2xl']} color={colors.border.inverse} />
           </View>
 
           <View pointerEvents="none" style={styles.tooltip}>
-            <Text style={styles.tooltipText}>모을 조각을 가운데 놓고 찍어주세요</Text>
+            <View style={styles.tooltipBox}>
+              <Text style={styles.tooltipText}>모을 조각을 가운데에 놓고 찍어주세요</Text>
+            </View>
+            <View style={styles.tooltipTail} />
           </View>
 
           <View style={styles.zoomRow}>
@@ -218,7 +239,7 @@ const PieceCameraScreen = ({navigation, route}: Props) => {
           style={styles.sideButton}
           onPress={handleToggleFlash}
           hitSlop={10}>
-          {flash === 'on' ? <IconFlashOn size={28} /> : <IconFlashOff size={28} />}
+          {flash === 'on' ? <IconFlashOn size={32} /> : <IconFlashOff size={32} />}
         </Pressable>
 
         <Pressable
@@ -280,7 +301,7 @@ const styles = StyleSheet.create({
   cameraBox: {
     width: PHOTO_WIDTH,
     height: PHOTO_HEIGHT,
-    borderRadius: radius.xl,
+    borderRadius: radius['2xl'],
     overflow: 'hidden',
     backgroundColor: colors.surface.subtleDarker,
   },
@@ -303,39 +324,61 @@ const styles = StyleSheet.create({
   guideFrame: {
     position: 'absolute',
     alignSelf: 'center',
-    top: '22%',
-    width: `${GUIDE_WIDTH_RATIO * 100}%`,
-    height: `${GUIDE_HEIGHT_RATIO * 100}%`,
+    top: GUIDE_TOP,
+    width: GUIDE_WIDTH,
+    height: GUIDE_HEIGHT,
+    borderRadius: radius['2xl'],
+    backgroundColor: GUIDE_FILL,
   },
 
   tooltip: {
     position: 'absolute',
-    top: padding.md,
+    top: TOOLTIP_TOP,
     alignSelf: 'center',
-    paddingHorizontal: padding.s,
-    paddingVertical: 5,
+    alignItems: 'center',
+  },
+
+  tooltipBox: {
+    height: TOOLTIP_HEIGHT,
+    paddingHorizontal: padding.md,
+    justifyContent: 'center',
     borderRadius: radius.md,
     backgroundColor: colors.brand.primary,
   },
 
   tooltipText: {
-    ...typography.c2,
-    fontFamily: fontFamily.medium,
+    ...typography.c1,
+    lineHeight: 16,
     color: colors.text.basic,
+    textAlign: 'center',
     includeFontPadding: false,
+  },
+
+  tooltipTail: {
+    marginTop: -1, // 박스와의 서브픽셀 틈 방지
+    width: 0,
+    height: 0,
+    borderLeftWidth: TOOLTIP_TAIL_WIDTH / 2,
+    borderRightWidth: TOOLTIP_TAIL_WIDTH / 2,
+    borderTopWidth: TOOLTIP_TAIL_HEIGHT,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: colors.brand.primary,
   },
 
   zoomRow: {
     position: 'absolute',
-    bottom: padding.lg,
+    top: ZOOM_TOP,
     alignSelf: 'center',
+    width: 100,
     flexDirection: 'row',
-    gap: gap.md,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
   zoomButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -346,15 +389,13 @@ const styles = StyleSheet.create({
   },
 
   zoomText: {
-    ...typography.c2,
+    ...typography.b6,
     color: colors.text.inverse,
     includeFontPadding: false,
   },
 
   zoomTextActive: {
-    ...typography.c1,
-    color: colors.text.brand,
-    includeFontPadding: false,
+    color: ZOOM_ACTIVE_COLOR,
   },
 
   controls: {
@@ -366,32 +407,33 @@ const styles = StyleSheet.create({
   },
 
   sideButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   sideIcon: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     resizeMode: 'contain',
   },
 
+  // 시안 셔터(Group 8): 지름 72 링(두께 약 4) + 지름 약 58 원
   shutterOuter: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 3,
+    width: 72,
+    height: 72,
+    borderRadius: radius.full,
+    borderWidth: 4,
     borderColor: colors.border.inverse,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   shutterInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: radius.full,
     backgroundColor: colors.white,
   },
 });

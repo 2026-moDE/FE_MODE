@@ -19,6 +19,7 @@ import type {PieceStackParamList} from '../../types/navigation';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {createPiece, getPieceImagePresignedUrl} from '../../api/piece';
 import {uploadImageToS3} from '../../api/imageUpload';
+import StickerCutout from '../../components/piece/StickerCutout';
 import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {padding, gap} from '../../constants/spacing';
@@ -182,7 +183,9 @@ const PieceInfoScreen = ({navigation, route}: Props) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
-          <Image source={{uri: cutoutUri}} style={styles.cutout} />
+          <View style={styles.cutout}>
+            <StickerCutout uri={cutoutUri} />
+          </View>
 
           <View style={styles.cardFooter}>
             <View style={styles.cardMeta}>
@@ -238,10 +241,8 @@ const PieceInfoScreen = ({navigation, route}: Props) => {
           style={[styles.submitButton, !isSubmitActive && styles.submitButtonDisabled]}
           onPress={handleSubmit}
           disabled={!isSubmitActive}>
-          <Text
-            style={[styles.submitText, !isSubmitActive && styles.submitTextDisabled]}>
-            완료
-          </Text>
+          {/* 시안은 비활성일 때도 글자가 흰색 */}
+          <Text style={styles.submitText}>완료</Text>
         </Pressable>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -306,7 +307,6 @@ const styles = StyleSheet.create({
     left: '15%',
     right: '15%',
     height: '65%',
-    resizeMode: 'contain',
   },
 
   cardFooter: {
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
 
   cardMeta: {
     flexShrink: 1,
-    gap: 2,
+    gap: gap.xs,
   },
 
   cardPlace: {
@@ -448,10 +448,6 @@ const styles = StyleSheet.create({
     ...typography.b3,
     color: colors.text.inverse,
     includeFontPadding: false,
-  },
-
-  submitTextDisabled: {
-    color: colors.text.disabled,
   },
 
   toggleTrack: {
