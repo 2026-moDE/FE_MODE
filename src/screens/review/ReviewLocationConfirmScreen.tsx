@@ -126,6 +126,7 @@ const handleLocationFailConfirm = () => {
               {latitude != null && longitude != null && latitude !== 0 && longitude !== 0 ? (
                 <MapView
                   ref={mapRef}
+                  showLocationMarker={false}
                   initialCamera={{latitude, longitude, zoom: 16}}
                   isScrollGesturesEnabled={false}
                   isZoomGesturesEnabled={false}

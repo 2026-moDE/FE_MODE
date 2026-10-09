@@ -1,6 +1,6 @@
 import React, {useMemo} from 'react';
-import {StyleSheet, View, Platform} from 'react-native';
-import {NaverMapView, NaverMapViewProps, NaverMapViewRef, NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
+import {StyleSheet, Platform} from 'react-native';
+import {NaverMapView, NaverMapViewProps, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 import { INITIAL_CAMERA } from '../../constants/map';
 import { useLocation } from '../../context/LocationContext';
 
@@ -71,8 +71,12 @@ const MapView=({ref, children, showCircle = true, showLocationMarker = true, ...
     // 이미지가 같다고 판단돼 재디코딩은 일어나지 않음
     const locationOverlay = useMemo(() => ({
         ...LOCATION_OVERLAY_BASE,
+        // 장소를 보여주는 게 목적인 지도(장소 확인, 마이페이지 지도)에서는 현위치 마커를 끈다.
+        // 안 끄면 장소 마커와 현위치 동그라미가 같이 떠서 마커가 두 개로 보인다
+        isVisible: showLocationMarker,
+        circleRadius: showCircle ? LOCATION_OVERLAY_BASE.circleRadius : 0,
         position: location ?? undefined,
-    }), [location]);
+    }), [location, showLocationMarker, showCircle]);
 
     return (
         <NaverMapView
