@@ -15,6 +15,8 @@ export type ExtractedSubject = {
   uri: string;
   // 원본 사진 크기 그대로인 흰색 윤곽선 PNG. 네이티브에서 실패하면 안 올 수 있음
   outlineUri?: string;
+  // 원본 사진 크기 그대로인 흑백 마스크 PNG (피사체 = 흰색). 네이티브에서 실패하면 안 올 수 있음
+  maskUri?: string;
   width: number;
   height: number;
   // 원본 사진 크기 (윤곽선을 원본 위에 겹칠 때 비율 계산용)

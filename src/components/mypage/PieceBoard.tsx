@@ -12,15 +12,19 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import {MIN_SCALE, MAX_SCALE, type Piece, type PiecePlacement} from '../../api/piece';
-import {typography, fontFamily} from '../../constants/typography';
+import {
+  MIN_SCALE,
+  MAX_SCALE,
+  type Piece,
+  type PiecePlacement,
+} from '../../api/piece';
+import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {padding, gap} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
+import IconEdit from '../../assets/icons/IconEdit';
 import DashedBorder from '../common/DashedBorder';
-
-const pencilIcon = require('../../assets/image/pencil.png');
 
 // 조각 하나가 떨어지는 데 걸리는 시간과, 다음 조각이 출발하기까지의 간격.
 // 하나씩 순서대로 쌓이는 게 보여야 해서 간격을 낙하 시간보다 짧게 둔다
@@ -33,16 +37,18 @@ const DROP_EASING = Easing.bezier(0.3, 0.1, 0.2, 1);
 // 롱프레스로 집었을 때: 집은 조각은 살짝 커지고, 나머지는 흐려진다
 const LONG_PRESS_MS = 220;
 const LIFT_SCALE = 0.08;
-const DIMMED_OPACITY = 0.3;
+// 시안(node 2791:15172) 선택 안 된 조각 불투명도 60%
+const DIMMED_OPACITY = 0.6;
 const DIM_DURATION_MS = 160;
 
 // 기울기 범위 (시안: 부자연스럽지 않은 선에서 랜덤)
 const MAX_ANGLE_DEG = 16;
 
-// 조각 기본 크기 (보드 너비 대비). 조각이 많아지면 보드가 꽉 차서 작게 줄인다
-const BASE_SIZE_RATIO = 0.3;
+// 조각 기본 크기 (보드 너비 대비). 조각이 많아지면 보드가 꽉 차서 작게 줄인다.
+// 시안(node 2791:15172) 조각 5개일 때 한 변 150~230 → 5개에서 44%(361 보드 기준 약 159)가 되게 맞춤
+const BASE_SIZE_RATIO = 0.5;
 const SIZE_SHRINK_PER_PIECE = 0.012;
-const MIN_SIZE_RATIO = 0.16;
+const MIN_SIZE_RATIO = 0.25;
 
 // 쌓임 판정. 가로로 이만큼 겹치면 위에 얹히고, 얹힐 때 세로로 조금 파묻히게 둔다
 const STACK_OVERLAP_X = 0.86;
@@ -84,23 +90,65 @@ const seededRandom = (seed: string) => {
 type Placement = {x: number; y: number; angle: number; scale: number};
 type Placements = Record<number, Placement>;
 
-type Occupant = {id: number; left: number; top: number; size: number};
+type Occupant = {
+  id: number;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+// 조각 칸 크기. 정사각형 칸에 이미지를 contain으로 넣으면 가로로 긴 조각은 위아래가
+// 비어서 바닥이나 다른 조각 위에 떠 보인다 - 칸을 이미지 비율 그대로 잡고, 긴 변을 size에 맞춘다
+const boxFor = (size: number, aspect: number) => {
+  'worklet';
+
+  return aspect >= 1
+    ? {width: size, height: size / aspect}
+    : {width: size * aspect, height: size};
+};
+
+// 이미지 비율(가로/세로) 캐시. 보드를 다시 마운트할 때마다 이미지 크기를 다시 묻지 않게 한다
+const aspectCache = new Map<string, number>();
+
+const loadAspect = (uri: string) =>
+  new Promise<number>(resolve => {
+    const cached = aspectCache.get(uri);
+
+    if (cached != null) {
+      resolve(cached);
+      return;
+    }
+
+    Image.getSize(
+      uri,
+      (width, height) => {
+        const aspect = width > 0 && height > 0 ? width / height : 1;
+
+        aspectCache.set(uri, aspect);
+        resolve(aspect);
+      },
+      // 크기를 못 읽으면 정사각형으로 본다 (예전 동작)
+      () => resolve(1),
+    );
+  });
 
 // 주어진 가로 위치에서 아래로 떨어뜨렸을 때 멈추는 높이.
 // 가로로 겹치는 조각이 있으면 그 위에, 없으면 바닥에 닿는다.
-// 조각마다 크기가 다를 수 있어서 겹침 판정은 두 조각 크기의 평균으로 본다.
+// 조각마다 크기가 다를 수 있어서 겹침 판정은 두 조각 너비의 평균으로 본다.
 // 처음 배치와 드래그 후 안착이 같은 규칙을 써야 해서 워크릿에서도 이 식을 그대로 쓴다
 const restingTopFor = (
   left: number,
-  size: number,
+  width: number,
+  height: number,
   boardHeight: number,
   occupants: Occupant[],
   ignoreId?: number,
 ) => {
   'worklet';
 
-  let top = Math.max(boardHeight - size, 0);
-  const center = left + size / 2;
+  let top = Math.max(boardHeight - height, 0);
+  const center = left + width / 2;
 
   for (let i = 0; i < occupants.length; i += 1) {
     const other = occupants[i];
@@ -109,57 +157,96 @@ const restingTopFor = (
       continue;
     }
 
-    const otherCenter = other.left + other.size / 2;
-    const reach = ((size + other.size) / 2) * STACK_OVERLAP_X;
+    const otherCenter = other.left + other.width / 2;
+    const reach = ((width + other.width) / 2) * STACK_OVERLAP_X;
 
     if (Math.abs(otherCenter - center) < reach) {
-      top = Math.min(top, other.top - size * STACK_STEP_Y);
+      top = Math.min(top, other.top - height * STACK_STEP_Y);
     }
   }
 
   return Math.max(top, 0);
 };
 
-// 자리가 없는 조각을 위에서 떨어뜨려 쌓는다.
-// 가로로 겹치는 조각이 이미 있으면 그 위에, 없으면 바닥에 놓인다
+// 이보다 덜 움직였으면 같은 자리로 본다 (서버가 position을 소수 4자리로 잘라 저장함)
+const SAME_POSITION_EPSILON = 0.0005;
+
+// 모든 조각을 지금 크기 기준으로 위에서 떨어뜨려 쌓는다.
+// 가로로 겹치는 조각이 이미 있으면 그 위에, 없으면 바닥에 놓인다.
+// 조각 수가 바뀌면 기본 크기도 바뀌는데, 저장된 높이는 예전 크기로 잰 값이라 그대로 쓰면
+// 공중에 뜨거나 바닥 밑으로 잘린다 - 저장된 조각도 가로 위치만 살리고 높이는 다시 떨어뜨린다
 const buildPlacements = (
   pieces: Piece[],
+  aspects: Record<number, number>,
   size: number,
   boardWidth: number,
   boardHeight: number,
-): {placements: Placements; created: PiecePlacement[]} => {
+): {placements: Placements; changed: PiecePlacement[]} => {
   const placements: Placements = {};
-  const created: PiecePlacement[] = [];
+  const changed: PiecePlacement[] = [];
   const occupied: Occupant[] = [];
 
-  pieces.forEach(piece => {
-    const pieceSize = size * piece.scale;
-    const maxLeft = Math.max(boardWidth - pieceSize, 0);
+  // position_x / position_y 가 null 이면 아직 보드에 올린 적 없는 조각이다
+  const saved = pieces.filter(
+    piece => piece.position_x != null && piece.position_y != null,
+  );
+  const fresh = pieces.filter(
+    piece => piece.position_x == null || piece.position_y == null,
+  );
 
-    // position_x / position_y 가 null 이면 아직 보드에 올린 적 없는 조각이다
-    if (piece.position_x != null && piece.position_y != null) {
+  // 쌓인 순서를 지키려고 아래(저장된 y가 큰 것)부터 다시 떨어뜨린다
+  [...saved]
+    .sort((a, b) => (b.position_y ?? 0) - (a.position_y ?? 0))
+    .forEach(piece => {
+      const {width, height} = boxFor(
+        size * piece.scale,
+        aspects[piece.id] ?? 1,
+      );
+      const maxLeft = Math.max(boardWidth - width, 0);
+      // 크기가 커졌으면 오른쪽 밖으로 나가지 않게 안으로 당긴다
+      const left = Math.min(
+        Math.max((piece.position_x ?? 0) * boardWidth, 0),
+        maxLeft,
+      );
+      const top = restingTopFor(left, width, height, boardHeight, occupied);
+
+      occupied.push({id: piece.id, left, top, width, height});
+
+      const x = left / boardWidth;
+      const y = top / boardHeight;
+
       placements[piece.id] = {
-        x: piece.position_x,
-        y: piece.position_y,
+        x,
+        y,
         angle: piece.rotation,
         scale: piece.scale,
       };
-      occupied.push({
-        id: piece.id,
-        left: piece.position_x * boardWidth,
-        top: piece.position_y * boardHeight,
-        size: pieceSize,
-      });
-      return;
-    }
 
+      const moved =
+        Math.abs(x - (piece.position_x ?? 0)) >= SAME_POSITION_EPSILON ||
+        Math.abs(y - (piece.position_y ?? 0)) >= SAME_POSITION_EPSILON;
+
+      if (moved) {
+        changed.push({
+          piece_id: piece.id,
+          position_x: x,
+          position_y: y,
+          rotation: piece.rotation,
+          scale: piece.scale,
+        });
+      }
+    });
+
+  fresh.forEach(piece => {
+    const {width, height} = boxFor(size * piece.scale, aspects[piece.id] ?? 1);
+    const maxLeft = Math.max(boardWidth - width, 0);
     const random = seededRandom(String(piece.id));
     const left = random() * maxLeft;
     const angle = random() * MAX_ANGLE_DEG * 2 - MAX_ANGLE_DEG;
 
-    const top = restingTopFor(left, pieceSize, boardHeight, occupied);
+    const top = restingTopFor(left, width, height, boardHeight, occupied);
 
-    occupied.push({id: piece.id, left, top, size: pieceSize});
+    occupied.push({id: piece.id, left, top, width, height});
 
     placements[piece.id] = {
       x: left / boardWidth,
@@ -167,7 +254,7 @@ const buildPlacements = (
       angle,
       scale: piece.scale,
     };
-    created.push({
+    changed.push({
       piece_id: piece.id,
       position_x: left / boardWidth,
       position_y: top / boardHeight,
@@ -176,7 +263,7 @@ const buildPlacements = (
     });
   });
 
-  return {placements, created};
+  return {placements, changed};
 };
 
 // 받쳐주던 조각이 빠지면 그 위에 있던 조각들이 내려와야 한다.
@@ -188,7 +275,8 @@ const collapseStack = (occupants: Occupant[], boardHeight: number) => {
   sorted.forEach(occupant => {
     const top = restingTopFor(
       occupant.left,
-      occupant.size,
+      occupant.width,
+      occupant.height,
       boardHeight,
       settled,
       occupant.id,
@@ -203,8 +291,10 @@ const collapseStack = (occupants: Occupant[], boardHeight: number) => {
 type BoardPieceProps = {
   piece: Piece;
   placement: Placement;
-  // 배율 1일 때의 크기. 실제 크기는 여기에 scale을 곱한 값
+  // 배율 1일 때 긴 변의 길이. 실제 크기는 여기에 scale을 곱한 값
   baseSize: number;
+  // 이미지 가로/세로 비율
+  aspect: number;
   boardWidth: number;
   boardHeight: number;
   index: number;
@@ -227,6 +317,7 @@ function BoardPiece({
   piece,
   placement,
   baseSize,
+  aspect,
   boardWidth,
   boardHeight,
   index,
@@ -276,13 +367,17 @@ function BoardPiece({
   const settle = () => {
     'worklet';
 
-    const currentSize = baseSize * scale.value;
+    const box = boxFor(baseSize * scale.value, aspect);
 
-    x.value = Math.min(Math.max(x.value, 0), Math.max(boardWidth - currentSize, 0));
+    x.value = Math.min(
+      Math.max(x.value, 0),
+      Math.max(boardWidth - box.width, 0),
+    );
 
     const resting = restingTopFor(
       x.value,
-      currentSize,
+      box.width,
+      box.height,
       boardHeight,
       occupants.value,
       piece.id,
@@ -312,15 +407,15 @@ function BoardPiece({
       runOnJS(onPickUp)(piece.id);
     })
     .onChange(event => {
-      const currentSize = baseSize * scale.value;
+      const box = boxFor(baseSize * scale.value, aspect);
 
       x.value = Math.min(
         Math.max(startX.value + event.translationX, 0),
-        Math.max(boardWidth - currentSize, 0),
+        Math.max(boardWidth - box.width, 0),
       );
       y.value = Math.min(
         Math.max(startY.value + event.translationY, 0),
-        Math.max(boardHeight - currentSize, 0),
+        Math.max(boardHeight - box.height, 0),
       );
     })
     .onEnd(() => {
@@ -371,21 +466,23 @@ function BoardPiece({
     },
   );
 
-  const tap = Gesture.Tap().onEnd(() => {
-    runOnJS(onReveal)(piece.id);
-  });
+  // 남의 보드는 옮길 수 없어서, 길게 눌렀다 떼면 이름표만 띄운다
+  const longPress = Gesture.LongPress()
+    .minDuration(LONG_PRESS_MS)
+    .onEnd((_event, success) => {
+      if (success) {
+        runOnJS(onReveal)(piece.id);
+      }
+    });
 
   // 핀치(두 손가락)는 롱프레스 드래그와 동시에 인식돼도 서로 방해하지 않는다.
-  // 읽기 전용이면 이름표를 띄우는 탭만 받는다
-  const gesture = readOnly
-    ? tap
-    : Gesture.Simultaneous(Gesture.Exclusive(pan, tap), pinch);
+  // 이름표는 길게 눌렀다 뗄 때만 뜬다 (짧은 탭으로는 안 뜸)
+  const gesture = readOnly ? longPress : Gesture.Simultaneous(pan, pinch);
 
   // 크기를 transform scale로 주면 중심 기준으로 커져서 좌상단이 밀린다.
   // 좌표 계산이 전부 좌상단 기준이라, 크기는 width/height로 직접 바꾼다
   const pieceStyle = useAnimatedStyle(() => ({
-    width: baseSize * scale.value,
-    height: baseSize * scale.value,
+    ...boxFor(baseSize * scale.value, aspect),
     opacity: dim.value,
     transform: [
       {translateX: x.value},
@@ -397,10 +494,12 @@ function BoardPiece({
 
   // 이름표는 조각을 따라다니되 같이 기울어지면 안 읽혀서 회전은 빼고 위치만 공유한다
   const labelStyle = useAnimatedStyle(() => ({
-    width: baseSize * scale.value,
-    height: baseSize * scale.value,
+    ...boxFor(baseSize * scale.value, aspect),
     opacity: dim.value,
-    transform: [{translateX: x.value}, {translateY: y.value - drop.value * dropFrom}],
+    transform: [
+      {translateX: x.value},
+      {translateY: y.value - drop.value * dropFrom},
+    ],
   }));
 
   return (
@@ -414,26 +513,35 @@ function BoardPiece({
       {isRevealed && (
         <Animated.View
           pointerEvents="box-none"
-          style={[styles.labelAnchor, labelStyle]}>
+          style={[styles.labelAnchor, labelStyle]}
+        >
           <Pressable
             style={styles.labelChip}
             disabled={readOnly}
-            onPress={() => onEdit(piece)}>
+            onPress={() => onEdit(piece)}
+          >
             <View style={styles.labelTitleRow}>
               <Text style={styles.labelText} numberOfLines={1}>
                 {piece.name ?? '이름 없음'}
               </Text>
-              {!readOnly && <Image source={pencilIcon} style={styles.labelPencil} />}
+              {!readOnly && (
+                <IconEdit size={12} color={colors.icon.tertiary} />
+              )}
             </View>
 
             <View style={styles.labelPlaceRow}>
-              <IconPlaceLocation size={10} color={colors.icon.tertiary} />
+              <IconPlaceLocation size={12} color={colors.icon.tertiary} />
               <Text style={styles.labelPlace} numberOfLines={1}>
                 {piece.place.name}
               </Text>
             </View>
 
-            <DashedBorder radius={radius.lg} color={colors.border.default} />
+            {/* 시안 점선: 1px, 2 칠하고 2 비움 (조각 등록 완료 화면 이름표와 같음) */}
+            <DashedBorder
+              radius={radius.lg}
+              color={colors.border.black}
+              dash={[2, 2]}
+            />
           </Pressable>
         </Animated.View>
       )}
@@ -462,15 +570,48 @@ export default function PieceBoard({
 }: Props) {
   const [activeId, setActiveId] = React.useState<number | null>(null);
   const [revealedId, setRevealedId] = React.useState<number | null>(null);
+  // 조각 id -> 이미지 가로/세로 비율. 다 읽기 전까지는 자리를 계산할 수 없어서 보드를 비워둔다
+  const [aspects, setAspects] = React.useState<Record<number, number> | null>(
+    null,
+  );
+
+  // 길게 눌러 집은 동안, 그리고 떼서 이름표가 떠 있는 동안 나머지 조각을 흐리게 둔다.
+  // 빈 곳을 눌러 이름표를 닫으면 흐림도 같이 풀린다
+  const focusedId = activeId ?? revealedId;
 
   const size = useMemo(
     () => pieceSizeFor(width, pieces.length),
     [width, pieces.length],
   );
 
-  const {placements, created} = useMemo(
-    () => buildPlacements(pieces, size, width, height),
-    [pieces, size, width, height],
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all(
+      pieces.map(
+        async piece => [piece.id, await loadAspect(piece.image_url)] as const,
+      ),
+    ).then(entries => {
+      if (!cancelled) {
+        setAspects(Object.fromEntries(entries));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pieces]);
+
+  // 조각이 추가/삭제된 직후에는 이전 비율 목록에 없는 조각이 있을 수 있다 - 다 모일 때까지 기다린다
+  const isReady =
+    aspects != null && pieces.every(piece => aspects[piece.id] != null);
+
+  const {placements, changed: resettled} = useMemo(
+    () =>
+      isReady
+        ? buildPlacements(pieces, aspects, size, width, height)
+        : {placements: {} as Placements, changed: [] as PiecePlacement[]},
+    [isReady, pieces, aspects, size, width, height],
   );
 
   // 드래그를 놓았을 때 무엇 위에 얹힐지 계산할 재료. 자리가 바뀔 때마다 갱신된다
@@ -480,24 +621,29 @@ export default function PieceBoard({
   const collapseTick = useSharedValue(0);
 
   useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
     occupants.value = pieces.map(piece => ({
       id: piece.id,
       left: placements[piece.id].x * width,
       top: placements[piece.id].y * height,
-      size: size * placements[piece.id].scale,
+      ...boxFor(size * placements[piece.id].scale, aspects[piece.id]),
     }));
-  }, [occupants, pieces, placements, width, height, size]);
+  }, [isReady, aspects, occupants, pieces, placements, width, height, size]);
 
   useEffect(() => {
+    // 새 조각의 첫 배치와, 크기가 바뀌어 다시 떨어진 조각의 새 자리를 저장한다.
     // 남의 보드는 자리를 저장할 수 없다(403). 화면에만 중력 배치해서 보여준다
-    if (!readOnly && created.length > 0) {
-      onPlacePieces(created);
+    if (!readOnly && resettled.length > 0) {
+      onPlacePieces(resettled);
     }
-  }, [created, onPlacePieces, readOnly]);
+  }, [resettled, onPlacePieces, readOnly]);
 
   const handleDrop = (placement: PiecePlacement) => {
     setActiveId(null);
-    // 길게 눌렀다 떼면 그 조각의 이름표가 뜬다
+    // 길게 눌렀다 떼면 그 조각의 이름표가 뜬다 (나머지는 계속 흐린 채로)
     setRevealedId(placement.piece_id);
 
     // 움직인 조각의 새 자리를 반영한 뒤, 더미 전체를 다시 떨어뜨린다.
@@ -508,7 +654,7 @@ export default function PieceBoard({
             ...occupant,
             left: placement.position_x * width,
             top: placement.position_y * height,
-            size: size * placement.scale,
+            ...boxFor(size * placement.scale, aspects?.[occupant.id] ?? 1),
           }
         : occupant,
     );
@@ -562,35 +708,38 @@ export default function PieceBoard({
     onPlacePieces(changed);
   };
 
-  const handleReveal = (pieceId: number) => {
-    setRevealedId(prev => (prev === pieceId ? null : pieceId));
-  };
-
   return (
-    // 배경 탭으로 이름표를 닫지 않는다 - 여기에 Pressable을 두면 조각의 탭 제스처와
-    // 서로 먹어서 이름표가 뜨자마자 닫힌다. 같은 조각을 한 번 더 누르면 닫히는 방식
     <View style={[styles.board, {width, height}]}>
-      {pieces.map((piece, index) => (
-        <BoardPiece
-          key={piece.id}
-          piece={piece}
-          placement={placements[piece.id]}
-          baseSize={size}
-          boardWidth={width}
-          boardHeight={height}
-          index={index}
-          occupants={occupants}
-          collapseTargets={collapseTargets}
-          collapseTick={collapseTick}
-          isDimmed={activeId != null && activeId !== piece.id}
-          readOnly={readOnly}
-          isRevealed={revealedId === piece.id}
-          onPickUp={setActiveId}
-          onDrop={handleDrop}
-          onReveal={handleReveal}
-          onEdit={onEditPiece}
-        />
-      ))}
+      {/* 빈 곳을 누르면 이름표를 닫는다. 보드를 감싸지 않고 조각들 밑에 형제로 깔아야
+          조각/이름표를 누른 터치가 여기까지 오지 않는다 */}
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={() => setRevealedId(null)}
+      />
+
+      {isReady &&
+        pieces.map((piece, index) => (
+          <BoardPiece
+            key={piece.id}
+            piece={piece}
+            placement={placements[piece.id]}
+            baseSize={size}
+            aspect={aspects[piece.id]}
+            boardWidth={width}
+            boardHeight={height}
+            index={index}
+            occupants={occupants}
+            collapseTargets={collapseTargets}
+            collapseTick={collapseTick}
+            isDimmed={focusedId != null && focusedId !== piece.id}
+            readOnly={readOnly}
+            isRevealed={revealedId === piece.id}
+            onPickUp={setActiveId}
+            onDrop={handleDrop}
+            onReveal={setRevealedId}
+            onEdit={onEditPiece}
+          />
+        ))}
     </View>
   );
 }
@@ -620,18 +769,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
 
-  // 조각 오른쪽 아래에 걸치는 흰색 이름표 (조각 등록 완료 화면과 같은 생김새)
+  // 조각 오른쪽 아래에 걸치는 흰색 이름표 (시안 node 2791:15301)
   labelChip: {
     position: 'absolute',
     left: '45%',
     bottom: 0,
-    minWidth: 76,
-    paddingHorizontal: padding.s,
-    paddingVertical: 6,
+    maxWidth: 160,
+    paddingHorizontal: padding.md,
+    paddingVertical: padding.s,
     borderRadius: radius.lg,
     backgroundColor: colors.surface.white,
     alignItems: 'center',
-    gap: 2,
+    gap: gap.xs,
   },
 
   labelTitleRow: {
@@ -647,24 +796,17 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  labelPencil: {
-    width: 10,
-    height: 10,
-    resizeMode: 'contain',
-    tintColor: colors.icon.tertiary,
-  },
-
   labelPlaceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: gap.xs,
   },
 
+  // Caption/C3
   labelPlace: {
     ...typography.c3,
-    fontFamily: fontFamily.medium,
     flexShrink: 1,
-    color: colors.text.tertiary,
+    color: colors.text.disabled,
     includeFontPadding: false,
   },
 });

@@ -163,11 +163,23 @@ class SubjectExtractorModule(reactContext: ReactApplicationContext) :
                     return@execute
                 }
 
-                // 인식 성공 화면에서 원본 사진 위에 덧그릴 윤곽선. 실패해도 조각 자체는 쓸 수 있으니 넘어간다.
-                val outlinePath = buildOutline(subject, source.width, source.height)
+                // 인식 성공 화면에서 원본 사진 위에 덧그릴 윤곽선과, 피사체 바깥만 어둡게 깔 마스크.
+                // 실패해도 조각 자체는 쓸 수 있으니 넘어간다.
+                val filled = fillSubject(subject, source.width, source.height)
+
+                val outlinePath = filled
+                    ?.let { buildOutline(it, source.width, source.height) }
                     ?.let { outline ->
                         val path = writePng(outline, "moing-piece-outline")
                         outline.recycle()
+                        path
+                    }
+
+                val maskPath = filled
+                    ?.let { buildMask(it, source.width, source.height) }
+                    ?.let { mask ->
+                        val path = writePng(mask, "moing-piece-mask")
+                        mask.recycle()
                         path
                     }
 
@@ -182,6 +194,10 @@ class SubjectExtractorModule(reactContext: ReactApplicationContext) :
 
                         if (outlinePath != null) {
                             putString("outlineUri", "file://$outlinePath")
+                        }
+
+                        if (maskPath != null) {
+                            putString("maskUri", "file://$maskPath")
                         }
                     },
                 )
@@ -375,10 +391,10 @@ class SubjectExtractorModule(reactContext: ReactApplicationContext) :
         return bestCentered ?: bestOverall
     }
 
-    // MARK: 윤곽선
+    // MARK: 윤곽선 / 마스크
 
-    // 원본 사진 크기 그대로인 흰색 윤곽선 PNG. 색은 JS에서 tintColor로 입힌다.
-    private fun buildOutline(subject: Subject, width: Int, height: Int): Bitmap? {
+    // 원본 사진 크기 기준으로 피사체 픽셀만 1로 채운 배열
+    private fun fillSubject(subject: Subject, width: Int, height: Int): ByteArray? {
         val mask = subject.confidenceMask ?: return null
 
         val filled = ByteArray(width * height)
@@ -402,6 +418,21 @@ class SubjectExtractorModule(reactContext: ReactApplicationContext) :
                 }
             }
         }
+
+        return filled
+    }
+
+    // 원본 사진 크기 그대로인 흑백 마스크 PNG (피사체 = 흰색, iOS와 같은 형식)
+    private fun buildMask(filled: ByteArray, width: Int, height: Int): Bitmap {
+        val pixels = IntArray(width * height) { i ->
+            if (filled[i].toInt() == 1) Color.WHITE else Color.BLACK
+        }
+
+        return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+    }
+
+    // 원본 사진 크기 그대로인 흰색 윤곽선 PNG. 색은 JS에서 tintColor로 입힌다.
+    private fun buildOutline(filled: ByteArray, width: Int, height: Int): Bitmap {
 
         val radius = max(MIN_OUTLINE_RADIUS, (min(width, height) * OUTLINE_RADIUS_RATIO).toInt())
 
