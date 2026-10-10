@@ -18,6 +18,7 @@ import {padding, gap} from '../../constants/spacing';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconChevronDown from '../../assets/icons/IconChevronDown';
 import IconFriend from '../../assets/icons/IconFriend';
+import IconArchive from '../../assets/icons/IconArchive';
 import type {MyProfile} from '../../api/mypage';
 import type {Piece, PiecePlacement} from '../../api/piece';
 import ProfileAvatar from '../common/ProfileAvatar';
@@ -25,7 +26,6 @@ import PieceBoard from './PieceBoard';
 
 const settingIcon = require('../../assets/image/setting.png');
 const menuIcon = require('../../assets/image/vertical_ellipis.png');
-const cameraIcon = require('../../assets/image/refresh_camera.png');
 
 // 시안 393x852 기준 (node 2859:4632)
 const BOARD_HEIGHT = 448;
@@ -35,7 +35,6 @@ const BOARD_TOP_LIFT = 11;
 const HEADER_ICON_TOP = 19;
 // 빈 상태 묶음 (화면 기준 239 - 보드 상단 48)
 const EMPTY_STATE_TOP = 191;
-const EMPTY_STATE_WIDTH = 163;
 // 프로필 사진이 보드 아래 모서리에 걸치는 깊이 (보드 하단 496 - 사진 상단 461)
 const AVATAR_SIZE = 78;
 const AVATAR_OVERLAP = 35;
@@ -124,7 +123,7 @@ export default function PieceProfileHeader({
                 activeOpacity={0.85}
                 style={styles.emptyButton}
                 onPress={onPressCollect}>
-                <Image source={cameraIcon} style={styles.emptyButtonIcon} />
+                <IconArchive size={16} color={colors.icon.inverse} />
                 <Text style={styles.emptyButtonText}>리뷰쓰고 조각 모으기</Text>
               </TouchableOpacity>
             )}
@@ -244,7 +243,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: EMPTY_STATE_TOP,
     alignSelf: 'center',
-    width: EMPTY_STATE_WIDTH,
     alignItems: 'center',
     gap: gap.md,
   },
@@ -257,7 +255,6 @@ const styles = StyleSheet.create({
   },
 
   emptyButton: {
-    width: '100%',
     height: 36,
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,12 +263,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.md,
     borderRadius: radius.full,
     backgroundColor: colors.button.secondaryFill,
-  },
-
-  emptyButtonIcon: {
-    width: 16,
-    height: 16,
-    resizeMode: 'contain',
   },
 
   emptyButtonText: {
