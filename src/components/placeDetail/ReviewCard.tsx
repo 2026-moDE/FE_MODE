@@ -41,6 +41,7 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
 
     return (
         <Pressable onPress={onPress} style={styles.container}>
+            <View style={styles.inner}>
             <FastImage
                 source={{uri: thumbnail_url ?? image_url , priority: FastImage.priority.high}}
                 style={styles.image}
@@ -71,6 +72,7 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
                     <Text style={styles.timeText}>{timeAgo}</Text>
                 </View>
             </View>
+            </View>
         </Pressable>
     );
 }
@@ -79,10 +81,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         aspectRatio: 177 / 233,
-        borderWidth: 2,
-        borderColor: colors.surface.muted,                           // 3:4 비율
-        borderRadius: radius.xl,                            // 16
+        // borderWidth+borderColor 대신 backgroundColor+padding으로 border 구현
+        // → 안드로이드 borderRadius 엣지 누락 버그, iOS anti-aliasing 깨짐 모두 방지
+        backgroundColor: colors.surface.muted,
+        borderRadius: radius.xl,
+        padding: 2,
+    },
+    inner: {
+        flex: 1,
+        borderRadius: radius.xl - 2,
         overflow: 'hidden',
+        backgroundColor: colors.surface.muted,
     },
     image: {
         position: 'absolute',
@@ -90,8 +99,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        borderRadius: radius.xl - 2,                        // container borderWidth(2)만큼 뺀 반지름
-        backgroundColor: colors.surface.muted,
     },
     topRow: {
         flexDirection: 'row',

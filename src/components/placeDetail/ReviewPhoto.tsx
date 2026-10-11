@@ -321,7 +321,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                     <View style={[styles.imageWrapper, imageRatio && imageRatio > 1 ? {aspectRatio: imageRatio} : null]}>
                         {/* 이미지 */}
                         <FastImage
-                            source={{uri: review.image_url, priority: FastImage.priority.high}}
+                            source={{uri: review.thumbnail_url ?? review.image_url, priority: FastImage.priority.high}}
                             style={styles.image}
                             resizeMode={FastImage.resizeMode.cover}
                             onLoad={e => {

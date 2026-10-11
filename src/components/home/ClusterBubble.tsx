@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
         borderRadius: radius.md,
         borderWidth: 2,
         // 묶음 버블은 혼잡도 색이 하나로 정해지지 않아 항상 색 없는 쪽 기본값을 쓴다
-        borderColor: colors.border.strong,
+        borderColor: colors.border.inverse,
         backgroundColor: colors.surface.muted,
         overflow: 'hidden',
     },
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
         borderTopWidth: TAIL_HEIGHT,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        borderTopColor: colors.border.strong,
+        borderTopColor: colors.border.inverse,
         marginTop: -1,
     },
 });

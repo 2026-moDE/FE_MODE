@@ -88,7 +88,7 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                     collapsable={false}
                     style={[
                         styles.bubble,
-                        {borderColor: congestionColor ?? colors.border.strong},
+                        {borderColor: congestionColor ?? colors.border.inverse},
                     ]}>
                     {hasThumbnail ? (
                         <FastImage
@@ -118,7 +118,7 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
                 <View
                     style={[
                         styles.tail,
-                        {borderTopColor: congestionColor ?? colors.border.strong},
+                        {borderTopColor: congestionColor ?? colors.border.inverse},
                     ]}
                 />
             </View>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
         borderRadius: radius.md,
         borderWidth: 2,
         // 혼잡도 색이 있으면 위에서 덮어씀 - 여긴 색이 없을 때의 기본값
-        borderColor: colors.border.strong,
+        borderColor: colors.border.inverse,
         backgroundColor: colors.surface.muted,
         overflow: 'hidden',
     },
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
         borderTopWidth: TAIL_HEIGHT,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        borderTopColor: colors.border.strong,
+        borderTopColor: colors.border.inverse,
         marginTop: -1,
     },
 });
