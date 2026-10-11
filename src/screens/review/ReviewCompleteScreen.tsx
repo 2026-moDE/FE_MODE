@@ -11,14 +11,14 @@ import IconArchive from '../../assets/icons/IconArchive';
 import ProfileAvatar from '../../components/common/ProfileAvatar';
 import {getMyProfile, type MyProfile} from '../../api/mypage';
 import {isSubjectExtractionAvailable} from '../../native/SubjectExtractor';
-import {fontFamily, typography} from '../../constants/typography';
+import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing, padding, gap} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
 type Props = NativeStackScreenProps<ReviewStackParamList, 'ReviewComplete'>;
 
-const BACKGROUND_COLOR = '#000000';
+const BACKGROUND_COLOR = colors.button.darkFill;
 // 카드 그라데이션 시작색: #1B2129(navy 900) 투명도 0%
 const CARD_GRADIENT_TOP = 'rgba(27, 33, 41, 0)';
 // 후기 작성 화면의 등록하기 버튼과 같은 위치 (하단 safe area 위로 33)
@@ -109,7 +109,7 @@ const ReviewCompleteScreen = ({navigation, route}: Props) => {
         <Text style={styles.completeText}>후기가 등록됐어요!</Text>
 
         <Pressable style={styles.archiveButton} onPress={handleCollectPieces}>
-          <IconArchive size={16} color={colors.text.basic} />
+          <IconArchive size={16} color={colors.icon.basic} />
           <Text style={styles.archiveButtonText}>해당 장소의 조각 모으기</Text>
         </Pressable>
       </LinearGradient>
@@ -150,12 +150,12 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
   },
 
-  // 시안 360x620 고정이지만 기기 높이에 맞게 남은 공간을 채움 (헤더와 7, 버튼과 20 간격)
+  // 시안 360x624 고정이지만 기기 높이에 맞게 남은 공간을 채움 (헤더와 7, 버튼과 16 간격)
   card: {
     flex: 1,
     marginTop: 7,
     marginHorizontal: padding.lg,
-    marginBottom: padding.xl,
+    marginBottom: padding.lg,
     borderRadius: radius.xl,
     alignItems: 'center',
     paddingTop: 69,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: gap.sm,
   },
 
   authorAvatar: {
@@ -194,16 +194,15 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
 
-  // Caption/C3 (Medium)
+  // Caption/C3
   authorName: {
     ...typography.c3,
-    fontFamily: fontFamily.medium,
     flexShrink: 1,
     color: colors.text.inverse,
     includeFontPadding: false,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: {width: 0, height: 1},
-    textShadowRadius: 2,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: {width: 0, height: 0},
+    textShadowRadius: 8,
   },
 
   // 사진 아래와 padding-md 간격
@@ -211,15 +210,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: padding.md,
     alignSelf: 'center',
-    paddingHorizontal: spacing.s,
-    paddingVertical: 3,
+    paddingHorizontal: padding.sm,
+    paddingVertical: padding.xs,
     borderRadius: radius.md,
-    backgroundColor: colors.background.dimDarkest,
+    backgroundColor: colors.background.dimDarker,
   },
 
+  // Caption/C2
   timeChipText: {
-    fontSize: 12,
-    fontFamily: fontFamily.medium,
+    ...typography.c2,
     color: colors.text.inverse,
     includeFontPadding: false,
   },
@@ -236,13 +235,14 @@ const styles = StyleSheet.create({
   // 시안의 상하 padding-sm(10)을 넣으면 내용 영역이 16px라 B5(lineHeight 18) 글자 아래가 잘림
   // → 높이 고정 + 세로 가운데 정렬로 같은 위치를 만듦
   archiveButton: {
-    marginTop: gap.xl,
+    marginTop: gap.lg,
     height: 36,
     paddingHorizontal: padding.md,
     borderRadius: radius.full,
     backgroundColor: colors.button.primaryFill,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: gap.sm,
   },
 

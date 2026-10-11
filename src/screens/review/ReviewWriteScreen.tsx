@@ -1,5 +1,5 @@
 import React, {useMemo, useRef, useState} from 'react';
-import {View, Text, StyleSheet, StatusBar, Image, Pressable, TextInput, KeyboardAvoidingView, ScrollView, Platform, Alert} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, Image, Pressable, TextInput, KeyboardAvoidingView, ScrollView, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 
@@ -171,7 +171,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior="padding">
         {/* 헤더 */}
         <View style={styles.header}>
           <Pressable

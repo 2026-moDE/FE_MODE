@@ -14,13 +14,14 @@ import type {PieceStackParamList} from '../../types/navigation';
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconCheck from '../../assets/icons/IconCheck';
 import DistortedPhoto from '../../components/piece/DistortedPhoto';
+import SubjectHighlightPhoto from '../../components/piece/SubjectHighlightPhoto';
 import {
   extractSubject,
   getSubjectExtractionErrorCode,
   type ExtractedSubject,
 } from '../../native/SubjectExtractor';
 import {px, PHOTO_WIDTH, PHOTO_HEIGHT} from './photoFrame';
-import {typography, fontFamily} from '../../constants/typography';
+import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {padding, gap} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -30,8 +31,15 @@ type Status = 'detecting' | 'success' | 'failed';
 
 const refreshCameraIcon = require('../../assets/image/refresh_camera.png');
 
-// 시안의 피사체 윤곽선 색 (디자인 토큰에 없는 값이라 여기서만 씀)
-const OUTLINE_COLOR = '#F0A868';
+// 시안에서 헤더 아래(102) ~ 사진 위(129) 간격, 사진 아래(714) ~ 다시 찍기(746) 간격
+const PHOTO_TOP = px(27);
+const RETAKE_GAP = px(32);
+// 시안에서 말풍선(조각이 마음에 들지 않는다면?)은 사진 아래쪽(714)에 25만큼 걸쳐 있다
+const TOOLTIP_OVERLAP = px(25);
+// 말풍선 박스 높이와 아래 꼬리 크기 (시안 bubbleChip)
+const TOOLTIP_HEIGHT = 28;
+const TOOLTIP_TAIL_WIDTH = 14;
+const TOOLTIP_TAIL_HEIGHT = 12;
 
 // 시안에서 사진 상단(129)과 안내 문구 중앙(184.5)의 간격
 const TOAST_TOP = px(44);
@@ -152,7 +160,7 @@ const PieceDetectScreen = ({navigation, route}: Props) => {
             style={styles.confirmButton}
             onPress={handleConfirm}
             hitSlop={10}>
-            <IconCheck size={16} color={colors.icon.brand} />
+            <IconCheck size={24} color={colors.icon.brand} />
             <Text style={styles.confirmText}>확인</Text>
           </Pressable>
         )}
@@ -170,15 +178,17 @@ const PieceDetectScreen = ({navigation, route}: Props) => {
                 animating={true}
               />
             </View>
+          ) : status === 'success' ? (
+            <SubjectHighlightPhoto
+              uri={photoUri}
+              maskUri={subject?.maskUri}
+              outlineUri={subject?.outlineUri}
+              width={PHOTO_WIDTH}
+              height={PHOTO_HEIGHT}
+              borderRadius={radius['2xl']}
+            />
           ) : (
             <Image source={{uri: photoUri}} style={styles.photo} />
-          )}
-
-          {status === 'success' && subject?.outlineUri != null && (
-            <Image
-              source={{uri: subject.outlineUri}}
-              style={[styles.photo, styles.outline]}
-            />
           )}
 
           {isDetecting && (
@@ -197,8 +207,11 @@ const PieceDetectScreen = ({navigation, route}: Props) => {
 
       <View style={styles.footer}>
         {status === 'success' && (
-          <View style={styles.tooltip}>
-            <Text style={styles.tooltipText}>조각이 마음에 들지 않는다면?</Text>
+          <View style={styles.tooltip} pointerEvents="none">
+            <View style={styles.tooltipBox}>
+              <Text style={styles.tooltipText}>조각이 마음에 들지 않는다면?</Text>
+            </View>
+            <View style={styles.tooltipTail} />
           </View>
         )}
 
@@ -246,19 +259,20 @@ const styles = StyleSheet.create({
     height: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: gap.xs,
+    gap: gap.sm,
   },
 
   confirmText: {
-    ...typography.b5,
-    color: colors.text.brand,
+    ...typography.b3,
+    color: colors.text.inverse,
     includeFontPadding: false,
   },
 
+  // 시안처럼 헤더 아래에서부터 사진 → 다시 찍기 순으로 쌓는다.
+  // (남는 높이를 사진 위아래로 나누면 기기마다 다시 찍기가 사진에서 멀어짐)
   content: {
-    flex: 1,
+    paddingTop: PHOTO_TOP,
     alignItems: 'center',
-    justifyContent: 'center',
   },
 
   photoBox: {
@@ -281,11 +295,6 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
 
-  // 원본과 같은 해상도로 만들어진 흰색 윤곽선이라 같은 resizeMode로 겹치면 정확히 맞는다
-  outline: {
-    tintColor: OUTLINE_COLOR,
-  },
-
   toast: {
     position: 'absolute',
     top: TOAST_TOP,
@@ -302,42 +311,61 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
+  // 시안 Toast: 사진 아래쪽에서 20 위
   failureToast: {
     position: 'absolute',
-    bottom: padding.lg,
+    bottom: px(20),
     alignSelf: 'center',
-    paddingHorizontal: padding.md,
-    paddingVertical: 7,
+    paddingHorizontal: padding.lg,
+    paddingVertical: padding.sm,
     borderRadius: radius.md,
-    backgroundColor: colors.background.dimDarkest,
+    backgroundColor: colors.background.dimDarker,
   },
 
   failureToastText: {
-    ...typography.c2,
-    fontFamily: fontFamily.medium,
+    ...typography.b5,
     color: colors.text.inverse,
     includeFontPadding: false,
   },
 
   footer: {
-    height: px(106),
+    paddingTop: RETAKE_GAP,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: gap.sm,
   },
 
+  // 다시 찍기 버튼 위치가 말풍선 유무에 따라 흔들리지 않게 띄워서 사진 아래쪽에 걸친다
   tooltip: {
-    paddingHorizontal: padding.s,
-    paddingVertical: 5,
+    position: 'absolute',
+    top: -TOOLTIP_OVERLAP,
+    alignItems: 'center',
+  },
+
+  tooltipBox: {
+    height: TOOLTIP_HEIGHT,
+    paddingHorizontal: padding.md,
+    justifyContent: 'center',
     borderRadius: radius.md,
     backgroundColor: colors.brand.primary,
   },
 
   tooltipText: {
-    ...typography.c2,
-    fontFamily: fontFamily.medium,
+    ...typography.c1,
+    lineHeight: 16,
     color: colors.text.basic,
+    textAlign: 'center',
     includeFontPadding: false,
+  },
+
+  tooltipTail: {
+    marginTop: -1, // 박스와의 서브픽셀 틈 방지
+    width: 0,
+    height: 0,
+    borderLeftWidth: TOOLTIP_TAIL_WIDTH / 2,
+    borderRightWidth: TOOLTIP_TAIL_WIDTH / 2,
+    borderTopWidth: TOOLTIP_TAIL_HEIGHT,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: colors.brand.primary,
   },
 
   retakeButton: {

@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, StatusBar, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Image} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, TouchableOpacity, TextInput, KeyboardAvoidingView, ActivityIndicator, Image} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -174,7 +174,7 @@ if (previewImage) {
 
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior="padding">
         <View style={styles.header}>
           <TouchableOpacity
             activeOpacity={0.7}

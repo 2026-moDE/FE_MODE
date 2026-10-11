@@ -129,7 +129,7 @@ export default function MypageScreen() {
     );
   }, []);
 
-  // 아직 자리가 없던 조각들의 첫 배치 (보드가 중력 배치로 계산해서 넘겨줌)
+  // 보드가 중력 배치로 계산한 자리를 저장 (새 조각의 첫 배치, 크기가 바뀌어 다시 떨어진 조각, 드래그 후 재안착)
   const handlePlacePieces = useCallback(
     async (placements: PiecePlacement[]) => {
       applyPlacements(placements);

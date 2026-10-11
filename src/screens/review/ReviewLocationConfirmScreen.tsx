@@ -1,5 +1,5 @@
 import React, {useRef, useState} from 'react';
-import {View, Text, StyleSheet, StatusBar, Pressable, Modal, Image} from 'react-native';
+import {View, Text, StyleSheet, StatusBar, Pressable, Modal, Image, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {NaverMapMarkerOverlay, NaverMapViewRef} from '@mj-studio/react-native-naver-map';
@@ -14,7 +14,14 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 import IconLocationPin from '../../assets/icons/IconLocationPin';
 const cautionIcon = require('../../assets/image/caution_yellow.png');
-const reviewMapMarker = require('../../assets/image/review_mapMarker.png');
+
+// 장소 위치에 찍는 노란 동그라미. 현위치 마커와 같은 이미지를 쓴다.
+// (안드로이드는 위치 추적 모드가 꺼져 있으면 SDK가 현위치 오버레이를 안 그려서,
+//  이 화면에서는 장소 좌표에 마커를 직접 올려야 동그라미가 보인다)
+// iOS는 신아키텍처라 require() 에셋이 지도 오버레이에 적용되지 않아 에셋 카탈로그 이름을 쓴다 - MapView와 같은 처리
+const PLACE_MARKER_IMAGE = Platform.OS === 'ios'
+  ? {assetName: 'mapMarker'}
+  : require('../../assets/image/mapMarker.png');
 
 type Props = NativeStackScreenProps<
   ReviewStackParamList,
@@ -119,6 +126,7 @@ const handleLocationFailConfirm = () => {
               {latitude != null && longitude != null && latitude !== 0 && longitude !== 0 ? (
                 <MapView
                   ref={mapRef}
+                  showLocationMarker={false}
                   initialCamera={{latitude, longitude, zoom: 16}}
                   isScrollGesturesEnabled={false}
                   isZoomGesturesEnabled={false}
@@ -127,10 +135,10 @@ const handleLocationFailConfirm = () => {
                   <NaverMapMarkerOverlay
                     latitude={latitude}
                     longitude={longitude}
-                    image={reviewMapMarker}
-                    width={50}
-                    height={50}
-                    anchor={{x: 0.5, y: 1}}
+                    image={PLACE_MARKER_IMAGE}
+                    width={22}
+                    height={22}
+                    anchor={{x: 0.5, y: 0.5}}
                   />
                 </MapView>
               ) : (

@@ -269,9 +269,13 @@ RCT_EXPORT_METHOD(extract:(NSString *)imagePath
         // 마스크의 경계만 남기고(모폴로지 그래디언트) 밝기를 알파로 바꿔 투명 PNG로 만든다.
         // 흰색으로 저장해두고 색은 JS에서 tintColor로 입힌다.
         NSString *outlinePath = nil;
+        // 같은 화면에서 피사체 바깥만 어둡게 깔기 위한 마스크 (원본 크기 흑백 PNG, 피사체 = 흰색)
+        NSString *maskPath = nil;
 
         if (scaledMask != NULL) {
             CIImage *maskImage = [CIImage imageWithCVPixelBuffer:scaledMask];
+            maskPath = MoingWritePNG(maskImage, context, @"moing-piece-mask");
+
             // 원본 해상도가 제각각이라 고정 반경을 쓰면 큰 사진에선 선이 안 보인다.
             const CGFloat shorterSide = MIN(maskImage.extent.size.width, maskImage.extent.size.height);
             const CGFloat outlineRadius = MAX(2.0, shorterSide * 0.004);
@@ -308,6 +312,10 @@ RCT_EXPORT_METHOD(extract:(NSString *)imagePath
 
         if (outlinePath != nil) {
             result[@"outlineUri"] = [@"file://" stringByAppendingString:outlinePath];
+        }
+
+        if (maskPath != nil) {
+            result[@"maskUri"] = [@"file://" stringByAppendingString:maskPath];
         }
 
         resolve(result);
