@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from '../types/navigation';
 import HomeScreen from '../screens/home/HomeScreen';
+import ExploreScreen from '../screens/explore/ExploreScreen';
 import SearchScreen from '../screens/search/SearchScreen';
 import PlaceDetailScreen from '../screens/placeDetail/PlaceDetailScreen';
 import MyPageScreen from '../screens/mypage/MyPageScreen';
@@ -26,7 +27,7 @@ const Stack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 
-// 하단 탭 네비게이션 (리뷰 쓰기 / 홈 / 마이페이지)
+// 하단 탭 네비게이션 (탐색 / 홈 / 마이페이지)
 function TabNavigator() {
   return (
     <Tab.Navigator
@@ -36,6 +37,7 @@ function TabNavigator() {
       backBehavior="initialRoute">
       {/* 리뷰 작성은 탭바에 버튼이 없고(CustomTabBar의 TAB_ORDER) 전부 루트 스택의
           'ReviewStack'으로 진입하므로, 여기 탭 화면으로는 등록하지 않음 */}
+      <Tab.Screen name="Explore" component={ExploreScreen} />
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Mypage" component={MyPageScreen} />
     </Tab.Navigator>
