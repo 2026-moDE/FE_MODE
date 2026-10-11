@@ -13,9 +13,10 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
-import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, fetchTrendingPlaces } from "../../api/place";
+import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, fetchRecommendPlaces, RecommendedPlace } from "../../api/place";
+import { fetchNearbyCongestion, NearbyCongestionData } from "../../api/congestion";
 import { fetchHasUnreadNotification } from "../../api/notification";
-import { NearbyPlace, PlaceDetail, TrendingPlace, CurrentReview } from "../../types/place";
+import { NearbyPlace, PlaceDetail, CurrentReview } from "../../types/place";
 import { FriendReview, fetchFriendReviews } from "../../api/friend";
 import ReviewPhoto from "../../components/placeDetail/ReviewPhoto";
 import { colors } from '../../constants/colors';
@@ -327,14 +328,27 @@ export default function HomeScreen(){
         loadNearbyPlaces();
     }, [loadNearbyPlaces]);
 
-    // 최근에 리뷰가 많이 달린 장소 (기본 바텀시트용)
-    const [trendingPlaces, setTrendingPlaces] = useState<TrendingPlace[]>([]);
+    // 개인화 추천 장소 (기본 바텀시트용)
+    const [recommendPlaces, setRecommendPlaces] = useState<RecommendedPlace[]>([]);
+    const [recommendMessage, setRecommendMessage] = useState<string | undefined>(undefined);
     useEffect(() => {
         if (!location) return;
 
-        fetchTrendingPlaces({latitude: location.latitude, longitude: location.longitude})
-            .then(res => setTrendingPlaces(res.places))
-            .catch(error => console.warn('트렌딩 장소 조회 실패:', error?.message));
+        fetchRecommendPlaces({latitude: location.latitude, longitude: location.longitude})
+            .then(res => {
+                setRecommendPlaces(res.places);
+                setRecommendMessage(res.message);
+            })
+            .catch(error => console.warn('추천 장소 조회 실패:', error?.message));
+    }, [location]);
+
+    // 주변 혼잡도 공공 데이터
+    const [congestionData, setCongestionData] = useState<NearbyCongestionData | null>(null);
+    useEffect(() => {
+        if (!location) return;
+        fetchNearbyCongestion({latitude: location.latitude, longitude: location.longitude})
+            .then(setCongestionData)
+            .catch(error => console.warn('혼잡도 조회 실패:', error?.message));
     }, [location]);
 
     // 친구가 최근에 작성한 리뷰 (기본 바텀시트용) - 위치 필요 없이 로그인만 되면 조회 가능
@@ -588,7 +602,9 @@ export default function HomeScreen(){
                     clusterPlaces={clusterPlaces}
                     onPressPlace={handleClusterItemPress}
                     friendReviews={friendReviews}
-                    trendingPlaces={trendingPlaces}
+                    recommendPlaces={recommendPlaces}
+                    recommendMessage={recommendMessage}
+                    congestionData={congestionData}
                     onPressFriendReview={item => handleOpenReview(item.id)}
                     onPressTrendingMore={place => {
                         // BottomSheetScrollView 안의 제스처가 덜 정리된 채로 화면 전환이 겹치면
