@@ -9,12 +9,13 @@ import { typography } from '../../constants/typography';
 // import IconSharedMap from '../../assets/icons/IconSharedMap';   // 공유지도 탭 임시 제외
 import IconHome from '../../assets/icons/IconHome';
 import IconMyPage from '../../assets/icons/IconMyPage';
+import IconExplore from '../../assets/icons/IconExplore';
 
-// 홈 → 마이페이지  (공유지도 임시 제외)
-const TAB_ORDER = [/* 'SharedMap', */ 'Home', 'Mypage'] as const;
+// 탐색 → 홈 → 마이페이지
+const TAB_ORDER = ['Explore', 'Home', 'Mypage'] as const;
 
 const TAB_LABEL: Record<string, string> = {
-    // SharedMap: '공유지도',
+    Explore: '탐색',
     Home: '홈',
     Mypage: '마이페이지',
 };
@@ -74,7 +75,7 @@ export default function CustomTabBar({ state, navigation, descriptors }: BottomT
                         }
                     };
 
-                    const IconComponent = name === 'Home' ? IconHome : IconMyPage;
+                    const IconComponent = name === 'Explore' ? IconExplore : name === 'Home' ? IconHome : IconMyPage;
 
                     return (
                         <TouchableOpacity key={route.key} style={styles.tab} onPress={onPress}>

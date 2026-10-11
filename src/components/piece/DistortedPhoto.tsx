@@ -71,15 +71,17 @@ type Props = {
   height: number;
   // false면 왜곡 없이 정지 상태로 둔다
   animating: boolean;
+  // animating=false일 때 고정 왜곡 강도 (기본 0 = 왜곡 없음)
+  staticAmount?: number;
 };
 
-export default function DistortedPhoto({uri, width, height, animating}: Props) {
+export default function DistortedPhoto({uri, width, height, animating, staticAmount = 0}: Props) {
   const image = useImage(uri);
   const amount = useSharedValue(0);
 
   useEffect(() => {
     if (!animating) {
-      amount.value = 0;
+      amount.value = staticAmount;
       return;
     }
 
