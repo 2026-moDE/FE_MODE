@@ -13,7 +13,6 @@ import {useExploreReviews} from '../../hooks/useExploreReviews';
 import {fetchRegion} from '../../api/place';
 import {typography} from '../../constants/typography';
 
-const DEFAULT_RADIUS = 5000; // 5km
 
 export default function ExploreScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -43,7 +42,7 @@ export default function ExploreScreen() {
     useEffect(() => {
         if (location && !initialLoadDone.current) {
             initialLoadDone.current = true;
-            refresh({latitude: location.latitude, longitude: location.longitude, radius: DEFAULT_RADIUS});
+            refresh({latitude: location.latitude, longitude: location.longitude});
             fetchRegion({latitude: location.latitude, longitude: location.longitude})
                 .then(r => setRegionName(r.region_3depth_name))
                 .catch(() => {});
@@ -75,23 +74,20 @@ export default function ExploreScreen() {
 
     const handleEndReached = () => {
         if (!location) {return;}
-        loadMore({latitude: location.latitude, longitude: location.longitude, radius: DEFAULT_RADIUS});
+        loadMore({latitude: location.latitude, longitude: location.longitude});
     };
-
-    const radiusKm = DEFAULT_RADIUS / 1000;
 
     return (
         <View style={styles.container}>
             <ExploreHeader
                 placeName={regionName ?? (location ? '현 위치 기준' : '위치 확인 중')}
-                radiusKm={radiusKm}
                 onPressPlace={handlePressPlace}
             />
-            {isLoading ? (
+            {isLoading && reviews.length === 0 ? (
                 <View style={styles.center}>
                     <ActivityIndicator color={colors.brand.primary} size="large" />
                 </View>
-            ) : error ? (
+            ) : error && reviews.length === 0 ? (
                 <View style={styles.center}>
                     <Text style={styles.message}>오류: {error}</Text>
                 </View>

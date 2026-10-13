@@ -38,7 +38,6 @@ export type ExploreReviewsResponse = {
 type FetchExploreReviewsParams = {
     latitude: number;
     longitude: number;
-    radius?: number;
     seed?: number;
     offset?: number;
     limit?: number;
