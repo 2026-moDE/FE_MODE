@@ -36,6 +36,7 @@ type Props = {
     recommendPlaces?: RecommendedPlace[];
     recommendMessage?: string;
     congestionData?: NearbyCongestionData | null;
+    onPressCongestionArea?: () => void;
     onPressFriendReview?: (item: FriendReview) => void;
     onPressTrendingMore?: (place: RecommendedPlace) => void;
     // 시트 상단 Y좌표 (플로팅 버튼이 시트를 따라 움직이게 공유)
@@ -52,6 +53,7 @@ export default function HomeBottomSheet({
     recommendPlaces = [],
     recommendMessage,
     congestionData,
+    onPressCongestionArea,
     onPressFriendReview,
     onPressTrendingMore,
     animatedPosition,
@@ -68,6 +70,7 @@ export default function HomeBottomSheet({
             currentLevel: congestionData.congestion_level,
             updatedAt:    congestionData.updated_at,
             forecast:     congestionData.forecast,
+            weather:      congestionData.weather,
         };
     }, [congestionData]);
 
@@ -106,6 +109,8 @@ export default function HomeBottomSheet({
                             currentLevel={congestionCard.currentLevel}
                             updatedAt={congestionCard.updatedAt}
                             forecast={congestionCard.forecast}
+                            weather={congestionCard.weather}
+                            onPressArea={onPressCongestionArea}
                         />
                     )}
                     <TrendingPlacesSection

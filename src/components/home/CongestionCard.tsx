@@ -5,7 +5,8 @@ import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
 import {padding, gap} from '../../constants/spacing';
 import IconChevronDown from '../../assets/icons/IconChevronDown';
-import {NearbyCongestionLevel, CongestionForecast} from '../../api/congestion';
+import {NearbyCongestionLevel, CongestionForecast, WeatherData} from '../../api/congestion';
+import WeatherIcon from '../../assets/icons/weather/WeatherIcon';
 
 type Props = {
     areaName: string;
@@ -13,6 +14,7 @@ type Props = {
     currentLevel: NearbyCongestionLevel;
     updatedAt: string;          // ISO 문자열 - 6h/12h 라벨 인덱스 계산용
     forecast: CongestionForecast[];
+    weather?: WeatherData | null;
     onPressArea?: () => void;
 };
 
@@ -61,7 +63,7 @@ function findClosestIndex(
     return closest;
 }
 
-export default function CongestionCard({areaName, baseTime, currentLevel, updatedAt, forecast, onPressArea}: Props) {
+export default function CongestionCard({areaName, baseTime, currentLevel, updatedAt, forecast, weather, onPressArea}: Props) {
     const {pathD, gradientStops, labelIndices, allLevels, allTimes, xs} = useMemo(() => {
         // 현재 포인트 + forecast 전체를 합쳐서 그래프 그리기
         const levels: NearbyCongestionLevel[] = [currentLevel, ...forecast.map(f => f.congestion_level)];
@@ -167,6 +169,25 @@ export default function CongestionCard({areaName, baseTime, currentLevel, update
                     );
                 })}
             </View>
+
+            {/* 날씨 카드 */}
+            {weather && (
+                <View style={styles.weatherCard}>
+                    <Text style={styles.weatherLabel}>현재 날씨</Text>
+                    <View style={styles.weatherRight}>
+                        <WeatherIcon
+                            skyStatus={weather.sky_status}
+                            precipitationType={weather.precipitation_type}
+                            size={12}
+                            color={colors.text.inverse}
+                        />
+                        <View style={styles.weatherIconGap} />
+                        <Text style={styles.weatherSky}>{weather.sky_status}</Text>
+                        <View style={styles.weatherSkyGap} />
+                        <Text style={styles.weatherTemp}>{weather.temperature}°</Text>
+                    </View>
+                </View>
+            )}
         </View>
     );
 }
@@ -219,6 +240,37 @@ const styles = StyleSheet.create({
     },
     levelLabel: {
         ...typography.c1,
+        color: colors.text.inverse,
+    },
+    weatherCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    weatherLabel: {
+        ...typography.c3,
+        color: colors.text.inverse,
+    },
+    weatherRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    weatherIconGap: {
+        width: gap.xs,
+    },
+    weatherSkyGap: {
+        width: gap.sm,
+    },
+    weatherSky: {
+        ...typography.c3,
+        color: colors.text.inverse,
+    },
+    weatherTemp: {
+        ...typography.b5,
         color: colors.text.inverse,
     },
 });
