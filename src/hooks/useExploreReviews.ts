@@ -48,6 +48,7 @@ export function useExploreReviews() {
             const data = await fetchExploreReviews({
                 latitude: params.latitude,
                 longitude: params.longitude,
+                radius: 700000,
                 seed: seedRef.current,
                 offset: offsetRef.current,
             });

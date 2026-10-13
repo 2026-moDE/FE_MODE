@@ -19,21 +19,7 @@ export default function ExploreScreen() {
     const {location} = useLocation();
     const {reviews: apiReviews, isLoading, error, refresh, loadMore} = useExploreReviews();
 
-    const MOCK_EXTRA: CurrentReview[] = Array.from({length: 20}, (_, i) => ({
-        id: 9000 + i,
-        image_url: '',
-        thumbnail_url: null,
-        thumbnail_small_url: null,
-        congestion_level: 'RELAXED' as const,
-        comment: i % 3 === 0 ? '목데이터 테스트' : '',
-        is_mine: false,
-        visibility: 'PUBLIC' as const,
-        is_friend: false,
-        user: {user_id: 99, nickname: '테스트', profile_image_url: '', profile_url: null},
-        created_at: new Date().toISOString(),
-        comment_count: 0,
-    }));
-    const reviews = [...apiReviews, ...MOCK_EXTRA];
+    const reviews = apiReviews;
     const [regionName, setRegionName] = useState<string | null>(null);
     const [previewReview, setPreviewReview] = useState<CurrentReview | null>(null);
 

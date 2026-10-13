@@ -7,17 +7,16 @@ import {gap, padding} from '../../constants/spacing';
 import IconChevronDown from '../../assets/icons/IconChevronDown';
 
 type Props = {
-    placeName: string;
     onPressPlace?: () => void;
 };
 
-export default function ExploreHeader({placeName, onPressPlace}: Props) {
+export default function ExploreHeader({onPressPlace}: Props) {
     const insets = useSafeAreaInsets();
 
     return (
         <View style={[styles.wrapper, {paddingTop: insets.top + padding.sm}]}>
             <Pressable style={styles.titleRow} onPress={onPressPlace} hitSlop={8}>
-                <Text style={styles.title}>{placeName}</Text>
+                <Text style={styles.title}>탐색</Text>
                 {/* <IconChevronDown size={18} color={colors.text.inverse} /> */}
             </Pressable>
             {/* <Text style={styles.subtitle}>주변 리뷰</Text> */}
@@ -28,8 +27,8 @@ export default function ExploreHeader({placeName, onPressPlace}: Props) {
 
 const styles = StyleSheet.create({
     wrapper: {
-        paddingHorizontal: padding.xl,
-        paddingBottom: padding.md,
+        paddingHorizontal: padding.lg,
+        paddingBottom: padding.sm,
         gap: gap.xs,
         alignItems: 'center',
     },
