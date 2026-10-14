@@ -22,7 +22,11 @@ import {radius} from '../../constants/radius';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
-import BlurBrushSizeSlider from '../../components/review/BlurBrushSizeSlider';
+import BlurBrushSizeSlider, {
+  VIEW_WIDTH as BRUSH_SLIDER_VIEW_WIDTH,
+  VIEW_HEIGHT as BRUSH_SLIDER_VIEW_HEIGHT,
+  VIEW_BOTTOM_PADDING as BRUSH_SLIDER_BOTTOM_PADDING,
+} from '../../components/review/BlurBrushSizeSlider';
 
 import RNFS from 'react-native-fs';
 import {
@@ -78,6 +82,8 @@ const TOOL_AREA_HEIGHT = px(120);
 // 브러쉬 크기 5단계 (시안 blur-volume 00~100). 기본값은 기존 크기와 같은 가운데 단계
 const BRUSH_RADII = [px(10), px(14), px(18), px(24), px(32)];
 const DEFAULT_BRUSH_LEVEL = 2;
+// 시안: 슬라이더 쐐기 아래 끝과 하단 도구 버튼 윗변 사이 간격 (731.75 → 746)
+const BRUSH_SLIDER_GAP = 14.25;
 const ERASE_RADIUS = px(28);
 const AI_BUBBLE_HEIGHT = px(40);
 //const BLUR_SIGMA = 12;
@@ -502,8 +508,8 @@ const handleConfirm = async () => {
               <BlurBrushSizeSlider
                 level={brushLevel}
                 onChangeLevel={setBrushLevel}
-                width={px(28)}
-                height={px(108)}
+                width={px(BRUSH_SLIDER_VIEW_WIDTH)}
+                height={px(BRUSH_SLIDER_VIEW_HEIGHT)}
               />
             </View>
           )}
@@ -763,11 +769,15 @@ const styles = StyleSheet.create({
     tintColor: colors.text.basic,
   },
   // 선택되지 않은 원형 버튼
-  // 블러 버튼 바로 위에 세로로 선다 (블러 버튼은 blurToolRow 왼쪽 끝)
+  // 블러 버튼 바로 위에 세로로 선다 (블러 버튼은 blurToolRow 왼쪽 끝).
+  // 시안처럼 노브 중심 = 블러 버튼 중심, 쐐기 아래 끝은 버튼 위 14.25
   brushSliderWrap: {
     position: 'absolute',
     left: (SCREEN_WIDTH - MAX_PHOTO_WIDTH) / 2,
-    bottom: px(spacing['4xl']) + px(40) + px(spacing.md),
+    bottom:
+      px(spacing['4xl']) +
+      px(40) +
+      px(BRUSH_SLIDER_GAP - BRUSH_SLIDER_BOTTOM_PADDING),
     width: px(40),
     alignItems: 'center',
   },
