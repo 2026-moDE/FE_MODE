@@ -14,7 +14,7 @@ import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
 import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, fetchRecommendPlaces, RecommendedPlace } from "../../api/place";
-import { fetchNearbyCongestion, NearbyCongestionData } from "../../api/congestion";
+import { fetchNearbyCongestion, fetchAreaCongestion, NearbyCongestionData } from "../../api/congestion";
 import { fetchHasUnreadNotification } from "../../api/notification";
 import { NearbyPlace, PlaceDetail, CurrentReview } from "../../types/place";
 import { FriendReview, fetchFriendReviews } from "../../api/friend";
@@ -605,6 +605,13 @@ export default function HomeScreen(){
                     recommendPlaces={recommendPlaces}
                     recommendMessage={recommendMessage}
                     congestionData={congestionData}
+                    onPressCongestionArea={() => goTo('CongestionAreaSearch', {
+                        onSelectArea: (areaId: number) => {
+                            fetchAreaCongestion(areaId)
+                                .then(setCongestionData)
+                                .catch(err => console.warn('지역 혼잡도 조회 실패:', err?.message));
+                        },
+                    })}
                     onPressFriendReview={item => handleOpenReview(item.id)}
                     onPressTrendingMore={place => {
                         // BottomSheetScrollView 안의 제스처가 덜 정리된 채로 화면 전환이 겹치면

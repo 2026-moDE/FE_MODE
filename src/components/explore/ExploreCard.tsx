@@ -1,6 +1,8 @@
 import React from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import {runOnJS} from 'react-native-reanimated';
 import {CurrentReview} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
@@ -13,15 +15,25 @@ type Props = {
     review: CurrentReview;
     onPress?: () => void;
     onLongPress?: () => void;
+    panRef?: React.RefObject<any>;
 };
 
-export default function ExploreCard({review, onPress, onLongPress}: Props) {
+export default function ExploreCard({review, onPress, onLongPress, panRef}: Props) {
     const {thumbnail_url, image_url, comment, user, created_at} = review;
     const uri = thumbnail_url ?? image_url;
     const timeAgo = formatReviewTime(created_at, false);
 
+    const longPressGesture = Gesture.LongPress()
+        .minDuration(400)
+        .maxDistance(30)
+        .simultaneousWithExternalGesture(panRef!)
+        .onStart(() => {
+            if (onLongPress) runOnJS(onLongPress)();
+        });
+
     return (
-        <Pressable onPress={onPress} onLongPress={onLongPress} style={styles.container}>
+        <GestureDetector gesture={longPressGesture}>
+        <Pressable onPress={onPress} style={styles.container}>
             <View style={styles.inner}>
                 <FastImage
                     source={{uri, priority: FastImage.priority.high}}
@@ -60,6 +72,7 @@ export default function ExploreCard({review, onPress, onLongPress}: Props) {
                 </View>
             </View>
         </Pressable>
+        </GestureDetector>
     );
 }
 

@@ -13,28 +13,13 @@ import {useExploreReviews} from '../../hooks/useExploreReviews';
 import {fetchRegion} from '../../api/place';
 import {typography} from '../../constants/typography';
 
-const DEFAULT_RADIUS = 5000; // 5km
 
 export default function ExploreScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
     const {location} = useLocation();
     const {reviews: apiReviews, isLoading, error, refresh, loadMore} = useExploreReviews();
 
-    const MOCK_EXTRA: CurrentReview[] = Array.from({length: 20}, (_, i) => ({
-        id: 9000 + i,
-        image_url: '',
-        thumbnail_url: null,
-        thumbnail_small_url: null,
-        congestion_level: 'RELAXED' as const,
-        comment: i % 3 === 0 ? '목데이터 테스트' : '',
-        is_mine: false,
-        visibility: 'PUBLIC' as const,
-        is_friend: false,
-        user: {user_id: 99, nickname: '테스트', profile_image_url: '', profile_url: null},
-        created_at: new Date().toISOString(),
-        comment_count: 0,
-    }));
-    const reviews = [...apiReviews, ...MOCK_EXTRA];
+    const reviews = apiReviews;
     const [regionName, setRegionName] = useState<string | null>(null);
     const [previewReview, setPreviewReview] = useState<CurrentReview | null>(null);
 
@@ -43,7 +28,7 @@ export default function ExploreScreen() {
     useEffect(() => {
         if (location && !initialLoadDone.current) {
             initialLoadDone.current = true;
-            refresh({latitude: location.latitude, longitude: location.longitude, radius: DEFAULT_RADIUS});
+            refresh({latitude: location.latitude, longitude: location.longitude});
             fetchRegion({latitude: location.latitude, longitude: location.longitude})
                 .then(r => setRegionName(r.region_3depth_name))
                 .catch(() => {});
@@ -75,23 +60,20 @@ export default function ExploreScreen() {
 
     const handleEndReached = () => {
         if (!location) {return;}
-        loadMore({latitude: location.latitude, longitude: location.longitude, radius: DEFAULT_RADIUS});
+        loadMore({latitude: location.latitude, longitude: location.longitude});
     };
-
-    const radiusKm = DEFAULT_RADIUS / 1000;
 
     return (
         <View style={styles.container}>
             <ExploreHeader
                 placeName={regionName ?? (location ? '현 위치 기준' : '위치 확인 중')}
-                radiusKm={radiusKm}
                 onPressPlace={handlePressPlace}
             />
-            {isLoading ? (
+            {isLoading && reviews.length === 0 ? (
                 <View style={styles.center}>
                     <ActivityIndicator color={colors.brand.primary} size="large" />
                 </View>
-            ) : error ? (
+            ) : error && reviews.length === 0 ? (
                 <View style={styles.center}>
                     <Text style={styles.message}>오류: {error}</Text>
                 </View>

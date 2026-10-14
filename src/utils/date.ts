@@ -37,7 +37,15 @@ export function formatReviewTime(isoString: string, isArchived: boolean): string
 
     if (diffMin < 1) return '방금';
     if (diffMin < 60) return `${diffMin}분 전`;
-    return `${diffHour}시간 전`;
+    if (diffHour < 24) return `${diffHour}시간 전`;
+
+    const now = new Date();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    if (date.getFullYear() !== now.getFullYear()) {
+        return `${date.getFullYear()}/${month}/${day}`;
+    }
+    return `${month}/${day}`;
 }
 
 // ISO 시간 → "2026년 8월 10일" 절대 날짜

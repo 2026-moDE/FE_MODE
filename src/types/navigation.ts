@@ -81,6 +81,10 @@ export type AppStackParamList = {
 
   FriendSearch: undefined;
 
+  CongestionAreaSearch: {
+    onSelectArea: (areaId: number, areaName: string) => void;
+  };
+
   UserMyPage: {
     userId: number;
   };
