@@ -1,10 +1,12 @@
 import React, {useMemo} from 'react';
 import {Text, View, StyleSheet} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import BottomSheet, {BottomSheetFlatList, BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import ClusterPlaceItem from './ClusterPlaceItem';
 import FriendReviewSection from './FriendReviewSection';
 import TrendingPlacesSection from './TrendingPlacesSection';
 import CongestionCard from './CongestionCard';
+import MagazineSection from './MagazineSection';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
 import {spacing} from '../../constants/spacing';
@@ -12,6 +14,7 @@ import {NearbyPlace} from '../../types/place';
 import {FriendReview} from '../../api/friend';
 import {NearbyCongestionData} from '../../api/congestion';
 import {RecommendedPlace} from '../../api/place';
+import {Magazine} from '../../api/magazine';
 import type {SharedValue} from 'react-native-reanimated';
 
 // updated_at ISO 문자열 → "MM.DD HH:mm" 형식
@@ -39,6 +42,8 @@ type Props = {
     onPressCongestionArea?: () => void;
     onPressFriendReview?: (item: FriendReview) => void;
     onPressTrendingMore?: (place: RecommendedPlace) => void;
+    magazines?: Magazine[];
+    onPressMagazine?: (magazine: Magazine) => void;
     // 시트 상단 Y좌표 (플로팅 버튼이 시트를 따라 움직이게 공유)
     animatedPosition?: SharedValue<number>;
     onChange?: (index: number, position: number) => void;
@@ -56,9 +61,12 @@ export default function HomeBottomSheet({
     onPressCongestionArea,
     onPressFriendReview,
     onPressTrendingMore,
+    magazines = [],
+    onPressMagazine,
     animatedPosition,
     onChange,
 }: Props) {
+    const insets = useSafeAreaInsets();
     const displayPlaces  = recommendPlaces;
     const displayMessage = recommendMessage ?? '근처에서 인기 있는 장소예요';
 
@@ -100,7 +108,7 @@ export default function HomeBottomSheet({
                     )}
                 />
             ) : (
-                <BottomSheetScrollView contentContainerStyle={styles.defaultContent}>
+                <BottomSheetScrollView contentContainerStyle={[styles.defaultContent, {paddingBottom: insets.bottom + 60}]}>
                     <FriendReviewSection items={friendReviews} onPressItem={onPressFriendReview} />
                     {congestionCard && (
                         <CongestionCard
@@ -113,6 +121,7 @@ export default function HomeBottomSheet({
                             onPressArea={onPressCongestionArea}
                         />
                     )}
+                    <MagazineSection magazines={magazines} onPressItem={onPressMagazine} />
                     <TrendingPlacesSection
                         places={displayPlaces}
                         message={displayMessage}

@@ -85,6 +85,11 @@ export type AppStackParamList = {
     onSelectArea: (areaId: number, areaName: string) => void;
   };
 
+  MagazineDetail: {
+    magazineId: number;
+    magazineTitle: string;
+  };
+
   UserMyPage: {
     userId: number;
   };

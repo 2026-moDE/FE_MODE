@@ -14,6 +14,7 @@ import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
 import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, fetchRecommendPlaces, RecommendedPlace } from "../../api/place";
+import { fetchMagazines, Magazine } from '../../api/magazine';
 import { fetchNearbyCongestion, fetchAreaCongestion, NearbyCongestionData } from "../../api/congestion";
 import { fetchHasUnreadNotification } from "../../api/notification";
 import { NearbyPlace, PlaceDetail, CurrentReview } from "../../types/place";
@@ -351,6 +352,15 @@ export default function HomeScreen(){
             .catch(error => console.warn('혼잡도 조회 실패:', error?.message));
     }, [location]);
 
+    // 매거진 (지금 볼 만한 리뷰)
+    const [magazines, setMagazines] = useState<Magazine[]>([]);
+    useEffect(() => {
+        if (!location) return;
+        fetchMagazines({latitude: location.latitude, longitude: location.longitude})
+            .then(setMagazines)
+            .catch(error => console.warn('매거진 조회 실패:', error?.message));
+    }, [location]);
+
     // 친구가 최근에 작성한 리뷰 (기본 바텀시트용) - 위치 필요 없이 로그인만 되면 조회 가능
     const [friendReviews, setFriendReviews] = useState<FriendReview[]>([]);
     useEffect(() => {
@@ -611,6 +621,11 @@ export default function HomeScreen(){
                                 .then(setCongestionData)
                                 .catch(err => console.warn('지역 혼잡도 조회 실패:', err?.message));
                         },
+                    })}
+                    magazines={magazines}
+                    onPressMagazine={magazine => goTo('MagazineDetail', {
+                        magazineId: magazine.id,
+                        magazineTitle: magazine.title,
                     })}
                     onPressFriendReview={item => handleOpenReview(item.id)}
                     onPressTrendingMore={place => {
