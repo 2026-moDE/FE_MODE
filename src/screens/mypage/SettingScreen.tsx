@@ -39,11 +39,18 @@ function ToggleSwitch({value, disabled, onValueChange}: ToggleSwitchProps) {
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.timing(anim, {
+    const animation = Animated.timing(anim, {
       toValue: value ? 1 : 0,
       duration: 150,
       useNativeDriver: true,
-    }).start();
+    });
+
+    animation.start();
+
+    // 화면을 벗어나는 중에 네이티브 드라이버 애니메이션이 살아 있으면
+    // Fabric이 아직 부모에 붙어 있는 뷰를 재활용하려다 크래시한다
+    // ('Attempt to recycle a mounted view')
+    return () => animation.stop();
   }, [anim, value]);
 
   const translateX = anim.interpolate({
