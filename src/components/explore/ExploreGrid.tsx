@@ -14,18 +14,31 @@ import {gap} from '../../constants/spacing';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
-const CARD_W = SCREEN_W * 0.38;
-const CARD_H = CARD_W * (233 / 177);
-const CARDS_PER_ROW = 3;
-const CARD_GAP = gap.lg;
+// 시안 기준(393pt 프레임, 카드 161x215, 간격 24)을 화면 폭 비율로 환산
+const DESIGN_FRAME_W = 393;
+const DESIGN_CARD_W = 161;
+const DESIGN_CARD_H = 215;
+
+const CARD_W = SCREEN_W * (DESIGN_CARD_W / DESIGN_FRAME_W);
+const CARD_H = CARD_W * (DESIGN_CARD_H / DESIGN_CARD_W);
+const CARD_GAP = gap['2xl'];
+// 홀수 행이 한 장 적어서 생기는 폭 차이의 절반 - 행을 서로 어긋나게 배치한다
 const EVEN_ROW_OFFSET = CARD_W / 2 + CARD_GAP / 2;
 const SIDE_PAD = (SCREEN_W - CARD_W) / 2;
-const CANVAS_W = SIDE_PAD * 2 + CARDS_PER_ROW * CARD_W + (CARDS_PER_ROW - 1) * CARD_GAP;
-const INITIAL_X = -((CANVAS_W - SCREEN_W) / 2);
 // x 스크롤 범위: 카드 끝 + CARD_GAP*2 여백
 const X_PAD = CARD_GAP * 2;
 const MAX_X = -SIDE_PAD + X_PAD;
-const MIN_X = SCREEN_W - CANVAS_W + SIDE_PAD - X_PAD;
+
+// 열 수를 고정하면 캔버스가 세로로만 길어져서 가로 탐색이 사라진다.
+// 캔버스가 대략 정사각형이 되게 잡아 리뷰가 쌓일수록 가로·세로로 같이 퍼지게 한다.
+const MIN_COLS = 4;
+const colsForCount = (count: number) =>
+    Math.max(
+        MIN_COLS,
+        Math.round(Math.sqrt((count * (CARD_H + CARD_GAP)) / (CARD_W + CARD_GAP))),
+    );
+const canvasWidthForCols = (cols: number) =>
+    SIDE_PAD * 2 + cols * CARD_W + (cols - 1) * CARD_GAP;
 
 type Props = {
     reviews: CurrentReview[];
@@ -37,28 +50,45 @@ type Props = {
 export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEndReached}: Props) {
     const [containerH, setContainerH] = useState(0);
 
+    const cols = useMemo(() => colsForCount(reviews.length), [reviews.length]);
+    const canvasW = useMemo(() => canvasWidthForCols(cols), [cols]);
+
     const rows = useMemo(() => {
         const result: CurrentReview[][] = [];
         let i = 0;
         let rowIdx = 0;
         while (i < reviews.length) {
-            const count = rowIdx % 2 === 0 ? CARDS_PER_ROW : 2;
+            // 행마다 한 장씩 번갈아 빼서 어긋나게 쌓는다
+            const count = rowIdx % 2 === 0 ? cols : cols - 1;
             result.push(reviews.slice(i, i + count));
             i += count;
             rowIdx++;
         }
         return result;
-    }, [reviews]);
+    }, [reviews, cols]);
 
     const canvasH = CARD_GAP + rows.length * (CARD_H + CARD_GAP);
 
-    const translateX = useSharedValue(INITIAL_X);
+    const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
-    const startX = useSharedValue(INITIAL_X);
+    const startX = useSharedValue(0);
     const startY = useSharedValue(0);
+    const minXSV = useSharedValue(0);
     const minYSV = useSharedValue(0);
+    const initialXRef = useRef(0);
+    const initialXSetRef = useRef(false);
     const initialYRef = useRef(0);
     const initialYSetRef = useRef(false);
+
+    // 캔버스 폭은 열 수를 따라 바뀌므로 x 경계도 같이 갱신한다 (제스처가 worklet이라 shared value로)
+    useEffect(() => {
+        minXSV.value = SCREEN_W - canvasW + SIDE_PAD - X_PAD;
+        initialXRef.current = -((canvasW - SCREEN_W) / 2);
+        if (!initialXSetRef.current) {
+            initialXSetRef.current = true;
+            translateX.value = initialXRef.current;
+        }
+    }, [canvasW]);
 
     useEffect(() => {
         if (containerH > 0 && canvasH > 0) {
@@ -72,7 +102,7 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
     }, [canvasH, containerH]);
 
     useFocusEffect(useCallback(() => {
-        translateX.value = INITIAL_X;
+        translateX.value = initialXRef.current;
         translateY.value = initialYRef.current;
     }, []));
 
@@ -97,7 +127,7 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
             startY.value = translateY.value;
         })
         .onUpdate(e => {
-            const newX = Math.max(Math.min(startX.value + e.translationX, MAX_X), MIN_X);
+            const newX = Math.max(Math.min(startX.value + e.translationX, MAX_X), minXSV.value);
             const newY = Math.max(Math.min(startY.value + e.translationY, 0), minYSV.value);
             translateX.value = newX;
             translateY.value = newY;
@@ -106,7 +136,7 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
             }
         })
         .onEnd(e => {
-            translateX.value = withDecay({velocity: e.velocityX, clamp: [MIN_X, MAX_X]});
+            translateX.value = withDecay({velocity: e.velocityX, clamp: [minXSV.value, MAX_X]});
             translateY.value = withDecay({velocity: e.velocityY, clamp: [minYSV.value, 0]});
         });
 
@@ -130,7 +160,7 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
             });
         });
 
-        const centerX = CANVAS_W / 2;
+        const centerX = canvasW / 2;
         const centerY = canvasH / 2;
         const sortedPositions = [...allPositions].sort((a, b) => {
             const da = (a.x + CARD_W / 2 - centerX) ** 2 + (a.y + CARD_H / 2 - centerY) ** 2;
@@ -147,7 +177,7 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
             x: pos.x,
             y: pos.y,
         }));
-    }, [rows, canvasH, reviews]);
+    }, [rows, canvasW, canvasH, reviews]);
 
     const onLayout = useCallback((e: LayoutChangeEvent) => {
         setContainerH(e.nativeEvent.layout.height);
@@ -157,7 +187,7 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
         <View style={styles.container} onLayout={onLayout}>
             <GestureDetector gesture={gesture}>
                 <Animated.View
-                    style={[styles.canvas, {width: CANVAS_W, height: canvasH}, animatedStyle]}>
+                    style={[styles.canvas, {width: canvasW, height: canvasH}, animatedStyle]}>
                     {cards.map(({review, x, y}) => (
                         <View key={review.id} style={[styles.card, {left: x, top: y}]}>
                             <ExploreCard

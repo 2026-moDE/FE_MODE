@@ -79,8 +79,9 @@ export default function ExploreCard({review, onPress, onLongPress, panRef}: Prop
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        aspectRatio: 177 / 233,
-        backgroundColor: colors.surface.muted,
+        aspectRatio: 161 / 215,
+        // 시안의 2px 흰색 테두리 - padding으로 만든 2px 띠가 테두리 역할을 한다
+        backgroundColor: colors.border.inverse,
         borderRadius: radius.xl,
         padding: 2,
     },

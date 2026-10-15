@@ -39,9 +39,24 @@ export default function ExploreScreen() {
         navigation.navigate('Search', undefined);
     };
 
-    // 우선 해둠
-    const handlePressCard = (_review: CurrentReview) => {
-        // TODO
+    // 리뷰 자체는 프리뷰 카드에서 이미 보여줬으니, '자세히 보기'는 그 리뷰가 달린
+    // 장소 상세로 보낸다. reviewId를 넘기면 특정 리뷰 사진이 바로 열려버리므로 넘기지 않는다.
+    const goToPlaceDetail = (review: CurrentReview) => {
+        // place_id/place_name은 CurrentReview의 선택 필드다 (탐색 응답에서만 채워 넣는 값)
+        if (!review.place_id || !review.place_name) {
+            return;
+        }
+
+        navigation.navigate('PlaceDetail', {
+            placeId: review.place_id,
+            placeName: review.place_name,
+        });
+    };
+
+    // 탐색에서 카드를 누르면 여기서 바로 리뷰를 펼쳐 본다 (ExplorePreviewCard가 상세 화면 역할).
+    // 별도 화면으로 넘어가는 건 그 안의 '자세히 보기'를 눌렀을 때다.
+    const handlePressCard = (review: CurrentReview) => {
+        setPreviewReview(review);
     };
 
     const handleLongPressCard = (review: CurrentReview) => {
@@ -50,12 +65,7 @@ export default function ExploreScreen() {
 
     const handlePressDetail = (review: CurrentReview) => {
         setPreviewReview(null);
-        if (review.place_id && review.place_name) {
-            navigation.navigate('PlaceDetail', {
-                placeId: review.place_id,
-                placeName: review.place_name,
-            });
-        }
+        goToPlaceDetail(review);
     };
 
     const handleEndReached = () => {
