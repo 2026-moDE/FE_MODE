@@ -20,6 +20,8 @@ import {logoutApi, withdrawApi} from '../../api/auth';
 import {useAuth} from '../../context/AuthContext';
 import WithdrawModal from '../../components/mypage/WithdrawModal';
 import LogoutModal from '../../components/mypage/LogoutModal';
+import PushSettingsModal from '../../components/mypage/PushSettingsModal';
+import {useNotificationPermission} from '../../hooks/useNotificationPermission';
 
 const TOGGLE_TRACK_WIDTH = 44;
 const TOGGLE_TRACK_HEIGHT = 24;
@@ -29,10 +31,11 @@ const TOGGLE_TRAVEL = TOGGLE_TRACK_WIDTH - TOGGLE_PADDING * 2 - TOGGLE_THUMB_SIZ
 
 type ToggleSwitchProps = {
   value: boolean;
+  disabled?: boolean;
   onValueChange: (value: boolean) => void;
 };
 
-function ToggleSwitch({value, onValueChange}: ToggleSwitchProps) {
+function ToggleSwitch({value, disabled, onValueChange}: ToggleSwitchProps) {
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   useEffect(() => {
@@ -49,7 +52,7 @@ function ToggleSwitch({value, onValueChange}: ToggleSwitchProps) {
   });
 
   return (
-    <Pressable onPress={() => onValueChange(!value)}>
+    <Pressable disabled={disabled} onPress={() => onValueChange(!value)}>
       <View style={[styles.toggleTrack, value && styles.toggleTrackOn]}>
         <Animated.View
           style={[styles.toggleThumb, {transform: [{translateX}]}]}
@@ -63,11 +66,34 @@ export default function SettingScreen() {
   const navigation = useNavigation<any>();
   const {setIsLoggedIn} = useAuth();
 
-  const [pushEnabled, setPushEnabled] = useState(true);
+  const {enabled: pushEnabled, isChecking, requestPermission, openSettings} =
+    useNotificationPermission();
+  const [pushModalVisible, setPushModalVisible] = useState(false);
   const [commentAllowed, setCommentAllowed] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  // 켜기는 권한이 아직 미결정일 때만 앱 안에서 되고, 끄기는 앱에서 아예 안 된다.
+  // 둘 다 안 되는 경우는 OS 설정으로 보낸다.
+  const handlePushToggle = async (nextValue: boolean) => {
+    if (!nextValue) {
+      setPushModalVisible(true);
+
+      return;
+    }
+
+    const granted = await requestPermission();
+
+    if (!granted) {
+      setPushModalVisible(true);
+    }
+  };
+
+  const handleOpenPushSettings = () => {
+    setPushModalVisible(false);
+    openSettings();
+  };
 
   const handleLogoutConfirm = async () => {
     if (isProcessing) {
@@ -130,7 +156,11 @@ export default function SettingScreen() {
           <Text style={styles.sectionLabel}>알림 설정</Text>
           <View style={styles.toggleRow}>
             <Text style={styles.rowText}>푸시 알림</Text>
-            <ToggleSwitch value={pushEnabled} onValueChange={setPushEnabled} />
+            <ToggleSwitch
+              value={pushEnabled}
+              disabled={isChecking}
+              onValueChange={handlePushToggle}
+            />
           </View>
         </View>
 
@@ -172,6 +202,13 @@ export default function SettingScreen() {
 
         <View style={styles.bottomFiller} />
       </View>
+
+      <PushSettingsModal
+        visible={pushModalVisible}
+        isTurningOff={pushEnabled}
+        onClose={() => setPushModalVisible(false)}
+        onOpenSettings={handleOpenPushSettings}
+      />
 
       <WithdrawModal
         visible={withdrawModalVisible}
