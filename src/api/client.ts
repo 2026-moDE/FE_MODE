@@ -3,7 +3,7 @@ import {getAccessToken} from '../storage/tokenStorage';
 import {refreshAccessTokenApi} from './auth';
 import {notifySessionExpired} from '../context/AuthContext';
 
-export const BASE_URL = 'http://moing.co.kr:8080';
+export const BASE_URL = 'https://api.moing.co.kr';
 
 type RetryRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
