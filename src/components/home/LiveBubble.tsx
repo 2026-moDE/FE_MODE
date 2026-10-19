@@ -70,7 +70,7 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
     // 응답에 색은 없어서 혼잡도 레벨로 매핑
     const congestionColor =
         !monochrome && place.congestion_level
-            ? CONGESTION_COLOR[place.congestion_level].stroke
+            ? CONGESTION_COLOR[place.congestion_level].bubbleStroke
             : null;
 
     return (

@@ -254,7 +254,7 @@ const ReviewWriteScreen = ({navigation, route}: Props) => {
                         styles.chipSelected,
                         {
                           backgroundColor: selectedColors.fill,
-                          borderColor: selectedColors.stroke,
+                          borderColor: selectedColors.chipStroke,
                         },
                       ],
                     ]}
