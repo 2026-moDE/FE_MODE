@@ -5,20 +5,15 @@ import type {NativeStackScreenProps, NativeStackNavigationProp} from '@react-nav
 
 import type {AuthStackParamList, AppStackParamList} from '../../types/navigation';
 import {colors} from '../../constants/colors';
-import {fontFamily, typography} from '../../constants/typography';
+import {typography} from '../../constants/typography';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
-import IconChevronDown from '../../assets/icons/IconChevronDown';
+import IconArrowFilled from '../../assets/icons/IconArrowFilled';
 import IconCheck from '../../assets/icons/IconCheck';
 
 // api 연결시 삭제
 // const [terms, setTerms] = useState<TermItem[]>([]); 얘로 수정
 import {termsMock} from '../../mocks/termsMock';
-
-const appliedFontFamily = fontFamily ?? {
-  bold: 'Pretendard-Bold',
-  regular: 'Pretendard-Regular',
-};
 
 const logo = require('../../assets/image/logo_new.png');
 
@@ -89,7 +84,7 @@ export default function TermsScreen({navigation, route}: Props) {
           />
 
           <Text style={styles.title}>
-            서비스 이용을 위한{'\n'}약관동의가 필요해요.
+            서비스 이용을 위한{'\n'}약관동의가 필요해요
           </Text>
         </View>
 
@@ -98,7 +93,7 @@ export default function TermsScreen({navigation, route}: Props) {
         <View style={styles.agreementArea}>
           <Pressable style={styles.allAgreeBox} onPress={handleAllCheck}>
             <IconCheck
-              size={18}
+              size={20}
               color={allChecked ? colors.navy[900] : colors.icon.tertiary}
             />
 
@@ -163,7 +158,7 @@ function TermRow({text, checked, onCheckPress, onDetailPress}: TermRowProps) {
     <View style={styles.termRow}>
       <Pressable style={styles.termLeft} onPress={onCheckPress}>
         <IconCheck
-          size={18}
+          size={20}
           color={checked ? colors.icon.subtle : colors.gray[300]}
         />
 
@@ -171,11 +166,7 @@ function TermRow({text, checked, onCheckPress, onDetailPress}: TermRowProps) {
       </Pressable>
 
       <Pressable onPress={onDetailPress}>
-        <IconChevronDown
-          size={20}
-          color={colors.icon.tertiary}
-          style={styles.chevronRight}
-        />
+        <IconArrowFilled color={colors.icon.subtle} />
       </Pressable>
     </View>
   );
@@ -190,7 +181,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    // 시안: 완료 버튼 아래~홈 인디케이터 26
+    paddingBottom: 26,
     backgroundColor: colors.white,
   },
 
@@ -205,9 +197,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  // 시안 로고 83x52 (logo_new 원본 비율 192:120)
   logo: {
-    width: 94,
-    height: 50,
+    width: 83,
+    height: 52,
     marginBottom: spacing['2xl'],
   },
 
@@ -236,11 +229,9 @@ const styles = StyleSheet.create({
   },
 
   allAgreeText: {
+    ...typography.b3,
     marginLeft: 10,
     color: colors.text.disabled,
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: appliedFontFamily.bold,
   },
 
   allAgreeTextActive: {
@@ -267,11 +258,8 @@ const styles = StyleSheet.create({
 
   termText: {
     ...typography.b6,
-    marginLeft: 10,
+    marginLeft: 12,
     color: colors.text.subtle,
-  },
-  chevronRight: {
-    transform: [{rotate: '-90deg'}],
   },
 
   bottomButton: {
@@ -289,7 +277,7 @@ const styles = StyleSheet.create({
   },
 
   bottomButtonText: {
-    ...typography.b1,
+    ...typography.b3,
     color: colors.text.inverse,
   },
 
