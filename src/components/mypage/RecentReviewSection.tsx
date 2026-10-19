@@ -21,6 +21,8 @@ import QuickReviewButton from '../home/QuickReviewButton';
 import {MyProfile, MyReview} from '../../api/mypage';
 import {UserReview} from '../../api/user';
 import {fetchEmojis, addEmoji, removeEmoji, EmojiReaction} from '../../api/review';
+import {isBlockedError} from '../../api/block';
+import {useToast} from '../common/Toast';
 import {AppStackParamList} from '../../types/navigation';
 
 const chatIcon = require('../../assets/image/placeDeail_comment.png'); // 파일명에 오타 있음(Detail -> Deail)
@@ -67,6 +69,7 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
   onReportReview,
 }: Props, ref) {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const {showToast} = useToast();
   const menuTargetRef = useRef<number | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -223,8 +226,13 @@ const RecentReviewSection = React.forwardRef<RecentReviewSectionRef, Props>(func
     } catch (err: any) {
       console.log('[이모지 반영 실패]', err?.message);
       rollbackEmoji(reviewId, prevEmoji);
+
+      // 차단 관계면 서버가 403
+      if (isBlockedError(err)) {
+        showToast('차단한 사용자에게는 반응을 남길 수 없습니다');
+      }
     }
-  }, [rollbackEmoji]);
+  }, [rollbackEmoji, showToast]);
 
   const closePicker = useCallback(() => setPickerReviewId(null), []);
 

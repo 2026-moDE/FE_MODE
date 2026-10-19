@@ -76,7 +76,6 @@ export default function SettingScreen() {
   const {enabled: pushEnabled, isChecking, requestPermission, openSettings} =
     useNotificationPermission();
   const [pushModalVisible, setPushModalVisible] = useState(false);
-  const [commentAllowed, setCommentAllowed] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -173,15 +172,13 @@ export default function SettingScreen() {
 
         <View style={styles.sectionGap} />
 
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>리뷰 설정</Text>
-          <View style={styles.toggleRow}>
-            <Text style={styles.rowText}>리뷰 댓글 허용</Text>
-            <ToggleSwitch value={commentAllowed} onValueChange={setCommentAllowed} />
-          </View>
-        </View>
-
-        <View style={styles.sectionGap} />
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.linkRow}
+          onPress={() => navigation.navigate('BlockedUsers')}>
+          <Text style={styles.rowText}>차단한 사용자</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.7}

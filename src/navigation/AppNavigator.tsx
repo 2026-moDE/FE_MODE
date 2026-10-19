@@ -19,6 +19,7 @@ import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
 import MyMapScreen from '../screens/mypage/MyMapScreen';
 import MonthlyReviewScreen from '../screens/mypage/MonthlyReviewScreen';
 import SettingScreen from '../screens/mypage/SettingScreen';
+import BlockedUsersScreen from '../screens/mypage/BlockedUsersScreen';
 import TermsOfServiceScreen from '../screens/mypage/TermsOfServiceScreen';
 import TermsScreen from '../screens/auth/TermsScreen';
 import FollowListScreen from '../screens/mypage/FollowListScreen';
@@ -61,6 +62,7 @@ export default function AppNavigator() {
       <Stack.Screen name='MyMap' component={MyMapScreen} options={{animation: 'fade'}} />
       <Stack.Screen name='MonthlyReview' component={MonthlyReviewScreen} options={{animation: 'fade'}} />
       <Stack.Screen name='Setting' component={SettingScreen} />
+      <Stack.Screen name='BlockedUsers' component={BlockedUsersScreen} />
       <Stack.Screen name='TermsOfService' component={TermsOfServiceScreen} />
       <Stack.Screen name='TermsAgreement' component={TermsScreen} />
       <Stack.Screen name='FollowList' component={FollowListScreen} />

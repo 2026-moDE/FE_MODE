@@ -57,6 +57,19 @@ export function formatAbsoluteDate(isoString: string): string {
     return `${y}년 ${m}월 ${d}일`;
 }
 
+// UTC(Z) ISO 시간 → KST 날짜 "2026.10.19"
+// 서버가 Z로 주는 값은 기기 타임존에 따라 날짜가 하루 밀릴 수 있어서 +9를 직접 더해 고정한다
+export function formatKstDate(isoString: string): string {
+    const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+    const kst = new Date(new Date(isoString).getTime() + KST_OFFSET_MS);
+
+    const y = kst.getUTCFullYear();
+    const m = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(kst.getUTCDate()).padStart(2, '0');
+
+    return `${y}.${m}.${d}`;
+}
+
 // 댓글 작성일시 (예: 2026.08.11 17:28)
 export function formatCommentDate(isoString: string): string {
     const date = new Date(isoString);

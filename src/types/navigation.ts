@@ -73,6 +73,9 @@ export type AppStackParamList = {
 
   Setting: undefined;
 
+  // 설정 > 차단한 사용자 (차단 해제 전용 목록)
+  BlockedUsers: undefined;
+
   TermsOfService: {initialOpenId?: number} | undefined;
 
   TermsAgreement: {viewOnly?: boolean} | undefined;

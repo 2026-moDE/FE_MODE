@@ -10,6 +10,7 @@ import ExploreGrid from '../../components/explore/ExploreGrid';
 import ExplorePreviewCard from '../../components/explore/ExplorePreviewCard';
 import {useLocation} from '../../context/LocationContext';
 import {useExploreReviews} from '../../hooks/useExploreReviews';
+import {useOnBlockChange} from '../../store/blockEvents';
 import {fetchRegion} from '../../api/place';
 import {typography} from '../../constants/typography';
 
@@ -34,6 +35,13 @@ export default function ExploreScreen() {
                 .catch(() => {});
         }
     }, [location, refresh]);
+
+    // 차단/해제되면 이미 받아둔 그리드에 그 사용자 리뷰가 남아 있어서 처음부터 다시 받는다
+    useOnBlockChange(() => {
+        if (!location) {return;}
+        setPreviewReview(null);
+        refresh({latitude: location.latitude, longitude: location.longitude});
+    });
 
     const handlePressPlace = () => {
         navigation.navigate('Search', undefined);

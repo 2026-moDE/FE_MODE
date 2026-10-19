@@ -19,6 +19,7 @@ import { fetchNearbyCongestion, fetchAreaCongestion, NearbyCongestionData } from
 import { fetchHasUnreadNotification } from "../../api/notification";
 import { NearbyPlace, PlaceDetail, CurrentReview } from "../../types/place";
 import { FriendReview, fetchFriendReviews } from "../../api/friend";
+import { useOnBlockChange } from "../../store/blockEvents";
 import ReviewPhoto from "../../components/placeDetail/ReviewPhoto";
 import { colors } from '../../constants/colors';
 import IconCurrentLocation from "../../assets/icons/IconCurrentLocation";
@@ -317,6 +318,10 @@ export default function HomeScreen(){
                     setPlaces(unique);
                     // 기존에 로드된 URL은 유지, 새 URL만 preloader가 채움
                     setReadyUrls(prev => new Set([...prev].filter(url => newUrls.has(url))));
+                    // 실패 기록은 통째로 비운다 - 리뷰를 막 등록한 직후엔 서버 리사이즈 썸네일이
+                    // 아직 없어서 404가 나는데, 한 번 실패로 박아두면 썸네일이 만들어진 뒤에도
+                    // 프리로더가 아예 다시 시도하지 않아 버블이 빈 카드로 굳어버린다
+                    setFailedUrls(new Set());
                 }
             })
             .finally(() => {
@@ -371,6 +376,17 @@ export default function HomeScreen(){
 
     // 친구가 최근에 작성한 리뷰 뷰어에서 넘기는 인덱스 - 사람/장소 안 가리고 friendReviews 배열 순서 그대로 왔다갔다
     const [friendReviewViewerIndex, setFriendReviewViewerIndex] = useState<number | null>(null);
+
+    // 차단/해제 직후엔 지도 버블과 친구 리뷰에 그 사용자 콘텐츠가 그대로 남아 있다.
+    // 홈 탭은 포커스가 없어도 마운트돼 있으니 알림을 받는 즉시 다시 조회한다 (앱 재시작 없이 반영)
+    useOnBlockChange(() => {
+        loadNearbyPlaces();
+        // 차단한 사용자의 리뷰를 보고 있던 중일 수 있어서 뷰어는 닫는다
+        setFriendReviewViewerIndex(null);
+        fetchFriendReviews()
+            .then(setFriendReviews)
+            .catch(error => console.warn('친구 리뷰 재조회 실패:', error?.message));
+    });
 
     // 미니카드 또는 친구 리뷰 뷰어 떠있을 때 하단 탭바 숨김 (둘 다 닫으면 복구)
     useEffect(() => {

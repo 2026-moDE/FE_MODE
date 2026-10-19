@@ -16,6 +16,8 @@ import {BottomSheetModal} from '@gorhom/bottom-sheet';
 import {AppStackParamList} from '../../types/navigation';
 import {fetchMagazineDetail, MagazineItem} from '../../api/magazine';
 import {addEmoji, fetchEmojis, removeEmoji} from '../../api/review';
+import {isBlockedError} from '../../api/block';
+import {useToast} from '../../components/common/Toast';
 import {useLocation} from '../../context/LocationContext';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
@@ -51,6 +53,7 @@ export default function MagazineDetailScreen() {
     const {magazineId, magazineTitle} = route.params;
     const {location} = useLocation();
     const insets = useSafeAreaInsets();
+    const {showToast} = useToast();
 
     const [items, setItems] = useState<MagazineItem[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -123,6 +126,11 @@ export default function MagazineDetailScreen() {
                 return n;
             });
             if (itemsRef.current[currentIndexRef.current]?.review_id === reviewId) syncEmoji(!!prev);
+
+            // 차단 관계면 서버가 403
+            if (isBlockedError(err)) {
+                showToast('차단한 사용자에게는 반응을 남길 수 없습니다');
+            }
         }
     };
 
