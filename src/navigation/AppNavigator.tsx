@@ -6,6 +6,7 @@ import HomeScreen from '../screens/home/HomeScreen';
 import ExploreScreen from '../screens/explore/ExploreScreen';
 import SearchScreen from '../screens/search/SearchScreen';
 import CongestionAreaSearchScreen from '../screens/home/CongestionAreaSearchScreen';
+import MagazineDetailScreen from '../screens/home/MagazineDetailScreen';
 import PlaceDetailScreen from '../screens/placeDetail/PlaceDetailScreen';
 import MyPageScreen from '../screens/mypage/MyPageScreen';
 import CustomTabBar from '../components/map/CustomTabBar';
@@ -18,6 +19,7 @@ import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
 import MyMapScreen from '../screens/mypage/MyMapScreen';
 import MonthlyReviewScreen from '../screens/mypage/MonthlyReviewScreen';
 import SettingScreen from '../screens/mypage/SettingScreen';
+import BlockedUsersScreen from '../screens/mypage/BlockedUsersScreen';
 import TermsOfServiceScreen from '../screens/mypage/TermsOfServiceScreen';
 import TermsScreen from '../screens/auth/TermsScreen';
 import FollowListScreen from '../screens/mypage/FollowListScreen';
@@ -60,11 +62,13 @@ export default function AppNavigator() {
       <Stack.Screen name='MyMap' component={MyMapScreen} options={{animation: 'fade'}} />
       <Stack.Screen name='MonthlyReview' component={MonthlyReviewScreen} options={{animation: 'fade'}} />
       <Stack.Screen name='Setting' component={SettingScreen} />
+      <Stack.Screen name='BlockedUsers' component={BlockedUsersScreen} />
       <Stack.Screen name='TermsOfService' component={TermsOfServiceScreen} />
       <Stack.Screen name='TermsAgreement' component={TermsScreen} />
       <Stack.Screen name='FollowList' component={FollowListScreen} />
       <Stack.Screen name='FriendSearch' component={FriendSearchScreen} />
       <Stack.Screen name='CongestionAreaSearch' component={CongestionAreaSearchScreen} />
+      <Stack.Screen name='MagazineDetail' component={MagazineDetailScreen} options={{headerShown: false}} />
       <Stack.Screen name='UserMyPage' component={UserMyPageScreen} />
     </Stack.Navigator>
   );

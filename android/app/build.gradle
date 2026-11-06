@@ -104,6 +104,18 @@ def requireKey = { String name ->
     return v
 }
 
+// 플레이스토어 업로드 키를 쓸 수 있는 환경인지. 4개가 다 있어야 한다.
+// 키스토어 파일은 .gitignore 라 git으로 안 오고, 비밀번호는 각자 ~/.gradle/gradle.properties 에 둔다
+// (android/gradle.properties 는 git에 추적되는 파일이라 거기 넣으면 비밀번호가 커밋된다).
+def uploadKeyProps = ['MOING_UPLOAD_STORE_FILE', 'MOING_UPLOAD_STORE_PASSWORD',
+                      'MOING_UPLOAD_KEY_ALIAS', 'MOING_UPLOAD_KEY_PASSWORD']
+def hasUploadKey = uploadKeyProps.every { project.hasProperty(it) }
+if (!hasUploadKey) {
+    logger.lifecycle("[moing] 업로드 키 설정이 없어 release 빌드도 debug 키로 서명됩니다. " +
+        "스토어 업로드용으로 빌드하려면 팀에서 moing-upload.keystore 와 비밀번호를 받아 " +
+        "~/.gradle/gradle.properties 에 ${uploadKeyProps.join(', ')} 를 설정하세요.")
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -114,8 +126,8 @@ android {
         applicationId "com.moing.app" //변경
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 4
+        versionName "1.0.1"
 
         resValue "string", "naver_map_client_id", requireKey("NMF_CLIENT_ID")
         resValue "string", "kakao_app_key", requireKey("KAKAO_APP_KEY")
@@ -129,15 +141,26 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // 업로드 키는 git에 없다(키스토어는 .gitignore, 비밀번호는 각자 ~/.gradle/gradle.properties).
+        // 그래서 "있을 때만" 선언한다 - 무조건 선언하면 값이 없는 사람은 configuration 단계에서
+        // MissingPropertyException이 나서 debug 빌드조차 못 한다
+        if (hasUploadKey) {
+            release {
+                storeFile file(MOING_UPLOAD_STORE_FILE)
+                storePassword MOING_UPLOAD_STORE_PASSWORD
+                keyAlias MOING_UPLOAD_KEY_ALIAS
+                keyPassword MOING_UPLOAD_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // 업로드 키가 있으면 그걸로 서명하고, 없으면 debug 키로 떨어진다.
+            // 후자로 만든 APK/AAB는 플레이스토어에 못 올리니 배포용은 키를 받아서 빌드할 것
+            signingConfig hasUploadKey ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

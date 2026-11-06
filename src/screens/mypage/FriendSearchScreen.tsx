@@ -4,6 +4,8 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 import {searchUsers, sendFriendRequest, FriendStatus} from '../../api/friend';
+import {isBlockedError} from '../../api/block';
+import {useToast} from '../../components/common/Toast';
 import {fontFamily} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {spacing} from '../../constants/spacing';
@@ -22,6 +24,7 @@ type SearchResultUser = {
 
 export default function FriendSearchScreen() {
   const navigation = useNavigation<any>();
+  const {showToast} = useToast();
   const [keyword, setKeyword] = useState('');
   const [results, setResults] = useState<SearchResultUser[]>([]);
   const inputRef = useRef<TextInput>(null);
@@ -95,6 +98,11 @@ export default function FriendSearchScreen() {
       );
     } catch (error) {
       console.log('[친구 요청 전송 실패]', error);
+
+      // 차단 관계면 서버가 403
+      if (isBlockedError(error)) {
+        showToast('차단한 사용자에게는 친구 요청을 보낼 수 없습니다');
+      }
     }
   };
 

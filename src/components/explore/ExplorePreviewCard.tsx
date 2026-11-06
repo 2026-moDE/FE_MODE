@@ -18,6 +18,8 @@ import ProfileAvatar from '../common/ProfileAvatar';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 
 const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
+// 시안은 카드 폭 257(393pt 기준 65%)이지만 상세 화면 역할이라 그보다 키웠다.
+// 86%까지 올렸다가 너무 커서 원래 쓰던 75%로 되돌림.
 const CARD_W = SCREEN_W * 0.75;
 
 type Props = {
@@ -56,7 +58,7 @@ export default function ExplorePreviewCard({review, onClose, onPressDetail}: Pro
                         </View>
                         {!!place_name && (
                             <View style={styles.locationRow}>
-                                <IconPlaceLocation size={14} color={colors.text.inverse} />
+                                <IconPlaceLocation size={12} color={colors.text.inverse} />
                                 <Text style={styles.locationText} numberOfLines={1}>
                                     {place_name}
                                 </Text>
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
         flexShrink: 1,
     },
     timeText: {
-        ...typography.c3,
+        ...typography.c2,
         color: colors.text.inverse,
     },
     locationRow: {
@@ -144,14 +146,17 @@ const styles = StyleSheet.create({
     },
 
     locationText: {
-        ...typography.c3,
+        ...typography.c2,
         color: colors.text.inverse,
         maxWidth: CARD_W * 0.3,
     },
     imageContainer: {
         marginHorizontal: padding.lg,
-        aspectRatio: 177 / 233,
-        maxHeight: SCREEN_H * 0.45,
+        // 시안 225x402
+        aspectRatio: 225 / 402,
+        // 카드를 키운 만큼 이 비율대로면 이미지도 높아진다. 상단 메타/버튼까지 한 화면에
+        // 들어가는 선에서 잡은 상한 - 작은 화면에서만 걸린다
+        maxHeight: SCREEN_H * 0.65,
         backgroundColor: colors.surface.muted,
         overflow: 'hidden',
         borderRadius: radius.xl,
@@ -169,7 +174,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: padding['2xl'],
     },
     comment: {
-        ...typography.b3,
+        // 시안 Caption/C1(Bold) 12px
+        ...typography.c1,
         color: colors.text.inverse,
         textAlign: 'center',
         textShadowColor: 'rgba(0,0,0,0.8)',
@@ -178,18 +184,19 @@ const styles = StyleSheet.create({
         letterSpacing: -0.3,
     },
     footer: {
+        // 이미지와 같은 좌우 여백이라야 버튼 오른쪽 끝이 사진 오른쪽 끝과 맞는다
         paddingHorizontal: padding.lg,
         paddingBottom: padding.lg,
         alignItems: 'flex-end',
     },
     detailButton: {
         backgroundColor: colors.surface.subtleDarker,
-        borderRadius: 12,
+        borderRadius: radius.lg,
         paddingHorizontal: padding.lg,
         paddingVertical: padding.sm,
     },
     detailText: {
-        ...typography.c3,
+        ...typography.c2,
         color: colors.text.inverse,
     },
 });

@@ -1,7 +1,6 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {View, Text, Image, Pressable, StyleSheet, Animated, PanResponder, ScrollView, Dimensions, Keyboard} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import FastImage from '@d11/react-native-fast-image';
 import {CurrentReview, ArchivedReview, ReviewUser} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
@@ -15,8 +14,11 @@ import ReviewPhotoComment, {ReviewPhotoCommentHandle} from './ReviewPhotoComment
 import {formatRelativeTime, formatAbsoluteDate} from '../../utils/date';
 import IconPlaceLocation from '../../assets/icons/IconPlaceLocation';
 import {addEmoji, removeEmoji, fetchEmojis} from '../../api/review';
+import {isBlockedError} from '../../api/block';
 import { typography } from '../../constants/typography';
 import ProfileAvatar from '../common/ProfileAvatar';
+import ReviewThumbnail from '../common/ReviewThumbnail';
+import {useToast} from '../common/Toast';
 
 type Props = {
     reviews: (CurrentReview | ArchivedReview)[];
@@ -55,6 +57,7 @@ const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
 export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, onPressUser, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat, onPressPlace, onAddComment}: Props) {
     const insets = useSafeAreaInsets();
+    const {showToast} = useToast();
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const isOwner = reviews[currentIndex]?.is_mine ?? false;
@@ -200,6 +203,11 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
         } catch (err: any) {
             console.warn('이모지 반영 실패:', err?.message);
             rollbackEmoji(reviewId, prevEmoji);
+
+            // 차단 관계면 서버가 403
+            if (isBlockedError(err)) {
+                showToast('차단한 사용자에게는 반응을 남길 수 없습니다');
+            }
         }
     };
 
@@ -322,10 +330,11 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
                     {/* 가로 사진이면 실제 비율(가로), 아니면 세로 2:3 유지 */}
                     <View style={[styles.imageWrapper, imageRatio && imageRatio > 1 ? {aspectRatio: imageRatio} : null]}>
                         {/* 이미지 */}
-                        <FastImage
-                            source={{uri: review.thumbnail_url ?? review.image_url, priority: FastImage.priority.high}}
+                        {/* 등록 직후엔 썸네일이 아직 없어서 404 - 그때는 원본으로 떨어진다 */}
+                        <ReviewThumbnail
+                            thumbnailUrl={review.thumbnail_url}
+                            imageUrl={review.image_url}
                             style={styles.image}
-                            resizeMode={FastImage.resizeMode.cover}
                             onLoad={e => {
                                 const {width, height} = e.nativeEvent;
                                 if (width && height) setImageRatio(width / height);

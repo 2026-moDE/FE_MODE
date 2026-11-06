@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, Pressable, StyleSheet, StyleProp, ViewStyle} from 'react-native';
-import FastImage from '@d11/react-native-fast-image';
+import ReviewThumbnail from '../common/ReviewThumbnail';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {spacing} from '../../constants/spacing';
@@ -38,10 +38,11 @@ export default function ArchivedReviewStack({reviews, onPress, label = '과거 �
                             !back2 && {backgroundColor: back1 ? colors.gray[400] : colors.surface.inverse},
                         ]}>
                         {back2 && (
-                            <FastImage
-                                source={{uri: back2.thumbnail_small_url ?? back2.thumbnail_url ?? back2.image_url}}
+                            <ReviewThumbnail
+                                thumbnailSmallUrl={back2.thumbnail_small_url}
+                                thumbnailUrl={back2.thumbnail_url}
+                                imageUrl={back2.image_url}
                                 style={styles.stackImage}
-                                resizeMode={FastImage.resizeMode.cover}
                             />
                         )}
                     </View>
@@ -51,10 +52,11 @@ export default function ArchivedReviewStack({reviews, onPress, label = '과거 �
                 <View style={styles.back1Wrapper} renderToHardwareTextureAndroid collapsable={false}>
                     <View style={[styles.stackCard, !back1 && {backgroundColor: colors.surface.inverse}]}>
                         {back1 && (
-                            <FastImage
-                                source={{uri: back1.thumbnail_small_url ?? back1.thumbnail_url ?? back1.image_url}}
+                            <ReviewThumbnail
+                                thumbnailSmallUrl={back1.thumbnail_small_url}
+                                thumbnailUrl={back1.thumbnail_url}
+                                imageUrl={back1.image_url}
                                 style={styles.stackImage}
-                                resizeMode={FastImage.resizeMode.cover}
                             />
                         )}
                     </View>
@@ -69,10 +71,11 @@ export default function ArchivedReviewStack({reviews, onPress, label = '과거 �
                             !front && {backgroundColor: colors.surface.inverse, borderColor: colors.border.inverse},
                         ]}>
                         {front && (
-                            <FastImage
-                                source={{uri: front.thumbnail_small_url ?? front.thumbnail_url ?? front.image_url}}
+                            <ReviewThumbnail
+                                thumbnailSmallUrl={front.thumbnail_small_url}
+                                thumbnailUrl={front.thumbnail_url}
+                                imageUrl={front.image_url}
                                 style={styles.stackImage}
-                                resizeMode={FastImage.resizeMode.cover}
                             />
                         )}
                     </View>

@@ -1,12 +1,15 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import {View, StyleSheet, type GestureResponderEvent} from 'react-native';
 import Svg, {Circle, Path} from 'react-native-svg';
 
 // 시안(node 1799:3353)의 blur-volume 컴포넌트.
 // 5개 상태(00/25/50/75/100)가 전부 같은 쐐기 위에서 흰 원만 20씩 움직이는 거라,
 // 에셋 5장 대신 원의 y만 바꾼다
-const VIEW_WIDTH = 28;
-const VIEW_HEIGHT = 108.252;
+// 시안 1px = viewBox 1. 쐐기(17 x 90.75)를 기준으로 위아래·좌우에 노브가 넘칠 여백을 둔 크기
+export const VIEW_WIDTH = 28;
+export const VIEW_HEIGHT = 108.252;
+// 쐐기 아래 끝 ~ viewBox 아래 끝 여백 (시안 위치를 맞출 때 쓴다)
+export const VIEW_BOTTOM_PADDING = VIEW_HEIGHT - 104.2515;
 
 // 아래로 갈수록 가늘어지는 반투명 쐐기 (위가 큰 브러쉬)
 const WEDGE_PATH =
@@ -43,10 +46,13 @@ export default function BlurBrushSizeSlider({
 }: Props) {
   const knobCy = KNOB_CY_MIN_LEVEL - level * KNOB_CY_STEP;
 
-  const handleTouch = (event: GestureResponderEvent) => {
+  // locationY는 손가락 아래에 있는 뷰 기준이라, 손가락이 슬라이더 밖으로 나가면 엉뚱한 값이 된다.
+  // 누른 순간의 locationY/pageY를 기억해 두고 이후엔 pageY 이동량으로만 계산한다
+  const touchStartRef = useRef({locationY: 0, pageY: 0});
+
+  const applyY = (y: number) => {
     const ratio =
-      (event.nativeEvent.locationY / height - TRAVEL_TOP_RATIO) /
-      (TRAVEL_BOTTOM_RATIO - TRAVEL_TOP_RATIO);
+      (y / height - TRAVEL_TOP_RATIO) / (TRAVEL_BOTTOM_RATIO - TRAVEL_TOP_RATIO);
 
     // 위로 갈수록 큰 단계
     const next = Math.round((1 - ratio) * (BRUSH_LEVEL_COUNT - 1));
@@ -57,14 +63,32 @@ export default function BlurBrushSizeSlider({
     }
   };
 
+  const handleGrant = (event: GestureResponderEvent) => {
+    const {locationY, pageY} = event.nativeEvent;
+    touchStartRef.current = {locationY, pageY};
+    applyY(locationY);
+  };
+
+  const handleMove = (event: GestureResponderEvent) => {
+    const start = touchStartRef.current;
+    applyY(start.locationY + (event.nativeEvent.pageY - start.pageY));
+  };
+
   return (
     <View
       style={[styles.touchArea, {width: Math.max(width, MIN_TOUCH_WIDTH), height}]}
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => true}
-      onResponderGrant={handleTouch}
-      onResponderMove={handleTouch}>
-      <Svg width={width} height={height} viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}>
+      // 드래그 중에 다른 뷰가 터치를 가져가지 못하게 한다
+      onResponderTerminationRequest={() => false}
+      onResponderGrant={handleGrant}
+      onResponderMove={handleMove}>
+      {/* Svg가 터치 대상이 되면 locationY 기준이 바뀌므로 터치는 바깥 View만 받는다 */}
+      <Svg
+        width={width}
+        height={height}
+        viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+        pointerEvents="none">
         <Path d={WEDGE_PATH} fill="white" fillOpacity={0.5} />
         <Circle cx={KNOB_CX} cy={knobCy} r={KNOB_RADIUS} fill="white" />
       </Svg>

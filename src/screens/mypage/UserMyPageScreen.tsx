@@ -11,9 +11,13 @@ import FriendActionButton from '../../components/mypage/FriendActionButton';
 import RecentReviewSection, {RecentReviewSectionRef} from '../../components/mypage/RecentReviewSection';
 import FriendLiveReviewSection from '../../components/mypage/FriendLiveReviewSection';
 import FriendProfileMenu from '../../components/mypage/FriendProfileMenu';
+import UserBlockModal from '../../components/mypage/UserBlockModal';
 import {getUserProfile, getUserReviews, UserProfile, UserReview} from '../../api/user';
 import {sendFriendRequest, deleteFriend} from '../../api/friend';
+import {blockUser, isBlockedError} from '../../api/block';
 import {getUserPieces, type Piece} from '../../api/piece';
+import {notifyBlockChanged} from '../../store/blockEvents';
+import {useToast} from '../../components/common/Toast';
 import {AppStackParamList} from '../../types/navigation';
 
 const REVIEW_PAGE_LIMIT = 20;
@@ -26,6 +30,7 @@ export default function UserMyPageScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<UserMyPageRouteProp>();
   const {userId} = route.params;
+  const {showToast} = useToast();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
@@ -37,6 +42,8 @@ export default function UserMyPageScreen() {
   const [isRequestSubmitting, setIsRequestSubmitting] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{top: number; right: number} | null>(null);
+  const [blockModalVisible, setBlockModalVisible] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
   const recentReviewSectionRef = useRef<RecentReviewSectionRef>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   // 화면에 들어올 때마다 조각이 다시 떨어져 쌓이는 애니메이션을 보여주려고 보드를 새로 마운트시킨다
@@ -50,10 +57,16 @@ export default function UserMyPageScreen() {
       setProfile(result);
     } catch (error) {
       console.log('[다른 유저 프로필 재조회 실패]', error);
+
+      // 차단 관계면 프로필 자체를 못 본다 (알림/딥링크로 바로 들어온 경우) - 안내하고 되돌린다
+      if (isBlockedError(error)) {
+        showToast('차단한 사용자입니다');
+        navigation.goBack();
+      }
     } finally {
       setIsProfileLoading(false);
     }
-  }, [userId]);
+  }, [userId, navigation, showToast]);
 
   const loadRecentReviews = useCallback(async () => {
     try {
@@ -116,6 +129,10 @@ export default function UserMyPageScreen() {
       setProfile(prev => (prev ? {...prev, friend_status: 'PENDING'} : prev));
     } catch (error) {
       console.log('[친구 요청 전송 실패]', error);
+
+      if (isBlockedError(error)) {
+        showToast('차단한 사용자에게는 친구 요청을 보낼 수 없습니다');
+      }
     } finally {
       setIsRequestSubmitting(false);
     }
@@ -151,6 +168,29 @@ export default function UserMyPageScreen() {
     console.log('[유저 신고] TODO: 아직 구현 안 됨', {userId});
   };
 
+  const handleBlock = async () => {
+    if (isBlocking) return;
+
+    setIsBlocking(true);
+    try {
+      await blockUser(userId);
+      setBlockModalVisible(false);
+
+      // 지도 버블 / 탐색 피드 / 친구 리뷰 / 댓글 목록이 들고 있는 캐시를 버리게 한다
+      // (앱 재시작 없이 바로 사라져야 함)
+      notifyBlockChanged();
+
+      showToast('차단했습니다');
+      // 차단한 사용자의 프로필에 그대로 머물러 있으면 안 된다
+      navigation.goBack();
+    } catch (error) {
+      console.log('[사용자 차단 실패]', error);
+      setBlockModalVisible(false);
+    } finally {
+      setIsBlocking(false);
+    }
+  };
+
   const handleUnfriend = async () => {
     try {
       await deleteFriend(userId);
@@ -184,14 +224,11 @@ export default function UserMyPageScreen() {
           onPressBack={() => navigation.goBack()}
           onPlacePieces={() => {}}
           onEditPiece={() => {}}
-          onPressMenu={
-            isFriend
-              ? anchor => {
-                  setMenuAnchor(anchor);
-                  setMenuVisible(true);
-                }
-              : undefined
-          }
+          // 친구가 아니어도 차단은 할 수 있어야 해서 ⋮ 메뉴는 항상 띄운다
+          onPressMenu={anchor => {
+            setMenuAnchor(anchor);
+            setMenuVisible(true);
+          }}
         />
 
         {isFriend && profile ? (
@@ -242,9 +279,19 @@ export default function UserMyPageScreen() {
       <FriendProfileMenu
         visible={menuVisible}
         anchor={menuAnchor}
+        isFriend={isFriend}
         onClose={() => setMenuVisible(false)}
         onPressReport={handlePressReport}
+        onPressBlock={() => setBlockModalVisible(true)}
         onPressUnfriend={handleUnfriend}
+      />
+
+      <UserBlockModal
+        visible={blockModalVisible}
+        mode="block"
+        nickname={profile?.nickname ?? ''}
+        onClose={() => setBlockModalVisible(false)}
+        onConfirm={handleBlock}
       />
     </SafeAreaView>
   );

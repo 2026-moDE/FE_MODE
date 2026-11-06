@@ -1,6 +1,5 @@
 import React from 'react';
-import {View, Text, Image, Pressable, StyleSheet} from 'react-native';
-import FastImage from '@d11/react-native-fast-image';
+import {View, Text, Pressable, StyleSheet} from 'react-native';
 import {CurrentReview, ArchivedReview, ReviewUser} from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
@@ -9,6 +8,7 @@ import {typography} from '../../constants/typography';
 import {formatReviewTime} from '../../utils/date';
 import IconFriend from '../../assets/icons/IconFriend';
 import ProfileAvatar from '../common/ProfileAvatar';
+import ReviewThumbnail from '../common/ReviewThumbnail';
 
 type Props = {
     review: CurrentReview | ArchivedReview;
@@ -42,10 +42,11 @@ export default function ReviewCard({review, onPress, onPressUser, isArchived}: P
     return (
         <Pressable onPress={onPress} style={styles.container}>
             <View style={styles.inner}>
-            <FastImage
-                source={{uri: thumbnail_url ?? image_url , priority: FastImage.priority.high}}
+            {/* 등록 직후엔 썸네일이 아직 없어서 404 - 그때는 원본으로 떨어진다 */}
+            <ReviewThumbnail
+                thumbnailUrl={thumbnail_url}
+                imageUrl={image_url}
                 style={styles.image}
-                resizeMode={FastImage.resizeMode.cover}
             />
             {/* 상단: 사용자 정보 */}
             <View style={styles.topRow}>

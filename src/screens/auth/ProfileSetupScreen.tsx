@@ -16,7 +16,6 @@ import {onboardingApi} from '../../api/onboardingApi';
 import {useProfileImageUpload, PickedProfileImage} from '../../hooks/useProfileImageUpload';
 import type {AuthStackParamList} from '../../types/navigation';
 import {useAuth} from '../../context/AuthContext';
-import ProfileAvatar from '../../components/common/ProfileAvatar';
 
 import {fontFamily, fontSize, typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
@@ -24,6 +23,7 @@ import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
 const pencilIcon = require('../../assets/image/pencil.png');
+const profilePlaceholder = require('../../assets/image/profile_placeholder.png');
 
 const appliedFontFamily = fontFamily ?? {
   bold: 'Pretendard-Bold',
@@ -125,17 +125,12 @@ const ProfileSetupScreen = (_props: Props) => {
 
         <View style={styles.profileSection}>
           <View style={styles.imageBox}>
-            {pickedImage ? (
-              <Image
-                source={{uri: pickedImage.uri}}
-                style={styles.profileImage}
-                resizeMode="cover"
-              />
-            ) : (
-              // 기본 이미지도 박스를 꽉 채워야 해서, 안에 테두리가 그려진 empty_profile.png
-              // 대신 공통 아바타(배경색 + 로고)를 씀
-              <ProfileAvatar style={styles.profileImage} />
-            )}
+            {/* 시안: 사진을 고르기 전엔 체크무늬 자리표시 이미지 */}
+            <Image
+              source={pickedImage ? {uri: pickedImage.uri} : profilePlaceholder}
+              style={styles.profileImage}
+              resizeMode="cover"
+            />
           </View>
 
           <Pressable style={styles.editButton} onPress={handlePickImage}>
@@ -174,10 +169,7 @@ const ProfileSetupScreen = (_props: Props) => {
           onPress={handleNext}
           disabled={!isActive}>
           <Text
-            style={[
-              styles.nextButtonText,
-              !isActive && styles.nextButtonTextInactive,
-            ]}>
+            style={styles.nextButtonText}>
             완료
           </Text>
         </Pressable>
@@ -209,7 +201,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    // 시안: 완료 버튼 아래~홈 인디케이터 26
+    paddingBottom: 26,
   },
   // 안전영역(노치 아래) 기준 프로필 박스까지 89(헤더 30 포함, 피그마 실측) - 화면이 작으면
   // 줄어들어서 완료 버튼이 항상 보이게 하되, 화면이 넉넉하면 딱 59만큼만 차지함
@@ -224,9 +217,10 @@ const styles = StyleSheet.create({
     height: 51,
     flexShrink: 1,
   },
+  // 사진 박스(160)가 화면 가운데 오도록 섹션을 박스 크기에 맞추고, 연필 버튼은 밖으로 17 삐져나오게 배치
   profileSection: {
-    width: 178,
-    height: 178,
+    width: 160,
+    height: 160,
     alignSelf: 'center',
   },
   imageBox: {
@@ -240,20 +234,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  // imageBox가 overflow: hidden으로 잘라주므로 안쪽 여백 없이 박스를 그대로 채움
+  // 시안: 박스(160) 안쪽으로 7씩 들어간 146, 모서리 20
   profileImage: {
-    width: '100%',
-    height: '100%',
+    width: 146,
+    height: 146,
+    borderRadius: radius['2xl'],
   },
   editButton: {
     position: 'absolute',
-    right: 0,
-    bottom: 0,
+    right: -17,
+    bottom: -17,
     width: 48,
     height: 48,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#C8CCD2',
+    borderColor: colors.gray[200],
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -266,9 +261,10 @@ const styles = StyleSheet.create({
   },
   inputSection: {},
 
-  // 닉네임 인풋~완료 버튼 사이 296 - 다른 spacer들과 같은 비율로 화면에 맞게 줄어듦
+  // 닉네임 인풋~완료 버튼 사이 296(시안) - 에러 문구 자리(18)를 빼서 278.
+  // 다른 spacer들과 같은 비율로 화면에 맞게 줄어듦
   bottomSpacer: {
-    height: 296,
+    height: 278,
     flexShrink: 1,
   },
   label: {
@@ -304,11 +300,9 @@ const styles = StyleSheet.create({
   nextButtonInactive: {
     backgroundColor: colors.button.disabledFill,
   },
+  // 시안: 비활성일 때도 글자는 흰색 (배경만 회색)
   nextButtonText: {
-    ...typography.b1,
+    ...typography.b3,
     color: colors.text.inverse,
-  },
-  nextButtonTextInactive: {
-    color: colors.gray[500],
   },
 });

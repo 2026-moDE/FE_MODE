@@ -27,6 +27,7 @@ import {
     unsubscribe,
 } from '../../api/place';
 import { deleteReview, changeReview, fetchEmojis, EmojiReaction } from '../../api/review';
+import {useOnBlockChange} from '../../store/blockEvents';
 import QuickReviewButton from '../../components/home/QuickReviewButton';
 import SpeechBubbleHint from '../../components/placeDetail/SpeechBubbleHint';
 
@@ -122,6 +123,10 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
             .catch(error => console.error('위치 인증 실패:', error));
     }, [placeId, location]);
 
+    // 차단/해제되면 이 장소 리뷰 목록에도 그 사용자 리뷰가 남아 있어서 같은 조회를 다시 돈다
+    const [blockReloadKey, setBlockReloadKey] = useState(0);
+    useOnBlockChange(() => setBlockReloadKey(prev => prev + 1));
+
     // 실시간 / 과거 리뷰 가져옴 - 알림에서 특정 리뷰로 들어온 경우, 그리드가 잠깐 보였다가 모달이 뜨는 걸 막기 위해 둘 다 끝났는지 추적
     const [reviewsLoaded, setReviewsLoaded] = useState(false);
     useEffect(() => {
@@ -134,7 +139,7 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                 .then(data => setArchivedReviews(data.reviews))
                 .catch(error => console.error('리뷰 조회 실패:', error)),
         ]).then(() => setReviewsLoaded(true));
-    }, [placeId]);
+    }, [placeId, blockReloadKey]);
 
     // 알림에서 특정 리뷰로 들어온 경우, 리뷰 상세 페이지가 아닌 해당 리뷰로
     const openedFromNotificationRef = useRef(false);

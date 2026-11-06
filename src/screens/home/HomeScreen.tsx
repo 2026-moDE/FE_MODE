@@ -14,10 +14,12 @@ import { AppStackParamList, TabParamList } from "../../types/navigation";
 import { useLocationPermission } from "../../hooks/useLocationPermission";
 import { useLocation } from "../../context/LocationContext";
 import { fetchNearbyPlaces, fetchPlaceDetail, fetchCurrentReviews, fetchArchivedReviews, fetchRecommendPlaces, RecommendedPlace } from "../../api/place";
+import { fetchMagazines, Magazine } from '../../api/magazine';
 import { fetchNearbyCongestion, fetchAreaCongestion, NearbyCongestionData } from "../../api/congestion";
 import { fetchHasUnreadNotification } from "../../api/notification";
 import { NearbyPlace, PlaceDetail, CurrentReview } from "../../types/place";
 import { FriendReview, fetchFriendReviews } from "../../api/friend";
+import { useOnBlockChange } from "../../store/blockEvents";
 import ReviewPhoto from "../../components/placeDetail/ReviewPhoto";
 import { colors } from '../../constants/colors';
 import IconCurrentLocation from "../../assets/icons/IconCurrentLocation";
@@ -139,6 +141,36 @@ export default function HomeScreen(){
     const [readyUrls, setReadyUrls] = useState<Set<string>>(new Set());
     // 로딩 자체가 실패한(깨진) 썸네일 URL 목록 - 마커에 아예 안 넘겨서 네이티브 크래시 방지
     const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
+
+    // 프리로더 onLoad는 이미지마다 따로 오고, 각각이 별개 네이티브 이벤트라 React가 묶어주지 않는다.
+    // 그때마다 setReadyUrls를 부르면 readyUrls가 매번 새 Set이 되어 clusterMarkers useMemo가 깨지고,
+    // 장소 N개면 마커 트리를 N번 다시 만든다(= 버블 뜨는 게 눈에 띄게 늦어짐).
+    // 한 tick 동안 모아서 한 번만 반영한다.
+    const readyBufferRef = useRef<string[]>([]);
+    const readyFlushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const markUrlReady = useCallback((url: string) => {
+        readyBufferRef.current.push(url);
+        if (readyFlushRef.current) return;   // 이미 예약돼 있으면 거기 실려 나간다
+
+        readyFlushRef.current = setTimeout(() => {
+            readyFlushRef.current = null;
+            const buffered = readyBufferRef.current;
+            readyBufferRef.current = [];
+
+            setReadyUrls(prev => {
+                const added = buffered.filter(u => !prev.has(u));
+                // 전부 이미 있으면 같은 Set을 그대로 돌려준다 - 참조만 바뀌어도 마커가 다시 만들어짐
+                if (added.length === 0) return prev;
+                return new Set([...prev, ...added]);
+            });
+        }, 0);
+    }, []);
+
+    // 화면을 떠날 때 예약된 flush가 남아 setState가 튀지 않게
+    useEffect(() => () => {
+        if (readyFlushRef.current) clearTimeout(readyFlushRef.current);
+    }, []);
 
     // 지도 초기화 완료 여부 (초기화 전 마커 렌더 방지)
     const [mapReady, setMapReady] = useState(false);
@@ -316,6 +348,10 @@ export default function HomeScreen(){
                     setPlaces(unique);
                     // 기존에 로드된 URL은 유지, 새 URL만 preloader가 채움
                     setReadyUrls(prev => new Set([...prev].filter(url => newUrls.has(url))));
+                    // 실패 기록은 통째로 비운다 - 리뷰를 막 등록한 직후엔 서버 리사이즈 썸네일이
+                    // 아직 없어서 404가 나는데, 한 번 실패로 박아두면 썸네일이 만들어진 뒤에도
+                    // 프리로더가 아예 다시 시도하지 않아 버블이 빈 카드로 굳어버린다
+                    setFailedUrls(new Set());
                 }
             })
             .finally(() => {
@@ -346,9 +382,23 @@ export default function HomeScreen(){
     const [congestionData, setCongestionData] = useState<NearbyCongestionData | null>(null);
     useEffect(() => {
         if (!location) return;
+        let cancelled = false;
+
         fetchNearbyCongestion({latitude: location.latitude, longitude: location.longitude})
-            .then(setCongestionData)
+            .then(data => { if (!cancelled) setCongestionData(data); })
             .catch(error => console.warn('혼잡도 조회 실패:', error?.message));
+
+        // 이동 중이면 요청이 겹칠 수 있음 - 느린 이전 요청이 최신 결과를 덮어쓰지 않게
+        return () => { cancelled = true; };
+    }, [location]);
+
+    // 매거진 (지금 볼 만한 리뷰)
+    const [magazines, setMagazines] = useState<Magazine[]>([]);
+    useEffect(() => {
+        if (!location) return;
+        fetchMagazines({latitude: location.latitude, longitude: location.longitude})
+            .then(setMagazines)
+            .catch(error => console.warn('매거진 조회 실패:', error?.message));
     }, [location]);
 
     // 친구가 최근에 작성한 리뷰 (기본 바텀시트용) - 위치 필요 없이 로그인만 되면 조회 가능
@@ -361,6 +411,17 @@ export default function HomeScreen(){
 
     // 친구가 최근에 작성한 리뷰 뷰어에서 넘기는 인덱스 - 사람/장소 안 가리고 friendReviews 배열 순서 그대로 왔다갔다
     const [friendReviewViewerIndex, setFriendReviewViewerIndex] = useState<number | null>(null);
+
+    // 차단/해제 직후엔 지도 버블과 친구 리뷰에 그 사용자 콘텐츠가 그대로 남아 있다.
+    // 홈 탭은 포커스가 없어도 마운트돼 있으니 알림을 받는 즉시 다시 조회한다 (앱 재시작 없이 반영)
+    useOnBlockChange(() => {
+        loadNearbyPlaces();
+        // 차단한 사용자의 리뷰를 보고 있던 중일 수 있어서 뷰어는 닫는다
+        setFriendReviewViewerIndex(null);
+        fetchFriendReviews()
+            .then(setFriendReviews)
+            .catch(error => console.warn('친구 리뷰 재조회 실패:', error?.message));
+    });
 
     // 미니카드 또는 친구 리뷰 뷰어 떠있을 때 하단 탭바 숨김 (둘 다 닫으면 복구)
     useEffect(() => {
@@ -546,7 +607,8 @@ export default function HomeScreen(){
                     source={{uri: bubbleUrl, priority: FastImage.priority.high}}
                     style={styles.preloader}
                     resizeMode={FastImage.resizeMode.cover}
-                    onLoad={() => setReadyUrls(prev => new Set([...prev, bubbleUrl]))}
+                    // 한 장씩 반영하면 마커 트리가 이미지 수만큼 재생성됨 - 모아서 한 번에 (markUrlReady)
+                    onLoad={() => markUrlReady(bubbleUrl)}
                     // 로딩 실패한 이미지는 ready가 아니라 failed로 분리 - 마커에 절대 안 넘어가게
                     onError={() => setFailedUrls(prev => new Set([...prev, bubbleUrl]))}
                 />
@@ -611,6 +673,11 @@ export default function HomeScreen(){
                                 .then(setCongestionData)
                                 .catch(err => console.warn('지역 혼잡도 조회 실패:', err?.message));
                         },
+                    })}
+                    magazines={magazines}
+                    onPressMagazine={magazine => goTo('MagazineDetail', {
+                        magazineId: magazine.id,
+                        magazineTitle: magazine.title,
                     })}
                     onPressFriendReview={item => handleOpenReview(item.id)}
                     onPressTrendingMore={place => {

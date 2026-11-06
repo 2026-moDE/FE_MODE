@@ -12,6 +12,9 @@ import ReviewCommentItem from "./ReviewCommentItem";
 import CommentInput from "./CommentInput";
 import { ReviewComment, createComment, createReply, deleteComment, fetchComments } from "../../api/review";
 import { getMyProfile } from "../../api/mypage";
+import { isBlockedError } from "../../api/block";
+import { useOnBlockChange } from "../../store/blockEvents";
+import { useToast } from "../common/Toast";
 import type { AppStackParamList } from "../../types/navigation";
 
 const checkWhiteIcon = require("../../assets/image/check_white.png");
@@ -32,6 +35,7 @@ type Props = {
 export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, ref, onAddComment}: Props) {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
     const insets = useSafeAreaInsets();
+    const {showToast} = useToast();
     const snapPoints = useMemo(() => ['50%', '85%'], []);
 
     const sheetRef = useRef<BottomSheetModal>(null);
@@ -72,6 +76,11 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         setComments([]);
         loadComments();
     }, [loadComments]);
+
+    // 차단/해제되면 차단한 사용자의 댓글·답글이 목록에 남아 있어서 다시 받아온다
+    useOnBlockChange(() => {
+        loadComments();
+    });
 
     // 댓글/답글을 API 응답 기다리지 않고 바로 UI에 보여주기 - 내 프로필 정보 미리 캐싱
     const myProfileRef = useRef<{id: number; nickname: string; profile_image_url: string | null; profile_url?: string | null} | null>(null);
@@ -166,8 +175,13 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
             .catch(err => {
                 console.warn('댓글 작성 실패:', err?.message);
                 setComments(prev => prev.filter(c => c.id !== tempId));
+
+                // 차단 관계면 서버가 403 - 낙관적으로 붙여둔 댓글을 걷어내고 이유를 알려준다
+                if (isBlockedError(err)) {
+                    showToast('차단한 사용자에게는 댓글을 작성할 수 없습니다');
+                }
             });
-    }, [reviewId, isSecret]);
+    }, [reviewId, isSecret, showToast]);
 
     // 답글 작성 - 댓글 아이템 안의 입력창 (댓글과 동일하게 낙관적 업데이트)
     const handleSubmitReply = useCallback((commentId: number, text: string) => {
@@ -209,8 +223,12 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                     ...c,
                     replies: c.replies.filter(r => r.id !== tempId),
                 } : c));
+
+                if (isBlockedError(err)) {
+                    showToast('차단한 사용자에게는 댓글을 작성할 수 없습니다');
+                }
             });
-    }, [reviewId]);
+    }, [reviewId, showToast]);
 
     // 댓글 삭제 - 누르자마자 로컬에서 바로 "삭제된 댓글입니다"로 바꾸고, 실제 삭제는 백그라운드로
     const [showDeleteToast, setShowDeleteToast] = useState(false);

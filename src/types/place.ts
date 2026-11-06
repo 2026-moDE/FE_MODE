@@ -30,15 +30,23 @@ export const CONGESTION_LABEL: Record<CongestionLevel, string> = {
 };
 
 // 혼잡도별 색. 네 단계가 각자 다른 색을 가진다.
-// fill/text는 리뷰 작성 칩처럼 면을 채울 때, stroke는 지도 버블 테두리처럼 선만 쓸 때
+// fill/text는 리뷰 작성 칩처럼 면을 채울 때 쓴다.
+//
+// 테두리는 쓰이는 자리가 둘인데 요구가 달라서 값을 나눠 둔다.
+// - bubbleStroke: 지도 버블 테두리. 사진 위에 선만 얹는 자리라 밝은 색이어도 잘 보인다.
+//   지도 버블 시안(Figma 3078:5522 - 여유/보통/약간 붐빔/붐빔 4종) 기준이고,
+//   '보통'만 디자인에서 변수(Icon/icon-brand)로 잡혀 있어 토큰을 그대로 쓴다.
+// - chipStroke: 리뷰 작성 혼잡도 칩의 선택 테두리. 같은 색 fill 위에 그려지므로
+//   fill보다 어두워야 테두리가 보인다. 버블 색을 그대로 쓰면 '보통'은 fill과 완전히
+//   같은 색(#FFFD6D)이 돼서 테두리가 사라진다.
 export const CONGESTION_COLOR: Record<
     CongestionLevel,
-    {fill: string; stroke: string; text: string}
+    {fill: string; bubbleStroke: string; chipStroke: string; text: string}
 > = {
-    RELAXED:      {fill: '#CFFFC1',            stroke: '#78D73D',           text: colors.text.subtle},
-    MODERATE:     {fill: colors.brand.primary, stroke: colors.border.brand, text: colors.text.brandDarker},
-    CROWDED:      {fill: '#FFD18D',            stroke: '#D7943D',           text: colors.text.brandDarker},
-    VERY_CROWDED: {fill: '#FFA1A1',            stroke: '#D73D3D',           text: colors.text.subtle},
+    RELAXED:      {fill: '#CFFFC1',            bubbleStroke: '#A5EA7B',         chipStroke: '#78D73D',           text: colors.text.subtle},
+    MODERATE:     {fill: colors.brand.primary, bubbleStroke: colors.icon.brand, chipStroke: colors.border.brand, text: colors.text.brandDarker},
+    CROWDED:      {fill: '#FFD18D',            bubbleStroke: '#FFA16A',         chipStroke: '#D7943D',           text: colors.text.brandDarker},
+    VERY_CROWDED: {fill: '#FFA1A1',            bubbleStroke: '#FF6D6D',         chipStroke: '#D73D3D',           text: colors.text.subtle},
 };
 
 // 화면에 칩으로 늘어놓을 때의 순서 (여유 → 붐빔)

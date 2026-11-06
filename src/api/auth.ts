@@ -4,7 +4,7 @@ import type {
 } from '../types/auth';
 import {getAccessToken, getRefreshToken, saveTokens, clearTokens} from '../storage/tokenStorage';
 
-const BASE_URL = 'http://moing.co.kr:8080';
+const BASE_URL = 'https://api.moing.co.kr';
 
 // 소셜 로그인 API
 export const socialLoginApi = async ({
