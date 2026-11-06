@@ -14,6 +14,7 @@ import ReviewStack from './ReviewStack';
 import PieceStack from './PieceStack';
 import ProfileEditScreen from '../screens/mypage/ProfileEditScreen';
 import PieceEditScreen from '../screens/mypage/PieceEditScreen';
+import PiecePinScreen from '../screens/mypage/PiecePinScreen';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import ReviewReportScreen from '../screens/reviewReport/ReviewReportScreen';
 import MyMapScreen from '../screens/mypage/MyMapScreen';
@@ -57,6 +58,7 @@ export default function AppNavigator() {
       <Stack.Screen name="PieceStack" component={PieceStack} />
       <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <Stack.Screen name="PieceEdit" component={PieceEditScreen} />
+      <Stack.Screen name="PiecePin" component={PiecePinScreen} />
       <Stack.Screen name='Notification' component={NotificationScreen}/>
       <Stack.Screen name='ReviewReport' component={ReviewReportScreen}/>
       <Stack.Screen name='MyMap' component={MyMapScreen} options={{animation: 'fade'}} />
