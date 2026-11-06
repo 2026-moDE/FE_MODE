@@ -5,6 +5,7 @@ import {fetchExploreReviews} from '../api/explore';
 type Params = {
     latitude: number;
     longitude: number;
+    radiusKm?: number;
 };
 
 type State = {
@@ -48,7 +49,7 @@ export function useExploreReviews() {
             const data = await fetchExploreReviews({
                 latitude: params.latitude,
                 longitude: params.longitude,
-                radius: 700000,
+                radius: params.radiusKm ? params.radiusKm * 1000 : 700000,
                 seed: seedRef.current,
                 offset: offsetRef.current,
             });

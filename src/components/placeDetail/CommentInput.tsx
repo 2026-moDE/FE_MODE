@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import {Text, Image, Pressable, StyleSheet, Keyboard, View} from 'react-native';
+import {Text, Image, Pressable, StyleSheet, Keyboard, Platform, TextInput, View} from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
@@ -36,26 +36,33 @@ export default function CommentInput({
     onBlur,
 }: Props) {
     const isCompact = variant === 'compact';
+    // Android: 일반 TextInput 사용 → gorhom 키보드 간섭 없이 OS가 직접 처리
+    // iOS: BottomSheetTextInput → gorhom keyboardBehavior="extend" 자동 처리
+    const useNativeInput = Platform.OS === 'android';
     const inputRef = useRef<React.ComponentRef<typeof BottomSheetTextInput>>(null);
+    const nativeInputRef = useRef<TextInput>(null);
     const textRef = useRef('');
 
-    // 시트를 드래그해서 닫거나 뒤로가기로 키보드를 내리면 TextInput의 onBlur가 안 불릴 수 있어서 직접 감지
-    // 단, .blur()를 직접 호출하면 BottomSheetTextInput의 내부 키보드 추적과 어긋나서 시트가 덜 재정렬되는 문제가 있어 포커스 상태만 읽고 콜백만 호출
     useEffect(() => {
         const sub = Keyboard.addListener('keyboardDidHide', () => {
-            if (inputRef.current?.isFocused?.()) {
+            const ref = useNativeInput ? nativeInputRef : inputRef;
+            if (ref.current?.isFocused?.()) {
                 onBlur?.();
             }
         });
         return () => sub.remove();
-    }, [onBlur]);
+    }, [onBlur, useNativeInput]);
 
     const handleSubmit = () => {
         const trimmed = textRef.current.trim();
         if (!trimmed) return;
         onSubmit(trimmed);
         textRef.current = '';
-        inputRef.current?.clear();
+        if (useNativeInput) {
+            nativeInputRef.current?.clear();
+        } else {
+            inputRef.current?.clear();
+        }
     };
 
     return (
@@ -70,19 +77,31 @@ export default function CommentInput({
                     <Text style={styles.secretToggleText}>친구 공개</Text>
                 </Pressable>
             )}
-            <BottomSheetTextInput
-                ref={inputRef}
-                style={[styles.input, isCompact && styles.inputCompact]}
-                defaultValue=""
-                onChangeText={text => {
-                    textRef.current = text;
-                }}
-                placeholder={placeholder}
-                placeholderTextColor={colors.text.disabled}
-                onFocus={onFocus}
-                onBlur={onBlur}
-                multiline
-            />
+            {useNativeInput ? (
+                <TextInput
+                    ref={nativeInputRef}
+                    style={[styles.input, styles.inputCompact]}
+                    defaultValue=""
+                    onChangeText={text => { textRef.current = text; }}
+                    placeholder={placeholder}
+                    placeholderTextColor={colors.text.disabled}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                    multiline
+                />
+            ) : (
+                <BottomSheetTextInput
+                    ref={inputRef}
+                    style={[styles.input, isCompact && styles.inputCompact]}
+                    defaultValue=""
+                    onChangeText={text => { textRef.current = text; }}
+                    placeholder={placeholder}
+                    placeholderTextColor={colors.text.disabled}
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                    multiline
+                />
+            )}
             <Pressable hitSlop={10} onPress={handleSubmit}>
                 <Image
                     source={sendIcon}

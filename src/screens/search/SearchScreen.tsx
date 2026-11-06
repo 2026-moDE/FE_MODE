@@ -266,7 +266,9 @@ export default function SearchScreen() {
             {(mode !== 'location') && (
                 <View style={[
                     styles.locationButtonWrapper,
-                    {bottom: keyboardHeight > 0 ? keyboardHeight + 12 : Math.max(bottomInset, 16) + 12},
+                    {bottom: keyboardHeight > 0
+                        ? (Platform.OS === 'ios' ? keyboardHeight + 12 : 12)
+                        : Math.max(bottomInset, 16) + 12},
                 ]}>
                     <LocationButton onPress={handleLocationSearch} />
                 </View>

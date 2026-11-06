@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
         color: colors.text.brand,
     },
     commentText: {
-        ...typography.b4,
+        ...typography.b6,
         color: colors.text.inverse,
     },
     secretCommentText: {

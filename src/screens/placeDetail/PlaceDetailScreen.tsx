@@ -496,6 +496,11 @@ export default function PlaceDetailScreen({route, navigation}: Props) {
                         console.error('리뷰 수정 실패:', e);
                     }
                 }}
+                onAddComment={reviewId => {
+                    setCurrentReviews(prev => prev.map(r =>
+                        r.id === reviewId ? {...r, comment_count: r.comment_count + 1} : r,
+                    ));
+                }}
             />
 
             {/* 리뷰 바로 쓰기 버튼 (사진 클릭시 숨김) */}

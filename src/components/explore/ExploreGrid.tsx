@@ -76,15 +76,13 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
         translateY.value = initialYRef.current;
     }, []));
 
-    const endReachedCalledRef = useRef(false);
+    const endReachedFiredSV = useSharedValue(false);
     const triggerEndReached = useCallback(() => {
-        if (endReachedCalledRef.current) {return;}
-        endReachedCalledRef.current = true;
         onEndReached?.();
     }, [onEndReached]);
 
     useEffect(() => {
-        endReachedCalledRef.current = false;
+        endReachedFiredSV.value = false;
     }, [reviews.length]);
 
     const panRef = useRef(null);
@@ -101,7 +99,8 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
             const newY = Math.max(Math.min(startY.value + e.translationY, 0), minYSV.value);
             translateX.value = newX;
             translateY.value = newY;
-            if (newY <= minYSV.value + 300) {
+            if (newY <= minYSV.value + 300 && !endReachedFiredSV.value) {
+                endReachedFiredSV.value = true;
                 runOnJS(triggerEndReached)();
             }
         })
@@ -142,12 +141,17 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
             (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         );
 
-        return sortedPositions.map((pos, idx) => ({
-            review: sortedReviews[idx],
-            x: pos.x,
-            y: pos.y,
-        }));
-    }, [rows, canvasH, reviews]);
+        return sortedPositions.map((pos, idx) => {
+            const review = sortedReviews[idx];
+            return {
+                review,
+                x: pos.x,
+                y: pos.y,
+                onPress: () => onPressCard?.(review),
+                onLongPress: () => onLongPressCard?.(review),
+            };
+        });
+    }, [rows, canvasH, reviews, onPressCard, onLongPressCard]);
 
     const onLayout = useCallback((e: LayoutChangeEvent) => {
         setContainerH(e.nativeEvent.layout.height);
@@ -158,12 +162,12 @@ export default function ExploreGrid({reviews, onPressCard, onLongPressCard, onEn
             <GestureDetector gesture={gesture}>
                 <Animated.View
                     style={[styles.canvas, {width: CANVAS_W, height: canvasH}, animatedStyle]}>
-                    {cards.map(({review, x, y}) => (
+                    {cards.map(({review, x, y, onPress, onLongPress}) => (
                         <View key={review.id} style={[styles.card, {left: x, top: y}]}>
                             <ExploreCard
                                 review={review}
-                                onPress={() => onPressCard?.(review)}
-                                onLongPress={() => onLongPressCard?.(review)}
+                                onPress={onPress}
+                                onLongPress={onLongPress}
                                 panRef={panRef}
                             />
                         </View>

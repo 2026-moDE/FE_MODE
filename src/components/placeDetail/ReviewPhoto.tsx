@@ -40,6 +40,8 @@ type Props = {
     autoOpenChat?: boolean;
     // 장소명 탭 시 장소 상세 페이지로 이동 (place_id, place_name 전달)
     onPressPlace?: (placeId: number, placeName: string) => void;
+    // 댓글 작성 성공 시 comment_count 갱신 용도
+    onAddComment?: (reviewId: number) => void;
 };
 
 const verticalEllipsisIcon = require('../../assets/image/vertical_ellipis.png');
@@ -51,7 +53,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 // 하단 리뷰 중앙 정렬을 위한 패딩
 const THUMBNAIL_PADDING = (SCREEN_WIDTH - THUMBNAIL_WIDTH) / 2;
 
-export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, onPressUser, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat, onPressPlace}: Props) {
+export default function ReviewPhoto({reviews, startIndex, visible, placeName, onClose, onDelete, onReport, onChangeComment, onPressUser, useAbsoluteDate, onOpenReactionList, readOnlyComments, autoOpenChat, onPressPlace, onAddComment}: Props) {
     const insets = useSafeAreaInsets();
     // 리뷰 사진 인덱스
     const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -434,7 +436,7 @@ export default function ReviewPhoto({reviews, startIndex, visible, placeName, on
         />
 
         {/* 댓글 채팅 시트 (독립) - Provider는 App.tsx 최상단 것 하나만 사용 */}
-        <ReviewChatModal ref={modalRef} reviewId={review.id} reviewVisibility={review.visibility} readOnly={readOnlyComments} />
+        <ReviewChatModal ref={modalRef} reviewId={review.id} reviewVisibility={review.visibility} readOnly={readOnlyComments} onAddComment={onAddComment} />
         </>
     );
 }
