@@ -5,6 +5,16 @@ import {NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
 import {fontSize, typography} from '../../constants/typography';
+import {
+    BUBBLE_SIZE,
+    TAIL_HEIGHT,
+    TAIL_WIDTH,
+    TOTAL_HEIGHT,
+    MARKER_PAD,
+    MARKER_WIDTH,
+    MARKER_HEIGHT,
+    MARKER_ANCHOR,
+} from './bubbleShadow';
 
 type Props = {
     latitude: number;
@@ -17,11 +27,6 @@ type Props = {
 };
 
 const EMPTY_THUMBNAIL = require('../../assets/image/empty_minicard.png');
-
-const BUBBLE_SIZE = 60;
-const TAIL_HEIGHT = 16;
-const TAIL_WIDTH = 12;
-const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
 const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, count, thumbnailUrl, isReady = true, onPress}: Props) {
     // 로컬 placeholder(Image)도 iOS에서는 마커 스냅샷이 찍히는 시점보다 실제 페인트가 늦어서
@@ -40,7 +45,8 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
         setRebakeTick(0);
     }, [thumbnailUrl, isReady]);
 
-    // 이미지가 실제로 그려졌다고 보고가 왔는지 (사진이면 FastImage, 없으면 빈 카드 기준)
+    // 사진이 최종적으로 다 그려졌는지 (사진이면 FastImage, 없으면 빈 카드 기준).
+    // rebakeTick 폴백 타이머를 멈출지 판단하는 용도 - 바닥 기본 이미지가 그려진 것만으론 "완료"가 아니다
     const painted = thumbnailUrl ? thumbnailPainted : placeholderReady;
 
     // onLoad가 실제 페인트 시점과 안 맞는 경우에만 다시 굽게 함 -
@@ -61,39 +67,41 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
         <NaverMapMarkerOverlay
             latitude={latitude}
             longitude={longitude}
-            width={BUBBLE_SIZE}
-            height={TOTAL_HEIGHT}
-            anchor={{x: 0.5, y: 1}}
+            width={MARKER_WIDTH}
+            height={MARKER_HEIGHT}
+            anchor={MARKER_ANCHOR}
             onTap={onPress}>
             {/* 마커 생김새가 바뀌면(사진 준비 여부/개수/placeholder 로드 여부) key도 바뀌어야
                 네이티브 쪽이 새 마커로 인식함 - 라이브러리 문서 권장사항 */}
-            <View key={`${thumbnailUrl ?? 'none'}-${isReady}-${count}-${placeholderReady}-${thumbnailPainted}-${rebakeTick}`} collapsable={false} style={styles.container}>
-                <View collapsable={false} style={styles.bubble}>
-                    {thumbnailUrl ? (
-                        <FastImage
-                            source={{uri: thumbnailUrl, priority: FastImage.priority.high}}
-                            style={styles.thumbnail}
-                            resizeMode={FastImage.resizeMode.cover}
-                            onLoad={() => setThumbnailPainted(true)}
-                        />
-                    ) : (
-                        // 로컬 placeholder는 RN Image로 - 마커는 네이티브가 비트맵으로 굽는데
-                        // FastImage로 넣으면 그려지기 전에 캡처돼서 버블 배경(회색)만 남음.
-                        // iOS는 로컬 이미지도 로드가 한 프레임 늦어서 첫 스냅샷엔 회색만 잡힐 수 있어,
-                        // onLoad 이후 key를 바꿔 다시 스냅샷 찍게 함
+            <View key={`${thumbnailUrl ?? 'none'}-${isReady}-${count}-${placeholderReady}-${thumbnailPainted}-${rebakeTick}`} collapsable={false} style={styles.root}>
+                {/* 묶음 버블은 테두리가 항상 흰색 - 흰 그림자는 지도에서 안 보여서 아예 안 넣는다.
+                    여백(MARKER_PAD)은 장소 버블과 크기/위치를 똑같이 유지하려고 그대로 둔다 */}
+                <View collapsable={false} style={styles.container}>
+                    <View collapsable={false} style={styles.bubble}>
+                        {/* 기본 이미지를 항상 바닥에 깔아둔다 - 사진이 아직 안 그려진 첫 스냅샷에
+                            버블 배경색(회색)이 찍히는 걸 막는 용도. 사진이 있으면 바로 위 FastImage가 덮는다.
+                            로컬 에셋은 RN Image로 - FastImage로 넣으면 그려지기 전에 캡처돼서 회색만 남음 */}
                         <Image
                             source={EMPTY_THUMBNAIL}
                             style={styles.thumbnail}
                             resizeMode="cover"
                             onLoad={() => setPlaceholderReady(true)}
                         />
-                    )}
-                    {/* 숫자 오버레이 */}
-                    <View style={styles.overlay}>
-                        <Text style={styles.count}>{count}</Text>
+                        {thumbnailUrl && (
+                            <FastImage
+                                source={{uri: thumbnailUrl, priority: FastImage.priority.high}}
+                                style={styles.thumbnail}
+                                resizeMode={FastImage.resizeMode.cover}
+                                onLoad={() => setThumbnailPainted(true)}
+                            />
+                        )}
+                        {/* 숫자 오버레이 */}
+                        <View style={styles.overlay}>
+                            <Text style={styles.count}>{count}</Text>
+                        </View>
                     </View>
+                    <View style={styles.tail} />
                 </View>
-                <View style={styles.tail} />
             </View>
         </NaverMapMarkerOverlay>
     );
@@ -102,7 +110,15 @@ const ClusterBubble = React.memo(function ClusterBubble({latitude, longitude, co
 export default ClusterBubble;
 
 const styles = StyleSheet.create({
+    // 그림자 여백까지 포함한 마커 전체 - 크기가 마커에 선언한 width/height와 같아야 비트맵이 안 잘린다
+    root: {
+        width: MARKER_WIDTH,
+        height: MARKER_HEIGHT,
+    },
     container: {
+        position: 'absolute',
+        top: MARKER_PAD,
+        left: MARKER_PAD,
         width: BUBBLE_SIZE,
         height: TOTAL_HEIGHT,
         alignItems: 'center',
