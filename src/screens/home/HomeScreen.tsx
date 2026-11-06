@@ -142,6 +142,36 @@ export default function HomeScreen(){
     // 로딩 자체가 실패한(깨진) 썸네일 URL 목록 - 마커에 아예 안 넘겨서 네이티브 크래시 방지
     const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
 
+    // 프리로더 onLoad는 이미지마다 따로 오고, 각각이 별개 네이티브 이벤트라 React가 묶어주지 않는다.
+    // 그때마다 setReadyUrls를 부르면 readyUrls가 매번 새 Set이 되어 clusterMarkers useMemo가 깨지고,
+    // 장소 N개면 마커 트리를 N번 다시 만든다(= 버블 뜨는 게 눈에 띄게 늦어짐).
+    // 한 tick 동안 모아서 한 번만 반영한다.
+    const readyBufferRef = useRef<string[]>([]);
+    const readyFlushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const markUrlReady = useCallback((url: string) => {
+        readyBufferRef.current.push(url);
+        if (readyFlushRef.current) return;   // 이미 예약돼 있으면 거기 실려 나간다
+
+        readyFlushRef.current = setTimeout(() => {
+            readyFlushRef.current = null;
+            const buffered = readyBufferRef.current;
+            readyBufferRef.current = [];
+
+            setReadyUrls(prev => {
+                const added = buffered.filter(u => !prev.has(u));
+                // 전부 이미 있으면 같은 Set을 그대로 돌려준다 - 참조만 바뀌어도 마커가 다시 만들어짐
+                if (added.length === 0) return prev;
+                return new Set([...prev, ...added]);
+            });
+        }, 0);
+    }, []);
+
+    // 화면을 떠날 때 예약된 flush가 남아 setState가 튀지 않게
+    useEffect(() => () => {
+        if (readyFlushRef.current) clearTimeout(readyFlushRef.current);
+    }, []);
+
     // 지도 초기화 완료 여부 (초기화 전 마커 렌더 방지)
     const [mapReady, setMapReady] = useState(false);
 
@@ -352,9 +382,14 @@ export default function HomeScreen(){
     const [congestionData, setCongestionData] = useState<NearbyCongestionData | null>(null);
     useEffect(() => {
         if (!location) return;
+        let cancelled = false;
+
         fetchNearbyCongestion({latitude: location.latitude, longitude: location.longitude})
-            .then(setCongestionData)
+            .then(data => { if (!cancelled) setCongestionData(data); })
             .catch(error => console.warn('혼잡도 조회 실패:', error?.message));
+
+        // 이동 중이면 요청이 겹칠 수 있음 - 느린 이전 요청이 최신 결과를 덮어쓰지 않게
+        return () => { cancelled = true; };
     }, [location]);
 
     // 매거진 (지금 볼 만한 리뷰)
@@ -572,7 +607,8 @@ export default function HomeScreen(){
                     source={{uri: bubbleUrl, priority: FastImage.priority.high}}
                     style={styles.preloader}
                     resizeMode={FastImage.resizeMode.cover}
-                    onLoad={() => setReadyUrls(prev => new Set([...prev, bubbleUrl]))}
+                    // 한 장씩 반영하면 마커 트리가 이미지 수만큼 재생성됨 - 모아서 한 번에 (markUrlReady)
+                    onLoad={() => markUrlReady(bubbleUrl)}
                     // 로딩 실패한 이미지는 ready가 아니라 failed로 분리 - 마커에 절대 안 넘어가게
                     onError={() => setFailedUrls(prev => new Set([...prev, bubbleUrl]))}
                 />
