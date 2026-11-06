@@ -352,9 +352,14 @@ export default function HomeScreen(){
     const [congestionData, setCongestionData] = useState<NearbyCongestionData | null>(null);
     useEffect(() => {
         if (!location) return;
+        let cancelled = false;
+
         fetchNearbyCongestion({latitude: location.latitude, longitude: location.longitude})
-            .then(setCongestionData)
+            .then(data => { if (!cancelled) setCongestionData(data); })
             .catch(error => console.warn('혼잡도 조회 실패:', error?.message));
+
+        // 이동 중이면 요청이 겹칠 수 있음 - 느린 이전 요청이 최신 결과를 덮어쓰지 않게
+        return () => { cancelled = true; };
     }, [location]);
 
     // 매거진 (지금 볼 만한 리뷰)
