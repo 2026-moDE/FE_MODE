@@ -333,7 +333,7 @@
 				CODE_SIGN_ENTITLEMENTS = moing/moing.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = CZ26P5Y37K;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = moing/Info.plist;
@@ -370,7 +370,7 @@
 				CODE_SIGN_ENTITLEMENTS = moing/moing.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = CZ26P5Y37K;
 				INFOPLIST_FILE = moing/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
