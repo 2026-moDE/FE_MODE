@@ -1,3 +1,5 @@
+import type {Piece} from '../api/piece';
+
 export type AuthStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -58,6 +60,13 @@ export type AppStackParamList = {
     placeName: string;
     createdAt: string;
     visibility: 'PUBLIC' | 'PRIVATE';
+  };
+
+  // 조각 도감의 고정 칸을 눌러 진입
+  PiecePin: {
+    pieces: Piece[];
+    pinnedIds: number[];
+    nickname?: string;
   };
 
   Notification: undefined;
