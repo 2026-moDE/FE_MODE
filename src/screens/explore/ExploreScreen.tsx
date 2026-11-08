@@ -8,10 +8,10 @@ import {CurrentReview} from '../../types/place';
 import ExploreHeader from '../../components/explore/ExploreHeader';
 import ExploreGrid from '../../components/explore/ExploreGrid';
 import ExplorePreviewCard from '../../components/explore/ExplorePreviewCard';
+import ExploreRangeSheet, {ExploreRangeSheetHandle} from '../../components/explore/ExploreRangeSheet';
 import {useLocation} from '../../context/LocationContext';
 import {useExploreReviews} from '../../hooks/useExploreReviews';
 import {useOnBlockChange} from '../../store/blockEvents';
-import {fetchRegion} from '../../api/place';
 import {typography} from '../../constants/typography';
 
 
@@ -21,20 +21,21 @@ export default function ExploreScreen() {
     const {reviews: apiReviews, isLoading, error, refresh, loadMore} = useExploreReviews();
 
     const reviews = apiReviews;
-    const [regionName, setRegionName] = useState<string | null>(null);
     const [previewReview, setPreviewReview] = useState<CurrentReview | null>(null);
+    const [distanceKm, setDistanceKm] = useState(5);
+    const rangeSheetRef = useRef<ExploreRangeSheetHandle>(null);
 
-    // 위치가 처음 잡히면 최초 로드 + 동 이름 조회
+    // 위치 처음 잡히면 리뷰 최초 로드, 거리 변경 시 재로드
     const initialLoadDone = useRef(false);
     useEffect(() => {
-        if (location && !initialLoadDone.current) {
+        if (!location) {return;}
+        if (!initialLoadDone.current) {
             initialLoadDone.current = true;
-            refresh({latitude: location.latitude, longitude: location.longitude});
-            fetchRegion({latitude: location.latitude, longitude: location.longitude})
-                .then(r => setRegionName(r.region_3depth_name))
-                .catch(() => {});
         }
-    }, [location, refresh]);
+        refresh({latitude: location.latitude, longitude: location.longitude, radiusKm: distanceKm});
+    // distanceKm 변경 시 재로드 (location은 최초 이후 거의 안 바뀜)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location, distanceKm]);
 
     // 차단/해제되면 이미 받아둔 그리드에 그 사용자 리뷰가 남아 있어서 처음부터 다시 받는다
     useOnBlockChange(() => {
@@ -44,7 +45,7 @@ export default function ExploreScreen() {
     });
 
     const handlePressPlace = () => {
-        navigation.navigate('Search', undefined);
+        rangeSheetRef.current?.present();
     };
 
     // 리뷰 자체는 프리뷰 카드에서 이미 보여줬으니, '자세히 보기'는 그 리뷰가 달린
@@ -78,15 +79,12 @@ export default function ExploreScreen() {
 
     const handleEndReached = () => {
         if (!location) {return;}
-        loadMore({latitude: location.latitude, longitude: location.longitude});
+        loadMore({latitude: location.latitude, longitude: location.longitude, radiusKm: distanceKm});
     };
 
     return (
         <View style={styles.container}>
-            <ExploreHeader
-                placeName={regionName ?? (location ? '현 위치 기준' : '위치 확인 중')}
-                onPressPlace={handlePressPlace}
-            />
+            <ExploreHeader onPressPlace={handlePressPlace} />
             {isLoading && reviews.length === 0 ? (
                 <View style={styles.center}>
                     <ActivityIndicator color={colors.brand.primary} size="large" />
@@ -111,6 +109,11 @@ export default function ExploreScreen() {
                 review={previewReview}
                 onClose={() => setPreviewReview(null)}
                 onPressDetail={handlePressDetail}
+            />
+            <ExploreRangeSheet
+                ref={rangeSheetRef}
+                initialDistanceKm={distanceKm}
+                onConfirm={km => setDistanceKm(km)}
             />
         </View>
     );

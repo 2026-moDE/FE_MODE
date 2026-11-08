@@ -16,20 +16,18 @@ export default function ExploreHeader({onPressPlace}: Props) {
     return (
         <View style={[styles.wrapper, {paddingTop: insets.top + padding.sm}]}>
             <Pressable style={styles.titleRow} onPress={onPressPlace} hitSlop={8}>
-                <Text style={styles.title}>탐색</Text>
-                {/* <IconChevronDown size={18} color={colors.text.inverse} /> */}
+                <Text style={styles.title}>지금 내 근처에서는</Text>
+                <IconChevronDown size={18} color={colors.text.inverse} />
             </Pressable>
-            {/* <Text style={styles.subtitle}>주변 리뷰</Text> */}
         </View>
     );
-
 }
 
 const styles = StyleSheet.create({
     wrapper: {
-        paddingHorizontal: padding.lg,
+        paddingHorizontal: padding['3xl'],
         paddingBottom: padding.sm,
-        gap: gap.xs,
+        gap: gap.md,
         alignItems: 'center',
     },
     titleRow: {
@@ -40,9 +38,5 @@ const styles = StyleSheet.create({
     title: {
         ...typography.b1,
         color: colors.text.inverse,
-    },
-    subtitle: {
-        ...typography.b5,
-        color: colors.brand.primary,
     },
 });

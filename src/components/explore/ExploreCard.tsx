@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {memo} from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -18,7 +18,7 @@ type Props = {
     panRef?: React.RefObject<any>;
 };
 
-export default function ExploreCard({review, onPress, onLongPress, panRef}: Props) {
+function ExploreCard({review, onPress, onLongPress, panRef}: Props) {
     const {thumbnail_url, image_url, comment, user, created_at} = review;
     const uri = thumbnail_url ?? image_url;
     const timeAgo = formatReviewTime(created_at, false);
@@ -151,3 +151,5 @@ const styles = StyleSheet.create({
         color: colors.text.inverse,
     },
 });
+
+export default memo(ExploreCard);
