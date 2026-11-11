@@ -12,6 +12,8 @@ import ExploreRangeSheet, {ExploreRangeSheetHandle} from '../../components/explo
 import {useLocation} from '../../context/LocationContext';
 import {useExploreReviews} from '../../hooks/useExploreReviews';
 import {useOnBlockChange} from '../../store/blockEvents';
+import {fetchNearbyCongestion} from '../../api/congestion';
+import {CongestionLevel} from '../../types/place';
 import {typography} from '../../constants/typography';
 
 
@@ -24,6 +26,8 @@ export default function ExploreScreen() {
     const [previewReview, setPreviewReview] = useState<CurrentReview | null>(null);
     const [distanceKm, setDistanceKm] = useState(5);
     const rangeSheetRef = useRef<ExploreRangeSheetHandle>(null);
+    const [congestionLevel, setCongestionLevel] = useState<CongestionLevel | undefined>(undefined);
+    const [baseTime, setBaseTime] = useState<string | undefined>(undefined);
 
     // 위치 처음 잡히면 리뷰 최초 로드, 거리 변경 시 재로드
     const initialLoadDone = useRef(false);
@@ -36,6 +40,29 @@ export default function ExploreScreen() {
     // distanceKm 변경 시 재로드 (location은 최초 이후 거의 안 바뀜)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location, distanceKm]);
+
+    // 위치 잡히면 주변 혼잡도 조회 (데이터 없으면 헤더에 미표시)
+    useEffect(() => {
+        if (!location) {return;}
+        fetchNearbyCongestion({latitude: location.latitude, longitude: location.longitude})
+            .then(data => {
+                setCongestionLevel(data.congestion_level as CongestionLevel);
+                const d = data.updated_at ? new Date(data.updated_at) : null;
+                if (d && !isNaN(d.getTime())) {
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const hh = String(d.getHours()).padStart(2, '0');
+                    const min = String(d.getMinutes()).padStart(2, '0');
+                    setBaseTime(`${mm}.${dd} ${hh}:${min}`);
+                } else {
+                    setBaseTime(undefined);
+                }
+            })
+            .catch(() => {
+                setCongestionLevel(undefined);
+                setBaseTime(undefined);
+            });
+    }, [location]);
 
     // 차단/해제되면 이미 받아둔 그리드에 그 사용자 리뷰가 남아 있어서 처음부터 다시 받는다
     useOnBlockChange(() => {
@@ -84,7 +111,11 @@ export default function ExploreScreen() {
 
     return (
         <View style={styles.container}>
-            <ExploreHeader onPressPlace={handlePressPlace} />
+            <ExploreHeader
+                onPressPlace={handlePressPlace}
+                congestionLevel={congestionLevel}
+                baseTime={baseTime}
+            />
             {isLoading && reviews.length === 0 ? (
                 <View style={styles.center}>
                     <ActivityIndicator color={colors.brand.primary} size="large" />
