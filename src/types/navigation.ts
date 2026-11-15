@@ -52,7 +52,7 @@ export type AppStackParamList = {
     profileImageUrl: string | null;
   };
 
-  // 마이페이지 조각 보드에서 조각 이름표를 눌러 진입
+  // 상단 도감 버튼은 목록으로, 보드의 이름표는 해당 조각 상세로 진입
   PieceEdit: {
     pieceId: number;
     imageUrl: string;
@@ -60,7 +60,7 @@ export type AppStackParamList = {
     placeName: string;
     createdAt: string;
     visibility: 'PUBLIC' | 'PRIVATE';
-  };
+  } | undefined;
 
   // 조각 도감의 고정 칸을 눌러 진입
   PiecePin: {

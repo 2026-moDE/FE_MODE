@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,10 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import IconCheck from '../../assets/icons/IconCheck';
 import PieceCollection from '../../components/mypage/PieceCollection';
 import {useToast} from '../../components/common/Toast';
-import {MAX_PINNED_PIECES, savePinnedPieceIds} from '../../storage/pinnedPieces';
+import {
+  MAX_PINNED_PIECES,
+  savePinnedPieceIds,
+} from '../../storage/pinnedPieces';
 import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {padding, gap} from '../../constants/spacing';
@@ -27,13 +30,19 @@ type Props = NativeStackScreenProps<AppStackParamList, 'PiecePin'>;
 const SELECTED_OPACITY = 0.4;
 
 const PiecePinScreen = ({navigation, route}: Props) => {
-  const {pieces, nickname} = route.params;
+  const {nickname, pieces} = route.params;
+  const savingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [pinnedIds, setPinnedIds] = useState(route.params.pinnedIds);
+  const [selectedPinnedIds, setPinnedIds] = useState(route.params.pinnedIds);
+  const pinnedIds = selectedPinnedIds.filter(id =>
+    pieces.some(piece => piece.id === id),
+  );
   const {showToast} = useToast();
 
   // 같은 카드를 다시 누르면 선택 취소 (시안 주석)
   const togglePiece = (pieceId: number) => {
+    if (savingRef.current) return;
     if (pinnedIds.includes(pieceId)) {
       setPinnedIds(pinnedIds.filter(id => id !== pieceId));
       return;
@@ -48,12 +57,18 @@ const PiecePinScreen = ({navigation, route}: Props) => {
   };
 
   const handleConfirm = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setIsSaving(true);
     try {
       await savePinnedPieceIds(pinnedIds);
       navigation.goBack();
     } catch (error) {
       console.log('[조각 고정 실패]', error);
       Alert.alert('오류', '조각을 고정하지 못했어요.');
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -62,13 +77,23 @@ const PiecePinScreen = ({navigation, route}: Props) => {
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
 
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={navigation.goBack} hitSlop={10}>
+        <Pressable
+          style={styles.backButton}
+          onPress={navigation.goBack}
+          hitSlop={10}
+          disabled={isSaving}
+        >
           <IconArrowLeft size={24} color={colors.icon.basic} />
         </Pressable>
 
         <Text style={styles.headerTitle}>조각 고정하기</Text>
 
-        <Pressable style={styles.confirmButton} onPress={handleConfirm} hitSlop={10}>
+        <Pressable
+          style={styles.confirmButton}
+          onPress={handleConfirm}
+          hitSlop={10}
+          disabled={isSaving}
+        >
           <IconCheck size={24} color={colors.icon.subtle} />
           <Text style={styles.confirmText}>확인</Text>
         </Pressable>
