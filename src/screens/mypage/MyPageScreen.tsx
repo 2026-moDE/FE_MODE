@@ -13,6 +13,7 @@ import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
 import {colors} from '../../constants/colors';
+import {useActivePieces} from '../../hooks/useActivePieces';
 import PieceProfileHeader from '../../components/mypage/PieceProfileHeader';
 import ProfileActionButtons from '../../components/mypage/ProfileActionButtons';
 import MyMapRow from '../../components/mypage/MyMapRow';
@@ -42,7 +43,8 @@ export default function MypageScreen() {
   const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const isLoadingMoreRef = useRef(false);
-  const [pieces, setPieces] = useState<Piece[]>([]);
+  const [allPieces, setPieces] = useState<Piece[]>([]);
+  const pieces = useActivePieces(allPieces);
   // 화면에 들어올 때마다 조각이 다시 떨어져 쌓이는 애니메이션을 보여주려고 보드를 새로 마운트시킨다
   const [boardRunId, setBoardRunId] = useState(0);
 
@@ -90,12 +92,11 @@ export default function MypageScreen() {
 
   const loadPieces = useCallback(async () => {
     try {
-      const data = await getMyPieces();
+      const data = await getMyPieces('board');
 
       // 내 보드에는 PRIVATE 조각도 보여준다 - 안 그러면 숨긴 조각을 다시 찾아 되돌릴 방법이 없다
       setPieces(data.pieces);
     } catch (error) {
-      // 조각 API가 아직 없는 동안은 빈 보드로 둔다
       console.log('[조각 목록 조회 실패]', error);
       setPieces([]);
     } finally {
@@ -210,6 +211,8 @@ export default function MypageScreen() {
           boardRunId={boardRunId}
           onPressBack={() => navigation.navigate('Tab', {screen: 'Home'})}
           onPressSettings={() => navigation.navigate('Setting')}
+          showCollectionHint
+          onPressCollection={() => navigation.navigate('PieceEdit')}
           onPressFriends={() => navigation.navigate('FollowList')}
           // 조각은 리뷰를 쓴 뒤에 모으는 흐름이라 리뷰 작성(촬영)부터 시작한다
           onPressCollect={() =>

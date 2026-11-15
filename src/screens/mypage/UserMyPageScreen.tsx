@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {StyleSheet, StatusBar, ScrollView, NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useRoute, useFocusEffect} from '@react-navigation/native';
@@ -6,6 +6,7 @@ import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import type {RouteProp} from '@react-navigation/native';
 
 import {colors} from '../../constants/colors';
+import {useActivePieces} from '../../hooks/useActivePieces';
 import PieceProfileHeader from '../../components/mypage/PieceProfileHeader';
 import FriendActionButton from '../../components/mypage/FriendActionButton';
 import RecentReviewSection, {RecentReviewSectionRef} from '../../components/mypage/RecentReviewSection';
@@ -45,7 +46,8 @@ export default function UserMyPageScreen() {
   const [blockModalVisible, setBlockModalVisible] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
   const recentReviewSectionRef = useRef<RecentReviewSectionRef>(null);
-  const [pieces, setPieces] = useState<Piece[]>([]);
+  const [allPieces, setPieces] = useState<Piece[]>([]);
+  const pieces = useActivePieces(allPieces);
   // 화면에 들어올 때마다 조각이 다시 떨어져 쌓이는 애니메이션을 보여주려고 보드를 새로 마운트시킨다
   const [boardRunId, setBoardRunId] = useState(0);
 
@@ -142,7 +144,7 @@ export default function UserMyPageScreen() {
 
   const loadPieces = useCallback(async () => {
     try {
-      const data = await getUserPieces(userId);
+      const data = await getUserPieces(userId, 'board');
 
       setPieces(data.pieces);
     } catch (error) {
@@ -153,15 +155,12 @@ export default function UserMyPageScreen() {
     }
   }, [userId]);
 
-  // 친구가 아니면 조각 목록은 403이라 아예 부르지 않는다
-  useEffect(() => {
-    if (!isFriend) {
-      setPieces([]);
-      return;
-    }
-
-    loadPieces();
-  }, [isFriend, loadPieces]);
+  // 공개 보드는 친구 여부와 무관하게 조회하며, 차단 관계는 서버가 검사한다.
+  useFocusEffect(
+    useCallback(() => {
+      loadPieces();
+    }, [loadPieces]),
+  );
 
   // TODO: 유저 신고 api/화면 아직 없음 - 연결 준비되면 붙이기
   const handlePressReport = () => {

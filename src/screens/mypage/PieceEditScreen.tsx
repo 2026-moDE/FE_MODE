@@ -27,7 +27,6 @@ import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import {
   MAX_SCALE,
   MIN_SCALE,
-  deletePiece,
   getMyPieces,
   updatePiece,
   updatePiecePositions,
@@ -49,7 +48,7 @@ const timerIcon = require('../../assets/icons/ic_round-timer.png');
 
 const MAX_LABEL_LENGTH = 10;
 
-// 시안(node 3119:10902) 361x307 카드 기준: 조각 113x128, 중심은 카드 위에서 158
+// 시안(node 3210:6996) 361x307 카드 기준: 조각 113x128, 중심은 카드 위에서 158
 const CUTOUT_SIZE = 128;
 const CUTOUT_CENTER_Y = 158;
 const HINT_TOP = 31;
@@ -60,7 +59,8 @@ const TOGGLE_TRACK_WIDTH = 44;
 const TOGGLE_TRACK_HEIGHT = 24;
 const TOGGLE_PADDING = 3;
 const TOGGLE_THUMB_SIZE = 18;
-const TOGGLE_TRAVEL = TOGGLE_TRACK_WIDTH - TOGGLE_PADDING * 2 - TOGGLE_THUMB_SIZE;
+const TOGGLE_TRAVEL =
+  TOGGLE_TRACK_WIDTH - TOGGLE_PADDING * 2 - TOGGLE_THUMB_SIZE;
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -102,9 +102,17 @@ function ToggleSwitch({
   });
 
   return (
-    <Pressable onPress={() => onValueChange(!value)} hitSlop={8}>
+    <Pressable
+      onPress={() => onValueChange(!value)}
+      hitSlop={8}
+      accessibilityRole="switch"
+      accessibilityLabel="나만 보기"
+      accessibilityState={{checked: value}}
+    >
       <View style={[styles.toggleTrack, value && styles.toggleTrackOn]}>
-        <Animated.View style={[styles.toggleThumb, {transform: [{translateX}]}]} />
+        <Animated.View
+          style={[styles.toggleThumb, {transform: [{translateX}]}]}
+        />
       </View>
     </Pressable>
   );
@@ -112,63 +120,98 @@ function ToggleSwitch({
 
 const PieceEditScreen = ({navigation, route}: Props) => {
   const [pieces, setPieces] = useState<Piece[]>([]);
-  const [selectedId, setSelectedId] = useState(route.params.pieceId);
+  const [isPiecesLoading, setIsPiecesLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(route.params?.pieceId);
   const [nickname, setNickname] = useState<string>();
   const [pinnedIds, setPinnedIds] = useState<number[]>([]);
-  const [showOnProfile, setShowOnProfile] = useState(
-    route.params.visibility === 'PUBLIC',
+  const [showOnlyMe, setShowOnlyMe] = useState(
+    route.params?.visibility === 'PRIVATE',
   );
-  const [label, setLabel] = useState(route.params.name ?? '');
+  const [label, setLabel] = useState(route.params?.name ?? '');
   const [isHintVisible, setIsHintVisible] = useState(true);
 
   const scrollRef = useRef<ScrollView>(null);
   const formTopRef = useRef(0);
   const selectedIdRef = useRef(selectedId);
-  const savedNameRef = useRef(route.params.name ?? '');
-  const isDeletedRef = useRef(false);
+  const savedNameRef = useRef(route.params?.name ?? '');
 
   const scale = useSharedValue(1);
   const startScale = useSharedValue(1);
 
   // 목록을 받기 전에는 진입할 때 넘겨받은 값으로 먼저 그린다
   const selected = pieces.find(piece => piece.id === selectedId);
-  const imageUrl = selected?.image_url ?? route.params.imageUrl;
-  const placeName = selected?.place.name ?? route.params.placeName;
-  const createdAt = selected?.created_at ?? route.params.createdAt;
+  const imageUrl = selected?.image_url ?? route.params?.imageUrl;
+  const placeName = selected?.place.name ?? route.params?.placeName;
+  const createdAt = selected?.created_at ?? route.params?.createdAt;
   const rotation = selected?.rotation ?? 0;
 
   const updateLocalPiece = (pieceId: number, changes: Partial<Piece>) => {
     setPieces(prev =>
-      prev.map(piece => (piece.id === pieceId ? {...piece, ...changes} : piece)),
+      prev.map(piece =>
+        piece.id === pieceId ? {...piece, ...changes} : piece,
+      ),
     );
   };
 
-  useEffect(() => {
-    getMyPieces()
-      .then(data => {
-        setPieces(data.pieces);
-
-        const current = data.pieces.find(
-          piece => piece.id === selectedIdRef.current,
-        );
-
-        if (current) {
-          scale.value = current.scale;
-        }
-      })
-      .catch(error => console.log('[조각 목록 조회 실패]', error));
-
-    getMyProfile()
-      .then(profile => setNickname(profile.nickname))
-      .catch(error => console.log('[프로필 조회 실패]', error));
-  }, [scale]);
-
-  // 조각 고정 화면에서 돌아오면 고정 목록이 바뀌어 있다
   useFocusEffect(
     useCallback(() => {
-      getPinnedPieceIds().then(setPinnedIds);
-    }, []),
+      let isActive = true;
+      setIsPiecesLoading(true);
+      getMyPieces('all')
+        .then(data => {
+          if (!isActive) return;
+          setPieces(data.pieces);
+          setPinnedIds(getPinnedPieceIds(data.pieces));
+
+          // 상단 버튼은 최신 조각, 보드에서 진입하면 눌렀던 조각을 선택한다.
+          // API는 created_at 최신순으로 내려준다.
+          const availablePieces = data.pieces;
+          const current =
+            selectedIdRef.current == null
+              ? availablePieces[0]
+              : availablePieces.find(
+                  piece => piece.id === selectedIdRef.current,
+                );
+
+          if (current) {
+            selectedIdRef.current = current.id;
+            savedNameRef.current = current.name ?? '';
+            setSelectedId(current.id);
+            setLabel(current.name ?? '');
+            setShowOnlyMe(current.visibility === 'PRIVATE');
+            scale.value = current.scale;
+          }
+        })
+        .catch(error => console.log('[조각 목록 조회 실패]', error))
+        .finally(() => {
+          if (isActive) setIsPiecesLoading(false);
+        });
+
+      getMyProfile()
+        .then(profile => {
+          if (isActive) setNickname(profile.nickname);
+        })
+        .catch(error => console.log('[프로필 조회 실패]', error));
+      return () => {
+        isActive = false;
+      };
+    }, [scale]),
   );
+
+  // 삭제 등으로 선택한 조각이 목록에서 빠지면 다음 조각 또는 빈 도감을 보여준다.
+  useEffect(() => {
+    if (isPiecesLoading || pieces.some(piece => piece.id === selectedId))
+      return;
+    const next = pieces[0];
+    if (selectedId === next?.id) return;
+
+    selectedIdRef.current = next?.id;
+    savedNameRef.current = next?.name ?? '';
+    setSelectedId(next?.id);
+    setLabel(next?.name ?? '');
+    setShowOnlyMe(next?.visibility === 'PRIVATE');
+    scale.value = next?.scale ?? 1;
+  }, [isPiecesLoading, pieces, selectedId, scale]);
 
   // 시안에 완료 버튼이 없어서 이름은 입력을 마칠 때 저장한다.
   // 비우면 저장하지 않고 원래 이름으로 되돌린다
@@ -177,7 +220,7 @@ const PieceEditScreen = ({navigation, route}: Props) => {
     const previousName = savedNameRef.current;
     const trimmedLabel = label.trim();
 
-    if (isDeletedRef.current) {
+    if (pieceId == null || !pieces.some(piece => piece.id === pieceId)) {
       return;
     }
 
@@ -216,9 +259,10 @@ const PieceEditScreen = ({navigation, route}: Props) => {
 
   const handleChangeVisibility = async (next: boolean) => {
     const pieceId = selectedId;
-    const visibility = next ? 'PUBLIC' : 'PRIVATE';
+    if (pieceId == null) return;
+    const visibility = next ? 'PRIVATE' : 'PUBLIC';
 
-    setShowOnProfile(next);
+    setShowOnlyMe(next);
 
     try {
       await updatePiece(pieceId, {visibility});
@@ -228,17 +272,14 @@ const PieceEditScreen = ({navigation, route}: Props) => {
       Alert.alert('오류', '조각을 수정하지 못했어요.');
 
       if (selectedIdRef.current === pieceId) {
-        setShowOnProfile(!next);
+        setShowOnlyMe(!next);
       }
     }
   };
 
   const saveScale = async (nextScale: number) => {
-    // 배치 API는 자리 없이 보낼 수 없다. 보드를 거쳐 들어오므로 보통은 이미 자리가 있다
-    if (selected?.position_x == null || selected.position_y == null) {
-      scale.value = selected?.scale ?? 1;
-      return;
-    }
+    // 미배치 조각도 null 좌표를 유지한 채 배율을 저장할 수 있다.
+    if (!selected) return;
 
     const roundedScale = Math.round(nextScale * 100) / 100;
 
@@ -295,33 +336,13 @@ const PieceEditScreen = ({navigation, route}: Props) => {
 
     setSelectedId(piece.id);
     setLabel(piece.name ?? '');
-    setShowOnProfile((piece.visibility ?? 'PUBLIC') === 'PUBLIC');
+    setShowOnlyMe(piece.visibility === 'PRIVATE');
     scrollRef.current?.scrollTo({y: 0, animated: true});
   };
 
   const handleBack = async () => {
     await saveName();
     navigation.goBack();
-  };
-
-  const handleDelete = () => {
-    Alert.alert('조각 삭제', '이 조각을 삭제할까요?', [
-      {text: '취소', style: 'cancel'},
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deletePiece(selectedId);
-            isDeletedRef.current = true;
-            navigation.goBack();
-          } catch (error) {
-            console.log('[조각 삭제 실패]', error);
-            Alert.alert('오류', '조각을 삭제하지 못했어요.');
-          }
-        },
-      },
-    ]);
   };
 
   return (
@@ -334,100 +355,103 @@ const PieceEditScreen = ({navigation, route}: Props) => {
         </Pressable>
 
         <Text style={styles.headerTitle}>조각 도감</Text>
-
-        <Pressable style={styles.deleteButton} onPress={handleDelete} hitSlop={10}>
-          <Text style={styles.deleteText}>삭제</Text>
-        </Pressable>
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.keyboardArea}
-        behavior="padding">
+      <KeyboardAvoidingView style={styles.keyboardArea} behavior="padding">
         <ScrollView
           ref={scrollRef}
           style={styles.body}
           contentContainerStyle={styles.bodyContent}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <View style={styles.form}>
-            <GestureDetector gesture={pinch}>
-              <View style={styles.card}>
-                <View style={styles.cutoutArea} pointerEvents="none">
-                  <Reanimated.View style={cutoutStyle}>
-                    <Image source={{uri: imageUrl}} style={styles.cutout} />
-                  </Reanimated.View>
+          showsVerticalScrollIndicator={false}
+        >
+          {selectedId != null && (
+            <View style={styles.form}>
+              <GestureDetector gesture={pinch}>
+                <View style={styles.card}>
+                  <View style={styles.cutoutArea} pointerEvents="none">
+                    <Reanimated.View style={cutoutStyle}>
+                      <Image
+                        source={imageUrl ? {uri: imageUrl} : undefined}
+                        style={styles.cutout}
+                      />
+                    </Reanimated.View>
+                  </View>
+
+                  {isHintVisible && (
+                    <View style={styles.hint} pointerEvents="none">
+                      <BubbleChip text="조각의 크기를 조절할 수 있어요" />
+                    </View>
+                  )}
+
+                  <View style={styles.cardFooter}>
+                    <Text style={styles.cardPlace} numberOfLines={1}>
+                      {placeName}
+                    </Text>
+
+                    <View style={styles.cardDateRow}>
+                      <Image source={timerIcon} style={styles.cardDateIcon} />
+                      <Text style={styles.cardDate}>
+                        {createdAt ? formatCapturedAt(createdAt) : ''}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
+              </GestureDetector>
 
-                {isHintVisible && (
-                  <View style={styles.hint} pointerEvents="none">
-                    <BubbleChip text="조각의 크기를 조절할 수 있어요" />
-                  </View>
-                )}
+              <View
+                style={styles.profileRow}
+                onLayout={event => {
+                  formTopRef.current = event.nativeEvent.layout.y;
+                }}
+              >
+                <Text style={styles.sectionLabel}>나만 보기</Text>
+                <ToggleSwitch
+                  value={showOnlyMe}
+                  onValueChange={handleChangeVisibility}
+                />
+              </View>
 
-                <View style={styles.cardFooter}>
-                  <Text style={styles.cardPlace} numberOfLines={1}>
-                    {placeName}
-                  </Text>
+              <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>
+                어떤 조각인가요?
+              </Text>
 
-                  <View style={styles.cardDateRow}>
-                    <Image source={timerIcon} style={styles.cardDateIcon} />
-                    <Text style={styles.cardDate}>{formatCapturedAt(createdAt)}</Text>
-                  </View>
+              <View style={styles.inputBox}>
+                <TextInput
+                  style={styles.input}
+                  value={label}
+                  onChangeText={setLabel}
+                  onBlur={saveName}
+                  placeholder="조각 이름을 적어주세요"
+                  placeholderTextColor={colors.text.disabled}
+                  maxLength={MAX_LABEL_LENGTH}
+                  returnKeyType="done"
+                  // 아래에 도감이 이어지므로 끝까지 내리지 않고 입력칸이 보이는 만큼만 올린다
+                  onFocus={() =>
+                    requestAnimationFrame(() =>
+                      scrollRef.current?.scrollTo({
+                        y: formTopRef.current,
+                        animated: true,
+                      }),
+                    )
+                  }
+                />
+
+                <View style={styles.counterRow}>
+                  <Text style={styles.counterCurrent}>{label.length}</Text>
+                  <Text style={styles.counterTotal}>/ {MAX_LABEL_LENGTH}</Text>
                 </View>
               </View>
-            </GestureDetector>
 
-            <View
-              style={styles.profileRow}
-              onLayout={event => {
-                formTopRef.current = event.nativeEvent.layout.y;
-              }}>
-              <Text style={styles.sectionLabel}>프로필에 표시하기</Text>
-              <ToggleSwitch
-                value={showOnProfile}
-                onValueChange={handleChangeVisibility}
-              />
+              <DashedDivider style={styles.divider} />
             </View>
-
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>
-              어떤 조각인가요?
-            </Text>
-
-            <View style={styles.inputBox}>
-              <TextInput
-                style={styles.input}
-                value={label}
-                onChangeText={setLabel}
-                onBlur={saveName}
-                placeholder="조각 이름을 적어주세요"
-                placeholderTextColor={colors.text.disabled}
-                maxLength={MAX_LABEL_LENGTH}
-                returnKeyType="done"
-                // 아래에 도감이 이어지므로 끝까지 내리지 않고 입력칸이 보이는 만큼만 올린다
-                onFocus={() =>
-                  requestAnimationFrame(() =>
-                    scrollRef.current?.scrollTo({
-                      y: formTopRef.current,
-                      animated: true,
-                    }),
-                  )
-                }
-              />
-
-              <View style={styles.counterRow}>
-                <Text style={styles.counterCurrent}>{label.length}</Text>
-                <Text style={styles.counterTotal}>/ {MAX_LABEL_LENGTH}</Text>
-              </View>
-            </View>
-
-            <DashedDivider style={styles.divider} />
-          </View>
+          )}
 
           <PieceCollection
             nickname={nickname}
             pieces={pieces}
             pinnedIds={pinnedIds}
-            dimmedIds={[selectedId]}
+            dimmedIds={selectedId == null ? [] : [selectedId]}
             dimOpacity={SELECTED_OPACITY}
             onPressPiece={handleSelectPiece}
             onPressPinnedSlot={() =>
@@ -473,19 +497,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...typography.b1,
     color: colors.text.basic,
-    includeFontPadding: false,
-  },
-
-  deleteButton: {
-    position: 'absolute',
-    right: padding.lg,
-    height: 32,
-    justifyContent: 'center',
-  },
-
-  deleteText: {
-    ...typography.b5,
-    color: colors.text.tertiary,
     includeFontPadding: false,
   },
 

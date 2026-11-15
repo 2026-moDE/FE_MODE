@@ -23,9 +23,11 @@ import type {MyProfile} from '../../api/mypage';
 import type {Piece, PiecePlacement} from '../../api/piece';
 import ProfileAvatar from '../common/ProfileAvatar';
 import PieceBoard from './PieceBoard';
+import BubbleChip from '../common/BubbleChip';
 
 const settingIcon = require('../../assets/image/setting.png');
 const menuIcon = require('../../assets/image/vertical_ellipis.png');
+const collectionIcon = require('../../assets/icons/piece_collection.png');
 
 // 시안 393x852 기준 (node 2859:4632)
 const BOARD_HEIGHT = 448;
@@ -33,6 +35,10 @@ const BOARD_HEIGHT = 448;
 const BOARD_TOP_LIFT = 11;
 // 보드 안쪽 헤더 아이콘 줄 (화면 기준 67 - 보드 상단 48)
 const HEADER_ICON_TOP = 19;
+// 시안 3206:7009: 도감 버튼 y=67, 높이 36. 20px 아이콘은 버튼 중앙에 맞춘다.
+const HEADER_CONTROL_HEIGHT = 36;
+const HEADER_CONTROL_ICON_INSET = (HEADER_CONTROL_HEIGHT - 20) / 2;
+const COLLECTION_HINT_GAP = 10;
 // 빈 상태 묶음 (화면 기준 239 - 보드 상단 48)
 const EMPTY_STATE_TOP = 191;
 // 프로필 사진이 보드 아래 모서리에 걸치는 깊이 (보드 하단 496 - 사진 상단 461)
@@ -57,6 +63,8 @@ type Props = {
   boardRunId: number;
   onPressBack: () => void;
   onPressSettings?: () => void;
+  onPressCollection?: () => void;
+  showCollectionHint?: boolean;
   // 없으면 친구 수를 눌러도 갈 곳이 없다는 뜻 - 화살표를 숨기고 탭도 막는다 (남의 프로필)
   onPressFriends?: () => void;
   // 남의 프로필에서는 조각을 모으러 갈 수 없어서 빈 상태 버튼을 숨긴다
@@ -80,6 +88,8 @@ export default function PieceProfileHeader({
   boardRunId,
   onPressBack,
   onPressSettings,
+  onPressCollection,
+  showCollectionHint = false,
   onPressFriends,
   onPressCollect,
   onPlacePieces,
@@ -116,7 +126,9 @@ export default function PieceProfileHeader({
         }>
         {pieces.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>아직 모은 조각이 없어요</Text>
+            <Text allowFontScaling={false} style={styles.emptyText}>
+              모은 조각이 없어요
+            </Text>
 
             {!!onPressCollect && (
               <TouchableOpacity
@@ -124,7 +136,9 @@ export default function PieceProfileHeader({
                 style={styles.emptyButton}
                 onPress={onPressCollect}>
                 <IconArchive size={16} color={colors.icon.inverse} />
-                <Text style={styles.emptyButtonText}>리뷰쓰고 조각 모으기</Text>
+                <Text allowFontScaling={false} style={styles.emptyButtonText}>
+                  리뷰쓰고 조각 모으기
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -146,11 +160,36 @@ export default function PieceProfileHeader({
 
         <TouchableOpacity
           activeOpacity={0.7}
-          style={[styles.iconButton, styles.backButton]}
+          style={[
+            styles.iconButton,
+            styles.backButton,
+            !!onPressCollection && styles.collectionHeaderIcon,
+          ]}
           onPress={onPressBack}
           hitSlop={12}>
           <IconArrowLeft size={20} color={colors.icon.inverse} />
         </TouchableOpacity>
+
+        {!!onPressCollection && (
+          <>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.collectionButton}
+              onPress={onPressCollection}
+              accessibilityRole="button"
+              accessibilityLabel="조각 도감">
+              <Image source={collectionIcon} style={styles.collectionIcon} />
+              <Text allowFontScaling={false} style={styles.collectionText}>
+                조각 도감
+              </Text>
+            </TouchableOpacity>
+            {showCollectionHint && (
+              <View style={styles.collectionHint} pointerEvents="none">
+                <BubbleChip text="모은 조각을 확인해보세요" placement="top" />
+              </View>
+            )}
+          </>
+        )}
 
         {onPressMenu ? (
           <TouchableOpacity
@@ -165,7 +204,11 @@ export default function PieceProfileHeader({
           showSettings && (
             <TouchableOpacity
               activeOpacity={0.7}
-              style={[styles.iconButton, styles.settingButton]}
+              style={[
+                styles.iconButton,
+                styles.settingButton,
+                !!onPressCollection && styles.collectionHeaderIcon,
+              ]}
               onPress={onPressSettings}
               hitSlop={12}>
               <Image
@@ -242,6 +285,7 @@ const styles = StyleSheet.create({
   emptyState: {
     position: 'absolute',
     top: EMPTY_STATE_TOP,
+    width: 163,
     alignSelf: 'center',
     alignItems: 'center',
     gap: gap.md,
@@ -255,6 +299,7 @@ const styles = StyleSheet.create({
   },
 
   emptyButton: {
+    width: '100%',
     height: 36,
     flexDirection: 'row',
     alignItems: 'center',
@@ -286,6 +331,41 @@ const styles = StyleSheet.create({
 
   settingButton: {
     right: padding.lg,
+  },
+
+  collectionHeaderIcon: {
+    top: HEADER_ICON_TOP + HEADER_CONTROL_ICON_INSET,
+  },
+
+  collectionButton: {
+    position: 'absolute',
+    top: HEADER_ICON_TOP,
+    right: padding.lg + 20 + gap.lg,
+    height: HEADER_CONTROL_HEIGHT,
+    paddingHorizontal: padding.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: gap.sm,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+
+  collectionText: {
+    ...typography.c2,
+    color: colors.text.inverse,
+    includeFontPadding: false,
+  },
+
+  collectionIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+  },
+
+  collectionHint: {
+    position: 'absolute',
+    top: HEADER_ICON_TOP + HEADER_CONTROL_HEIGHT + COLLECTION_HINT_GAP,
+    right: 30,
   },
 
   settingIcon: {
