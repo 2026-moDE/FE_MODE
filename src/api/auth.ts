@@ -16,12 +16,13 @@ export const socialLoginApi = async ({
   accessToken: string;
   fcmToken?: string;
 }) => {
+  // 토큰 값 자체는 찍지 않는다 - logcat/Console.app으로 새어나간다
   console.log('[소셜 로그인 요청]', {
     provider,
-    accessToken,
-    fcmToken,
+    hasAccessToken: Boolean(accessToken),
+    hasFcmToken: Boolean(fcmToken),
   });
-  
+
   const response = await fetch(`${BASE_URL}/api/auth/social-login`, {
     method: 'POST',
     headers: {
@@ -55,9 +56,7 @@ export const refreshAccessTokenApi = async () => {
     throw new Error('저장된 refresh_token이 없습니다.');
   }
 
-  console.log('[토큰 재발급 요청]', {
-    refresh_token: refreshToken,
-  });
+  console.log('[토큰 재발급 요청]');
 
   const response = await fetch(`${BASE_URL}/api/auth/token/refresh`, {
     method: 'POST',
@@ -71,7 +70,12 @@ export const refreshAccessTokenApi = async () => {
 
   const data = await response.json();
 
-  console.log('[토큰 재발급 응답]', data);
+  // 응답 본문에 새 토큰이 들어있으므로 통째로 찍지 않는다
+  console.log('[토큰 재발급 응답]', {
+    status: response.status,
+    success: data.success,
+    message: data.message,
+  });
 
   if (!response.ok || data.success === false) {
     // refresh_token 자체가 무효(401)인 경우에만 로컬 토큰 삭제.

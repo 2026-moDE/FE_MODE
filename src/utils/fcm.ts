@@ -20,7 +20,7 @@ export const getFcmToken = async (): Promise<string | undefined> => {
 
     const fcmToken = await messaging().getToken();
 
-    console.log('[FCM TOKEN 발급 성공]', fcmToken);
+    console.log('[FCM TOKEN 발급 성공]');
 
     return fcmToken;
   } catch (error) {

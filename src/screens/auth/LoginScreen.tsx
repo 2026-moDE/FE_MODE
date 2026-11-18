@@ -44,7 +44,7 @@ export default function LoginScreen({navigation}: Props) {
       console.log('[1] 카카오 로그인 시작');
 
       const kakaoToken = await loginWithKakaoAccount();
-      console.log('[2] 카카오 토큰 획득:', kakaoToken.accessToken);
+      console.log('[2] 카카오 토큰 획득');
 
       const fcmToken = await getFcmToken();
 
