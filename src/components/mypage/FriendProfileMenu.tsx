@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Modal, View, Text, Pressable, StyleSheet, Image} from 'react-native';
 import {colors} from '../../constants/colors';
+import IconBlock from '../../assets/icons/IconBlock';
 import {fontFamily} from '../../constants/typography';
 import {padding, gap} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
@@ -15,14 +16,27 @@ type Props = {
     visible: boolean;
     // ⋮ 버튼을 measureInWindow로 잰 실제 화면 좌표 (ProfileHeaderCard가 눌렀을 때 넘겨줌)
     anchor: {top: number; right: number} | null;
+    // 친구가 아니면 '친구 끊기'를 숨긴다. 차단은 친구 여부와 무관하게 항상 가능해야 함
+    // (App Store 가이드라인 1.2 - 아무 사용자나 차단할 수 있어야 한다)
+    isFriend?: boolean;
     onClose: () => void;
     // 유저 신고 api/화면이 아직 없어서 일단 자리만 잡아둠 - 연결은 나중에
     onPressReport: () => void;
+    // 차단 확인 모달은 화면(UserMyPageScreen)이 띄운다 - 성공 후 화면을 닫아야 해서
+    onPressBlock: () => void;
     onPressUnfriend: () => void;
 };
 
-// 친구 마이페이지 헤더 ⋮ 버튼 드롭다운 (신고하기 / 친구 끊기)
-export default function FriendProfileMenu({visible, anchor, onClose, onPressReport, onPressUnfriend}: Props) {
+// 친구 마이페이지 헤더 ⋮ 버튼 드롭다운 (신고하기 / 차단 / 친구 끊기)
+export default function FriendProfileMenu({
+    visible,
+    anchor,
+    isFriend = false,
+    onClose,
+    onPressReport,
+    onPressBlock,
+    onPressUnfriend,
+}: Props) {
     const [step, setStep] = useState<'menu' | 'confirm'>('menu');
 
     useEffect(() => {
@@ -42,20 +56,40 @@ export default function FriendProfileMenu({visible, anchor, onClose, onPressRepo
                     ]}
                     onPress={onClose}>
                     <View style={styles.dropdown} onStartShouldSetResponder={() => true}>
+                        {/* 신고하기는 아직 동작하지 않는 자리(유저 신고 api 미연결)라 노출 범위를 넓히지 않는다 -
+                            원래 보이던 친구 프로필에서만 그대로 보여준다 */}
+                        {isFriend && (
+                            <>
+                                <Pressable
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        onClose();
+                                        onPressReport();
+                                    }}>
+                                    <Image source={sirenIcon} style={styles.menuIcon} resizeMode="contain" />
+                                    <Text allowFontScaling={false} style={styles.menuText}>신고하기</Text>
+                                </Pressable>
+                                <View style={styles.divider} />
+                            </>
+                        )}
                         <Pressable
                             style={styles.menuItem}
                             onPress={() => {
                                 onClose();
-                                onPressReport();
+                                onPressBlock();
                             }}>
-                            <Image source={sirenIcon} style={styles.menuIcon} resizeMode="contain" />
-                            <Text allowFontScaling={false} style={styles.menuText}>신고하기</Text>
+                            <IconBlock size={18} color={colors.icon.inverse} />
+                            <Text allowFontScaling={false} style={styles.menuText}>차단</Text>
                         </Pressable>
-                        <View style={styles.divider} />
-                        <Pressable style={styles.menuItem} onPress={() => setStep('confirm')}>
-                            <Image source={xIcon} style={styles.menuIcon} resizeMode="contain" />
-                            <Text allowFontScaling={false} style={styles.menuText}>친구 끊기</Text>
-                        </Pressable>
+                        {isFriend && (
+                            <>
+                                <View style={styles.divider} />
+                                <Pressable style={styles.menuItem} onPress={() => setStep('confirm')}>
+                                    <Image source={xIcon} style={styles.menuIcon} resizeMode="contain" />
+                                    <Text allowFontScaling={false} style={styles.menuText}>친구 끊기</Text>
+                                </Pressable>
+                            </>
+                        )}
                     </View>
                 </Pressable>
             </Modal>

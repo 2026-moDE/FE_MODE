@@ -1,7 +1,48 @@
 import {apiClient} from './client';
-import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse, TrendingPlacesResponse} from '../types/place';
+import {NearbyPlaceResponse, PlaceDetail, LocationVerifyResponse, CurrentReviewsResponse, ArchivedReviewsResponse, CongestionResponse, SubscribeResponse, TrendingPlacesResponse, PlaceCategory, CongestionLevel} from '../types/place';
 import { Location } from '../types/location';
 import { RegionResponse } from '../types/place';
+
+// 개인화 추천 api
+export type RecommendedPlace = {
+    id: number;
+    name: string;
+    category: PlaceCategory;
+    congestion_level: CongestionLevel;
+    thumbnail_url: string | null;
+    thumbnail_small_url: string | null;
+    address: string;
+};
+
+export type RecommendPlacesResponse = {
+    is_personalized: boolean;
+    preferred_category: string | null;
+    message: string;
+    places: RecommendedPlace[];
+};
+
+type FetchRecommendPlacesParams = {
+    latitude: number;
+    longitude: number;
+    radius?: number;
+    limit?: number;
+};
+
+type RecommendPlacesApiResponse = {
+    success: boolean;
+    message: string;
+    data: RecommendPlacesResponse;
+};
+
+export async function fetchRecommendPlaces(
+    params: FetchRecommendPlacesParams,
+): Promise<RecommendPlacesResponse> {
+    const response = await apiClient.get<RecommendPlacesApiResponse>(
+        '/api/places/recommend',
+        {params},
+    );
+    return response.data.data;
+}
 
 type FetchNearbyPlacesParams = {
   latitude: number;

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Keyboard, Platform, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -27,6 +27,7 @@ type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 type Mode = 'default' | 'typing' | 'searched' | 'location'; 
 
 export default function SearchScreen() {
+    const {bottom: bottomInset} = useSafeAreaInsets();
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute<RouteProp<AppStackParamList, 'Search'>>();
     const reviewPhotoUri = route.params?.reviewPhotoUri;
@@ -263,7 +264,12 @@ export default function SearchScreen() {
 
             {/* 현재 위치로 장소 찾기 */}
             {(mode !== 'location') && (
-                <View style={[styles.locationButtonWrapper, keyboardHeight > 0 && {bottom: keyboardHeight + 12}]}>
+                <View style={[
+                    styles.locationButtonWrapper,
+                    {bottom: keyboardHeight > 0
+                        ? (Platform.OS === 'ios' ? keyboardHeight + 12 : 12)
+                        : Math.max(bottomInset, 16) + 12},
+                ]}>
                     <LocationButton onPress={handleLocationSearch} />
                 </View>
             )}
@@ -310,7 +316,6 @@ const styles = StyleSheet.create({
     },
     locationButtonWrapper: {
         position: 'absolute',
-        bottom: 40,
         left: 0,
         right: 0,
         alignItems: 'center',

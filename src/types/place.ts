@@ -1,3 +1,5 @@
+import {colors} from '../constants/colors';
+
 // ─────────────────── 공용 Union 타입 ───────────────────
 
 // 장소 카테고리
@@ -5,9 +7,6 @@ export type PlaceCategory = 'CAFE' | 'RESTAURANT' | 'POPUP' | 'CONCERT' | 'ETC';
 
 // 혼잡도 레벨
 export type CongestionLevel = 'RELAXED' | 'MODERATE' | 'CROWDED' | 'VERY_CROWDED';
-
-// 혼잡도 버블 색상
-export type BubbleColor = 'GREEN' | 'YELLOW' | 'RED';
 
 // 요일
 export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
@@ -21,28 +20,42 @@ export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
     ETC:        '기타',
 };
 
-// 혼잡도 한글 레이블 매핑 (서버는 congestion_level만 내려주고 문구는 FE에서 만듦)
+// 혼잡도 한글 레이블 (서버는 congestion_level만 내려주고 문구는 FE에서 만듦).
+// 지도 버블·장소 상세 칩·리뷰 작성 칩이 전부 이 문구를 쓴다
 export const CONGESTION_LABEL: Record<CongestionLevel, string> = {
-    RELAXED:      '한산해요',
-    MODERATE:     '적당해요',
-    CROWDED:      '붐벼요',
-    VERY_CROWDED: '매우 붐벼요',
+    RELAXED:      '여유',
+    MODERATE:     '보통',
+    CROWDED:      '약간 붐빔',
+    VERY_CROWDED: '붐빔',
 };
 
-// 혼잡도 → 버블 색상 매핑 (서버는 congestion_level만 내려주고 색은 FE에서 정함)
-export const CONGESTION_BUBBLE_COLOR: Record<CongestionLevel, BubbleColor> = {
-    RELAXED:      'GREEN',
-    MODERATE:     'GREEN',
-    CROWDED:      'YELLOW',
-    VERY_CROWDED: 'RED',
+// 혼잡도별 색. 네 단계가 각자 다른 색을 가진다.
+// fill/text는 리뷰 작성 칩처럼 면을 채울 때 쓴다.
+//
+// 테두리는 쓰이는 자리가 둘인데 요구가 달라서 값을 나눠 둔다.
+// - bubbleStroke: 지도 버블 테두리. 사진 위에 선만 얹는 자리라 밝은 색이어도 잘 보인다.
+//   지도 버블 시안(Figma 3078:5522 - 여유/보통/약간 붐빔/붐빔 4종) 기준이고,
+//   '보통'만 디자인에서 변수(Icon/icon-brand)로 잡혀 있어 토큰을 그대로 쓴다.
+// - chipStroke: 리뷰 작성 혼잡도 칩의 선택 테두리. 같은 색 fill 위에 그려지므로
+//   fill보다 어두워야 테두리가 보인다. 버블 색을 그대로 쓰면 '보통'은 fill과 완전히
+//   같은 색(#FFFD6D)이 돼서 테두리가 사라진다.
+export const CONGESTION_COLOR: Record<
+    CongestionLevel,
+    {fill: string; bubbleStroke: string; chipStroke: string; text: string}
+> = {
+    RELAXED:      {fill: '#CFFFC1',            bubbleStroke: '#A5EA7B',         chipStroke: '#78D73D',           text: colors.text.subtle},
+    MODERATE:     {fill: colors.brand.primary, bubbleStroke: colors.icon.brand, chipStroke: colors.border.brand, text: colors.text.brandDarker},
+    CROWDED:      {fill: '#FFD18D',            bubbleStroke: '#FFA16A',         chipStroke: '#D7943D',           text: colors.text.brandDarker},
+    VERY_CROWDED: {fill: '#FFA1A1',            bubbleStroke: '#FF6D6D',         chipStroke: '#D73D3D',           text: colors.text.subtle},
 };
 
-// 버블 색상 → 실제 컬러값
-export const BUBBLE_COLOR_HEX: Record<BubbleColor, string> = {
-    GREEN:  '#84E588',
-    YELLOW: '#FFD75E',
-    RED:    '#FF685D',
-};
+// 화면에 칩으로 늘어놓을 때의 순서 (여유 → 붐빔)
+export const CONGESTION_LEVELS: CongestionLevel[] = [
+    'RELAXED',
+    'MODERATE',
+    'CROWDED',
+    'VERY_CROWDED',
+];
 
 // ─────────────────── 장소 상세 조회 api (GET /api/places/:id) ───────────────────
 export type PlaceDetail = {

@@ -1,7 +1,7 @@
 import { BottomSheetModal, BottomSheetFlatList, BottomSheetFooter, BottomSheetFooterProps, BottomSheetBackdrop, BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { View, Text, Image, StyleSheet, Modal } from "react-native";
+import { View, Text, Image, StyleSheet, Modal, Keyboard, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { colors } from "../../constants/colors";
@@ -12,6 +12,9 @@ import ReviewCommentItem from "./ReviewCommentItem";
 import CommentInput from "./CommentInput";
 import { ReviewComment, createComment, createReply, deleteComment, fetchComments } from "../../api/review";
 import { getMyProfile } from "../../api/mypage";
+import { isBlockedError } from "../../api/block";
+import { useOnBlockChange } from "../../store/blockEvents";
+import { useToast } from "../common/Toast";
 import type { AppStackParamList } from "../../types/navigation";
 
 const checkWhiteIcon = require("../../assets/image/check_white.png");
@@ -23,13 +26,16 @@ type Props = {
     // true면 조회만 가능 - 입력창(댓글/답글) 자체가 필요없으니까 마이페이지에서 사용하면 됨!!
     readOnly?: boolean;
     ref?: React.Ref<BottomSheetModal>;
+    // 댓글 작성 성공 시 호출 - 부모에서 comment_count 갱신 용도
+    onAddComment?: (reviewId: number) => void;
 };
 
 // 리뷰 사진 댓글/채팅 바텀시트
 // ref로 present()/dismiss()를 ReviewPhoto에 노출
-export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, ref}: Props) {
+export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, ref, onAddComment}: Props) {
     const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
     const insets = useSafeAreaInsets();
+    const {showToast} = useToast();
     const snapPoints = useMemo(() => ['50%', '85%'], []);
 
     const sheetRef = useRef<BottomSheetModal>(null);
@@ -70,6 +76,11 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         setComments([]);
         loadComments();
     }, [loadComments]);
+
+    // 차단/해제되면 차단한 사용자의 댓글·답글이 목록에 남아 있어서 다시 받아온다
+    useOnBlockChange(() => {
+        loadComments();
+    });
 
     // 댓글/답글을 API 응답 기다리지 않고 바로 UI에 보여주기 - 내 프로필 정보 미리 캐싱
     const myProfileRef = useRef<{id: number; nickname: string; profile_image_url: string | null; profile_url?: string | null} | null>(null);
@@ -119,6 +130,11 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
 
     // 답글 입력창 포커스 중이면(답글 쓰는 중) 댓글 입력창 숨김
     const [isReplyFocused, setIsReplyFocused] = useState(false);
+    // 키보드가 완전히 내려가면 항상 footer 복원 (onBlur가 안 불리는 경우 대비)
+    useEffect(() => {
+        const sub = Keyboard.addListener('keyboardDidHide', () => setIsReplyFocused(false));
+        return () => sub.remove();
+    }, []);
 
     // 새 댓글 작성 - API 응답 기다리지 않고 바로 화면에 보여준 뒤, 응답 오면 실제 데이터로 교체
     // (실패하면 임시로 보여준 것 제거)
@@ -154,12 +170,18 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                 // 작성 응답(Comment)엔 user/replies가 아예 없음(공식 문서 기준) -
                 // 방금 넣어둔 user/replies는 그대로 두고, 서버가 준 값(id, created_at 등)만 덮어씀
                 setComments(prev => prev.map(c => c.id === tempId ? {...c, ...res} : c));
+                onAddComment?.(reviewId);
             })
             .catch(err => {
                 console.warn('댓글 작성 실패:', err?.message);
                 setComments(prev => prev.filter(c => c.id !== tempId));
+
+                // 차단 관계면 서버가 403 - 낙관적으로 붙여둔 댓글을 걷어내고 이유를 알려준다
+                if (isBlockedError(err)) {
+                    showToast('차단한 사용자에게는 댓글을 작성할 수 없습니다');
+                }
             });
-    }, [reviewId, isSecret]);
+    }, [reviewId, isSecret, showToast]);
 
     // 답글 작성 - 댓글 아이템 안의 입력창 (댓글과 동일하게 낙관적 업데이트)
     const handleSubmitReply = useCallback((commentId: number, text: string) => {
@@ -201,8 +223,12 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                     ...c,
                     replies: c.replies.filter(r => r.id !== tempId),
                 } : c));
+
+                if (isBlockedError(err)) {
+                    showToast('차단한 사용자에게는 댓글을 작성할 수 없습니다');
+                }
             });
-    }, [reviewId]);
+    }, [reviewId, showToast]);
 
     // 댓글 삭제 - 누르자마자 로컬에서 바로 "삭제된 댓글입니다"로 바꾸고, 실제 삭제는 백그라운드로
     const [showDeleteToast, setShowDeleteToast] = useState(false);
@@ -256,6 +282,7 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                         showSecretCheckbox={reviewVisibility === 'FRIENDS'}
                         isSecret={isSecret}
                         onToggleSecret={() => setIsSecret(prev => !prev)}
+                        onFocus={Platform.OS === 'android' ? () => sheetRef.current?.snapToIndex(1) : undefined}
                     />
                 </View>
             </BottomSheetFooter>
@@ -263,9 +290,8 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
         [handleSubmitComment, reviewVisibility, isSecret],
     );
 
-    const footerVisible = !readOnly && !isReplyFocused;
     // footer 높이: bottomInset(27) + paddingTop(16) + 입력창 한 줄(~40) + paddingBottom(16)
-    const toastBottom = insets.bottom + gap.lg + (footerVisible ? 27 + 16 + 40 + 16 : 0);
+    const toastBottom = insets.bottom + gap.lg + (!readOnly ? 27 + 16 + 40 + 16 : 0);
 
     return (
         <>
@@ -308,7 +334,23 @@ export default function ReviewChatModal({reviewId, reviewVisibility, readOnly, r
                         repliesExpanded={expandedIds.has(item.id)}
                         onPressReplyToggle={() => toggleReplies(item.id)}
                         onSubmitReply={text => handleSubmitReply(item.id, text)}
-                        onReplyFocusChange={setIsReplyFocused}
+                        onReplyFocusChange={focused => {
+                            if (!focused) {
+                                setIsReplyFocused(false);
+                                return;
+                            }
+                            if (Platform.OS === 'android') {
+                                // Android: 일반 TextInput이라 OS가 키보드를 올림
+                                // 한 프레임 뒤에 footer 제거 + 시트 확장 → 키보드가 먼저 올라온 뒤 처리
+                                requestAnimationFrame(() => {
+                                    setIsReplyFocused(true);
+                                    sheetRef.current?.snapToIndex(1);
+                                });
+                            } else {
+                                // iOS: BottomSheetTextInput이 gorhom에 키보드 알림 → keyboardBehavior="extend" 자동 처리
+                                setIsReplyFocused(true);
+                            }
+                        }}
                         onDeleteComment={() => handleDeleteComment(item.id)}
                         onReportComment={() => handleReportComment(item.id)}
                         onPressUser={handlePressUser}

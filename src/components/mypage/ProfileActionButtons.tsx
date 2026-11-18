@@ -33,8 +33,8 @@ const styles = StyleSheet.create({
   profileActionsRow: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginTop: 20,
-    gap: 10,
+    marginTop: 16,
+    gap: 8,
   },
 
   editButton: {

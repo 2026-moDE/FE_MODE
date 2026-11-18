@@ -1,23 +1,24 @@
 import React from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import TrendingPlaceCard from './TrendingPlaceCard';
-import {TrendingPlace} from '../../types/place';
+import {RecommendedPlace} from '../../api/place';
 import {colors} from '../../constants/colors';
 import {typography} from '../../constants/typography';
 import {spacing} from '../../constants/spacing';
 import {radius} from '../../constants/radius';
 
 type Props = {
-    places: TrendingPlace[];
-    onPressMore?: (place: TrendingPlace) => void;
+    places: RecommendedPlace[];
+    message?: string;
+    onPressMore?: (place: RecommendedPlace) => void;
 };
 
-export default function TrendingPlacesSection({places, onPressMore}: Props) {
+export default function TrendingPlacesSection({places, message, onPressMore}: Props) {
     if (places.length === 0) return null;
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>최근에 리뷰가 많이 달렸어요</Text>
+            <Text style={styles.title}>{message ?? '추천 장소'}</Text>
             <View style={styles.list}>
                 {places.map((place, index) => (
                     <View key={place.id} style={index > 0 && styles.gap}>

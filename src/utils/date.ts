@@ -37,7 +37,15 @@ export function formatReviewTime(isoString: string, isArchived: boolean): string
 
     if (diffMin < 1) return '방금';
     if (diffMin < 60) return `${diffMin}분 전`;
-    return `${diffHour}시간 전`;
+    if (diffHour < 24) return `${diffHour}시간 전`;
+
+    const now = new Date();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    if (date.getFullYear() !== now.getFullYear()) {
+        return `${date.getFullYear()}/${month}/${day}`;
+    }
+    return `${month}/${day}`;
 }
 
 // ISO 시간 → "2026년 8월 10일" 절대 날짜
@@ -47,6 +55,19 @@ export function formatAbsoluteDate(isoString: string): string {
     const m = date.getMonth() + 1;
     const d = date.getDate();
     return `${y}년 ${m}월 ${d}일`;
+}
+
+// UTC(Z) ISO 시간 → KST 날짜 "2026.10.19"
+// 서버가 Z로 주는 값은 기기 타임존에 따라 날짜가 하루 밀릴 수 있어서 +9를 직접 더해 고정한다
+export function formatKstDate(isoString: string): string {
+    const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+    const kst = new Date(new Date(isoString).getTime() + KST_OFFSET_MS);
+
+    const y = kst.getUTCFullYear();
+    const m = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(kst.getUTCDate()).padStart(2, '0');
+
+    return `${y}.${m}.${d}`;
 }
 
 // 댓글 작성일시 (예: 2026.08.11 17:28)

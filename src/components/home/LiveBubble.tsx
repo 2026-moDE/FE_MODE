@@ -4,11 +4,21 @@ import FastImage from '@d11/react-native-fast-image';
 import {NaverMapMarkerOverlay} from '@mj-studio/react-native-naver-map';
 import {
     NearbyPlace,
-    BUBBLE_COLOR_HEX,
-    CONGESTION_BUBBLE_COLOR,
+    CONGESTION_COLOR,
 } from '../../types/place';
 import {colors} from '../../constants/colors';
 import {radius} from '../../constants/radius';
+import {
+    BubbleShadow,
+    BUBBLE_SIZE,
+    TAIL_HEIGHT,
+    TAIL_WIDTH,
+    TOTAL_HEIGHT,
+    MARKER_PAD,
+    MARKER_WIDTH,
+    MARKER_HEIGHT,
+    MARKER_ANCHOR,
+} from './bubbleShadow';
 
 type Props = {
     place: NearbyPlace;
@@ -20,11 +30,6 @@ type Props = {
 };
 
 const EMPTY_THUMBNAIL = require('../../assets/image/empty_minicard.png');
-
-const BUBBLE_SIZE = 60;
-const TAIL_HEIGHT = 16;
-const TAIL_WIDTH = 12;
-const TOTAL_HEIGHT = BUBBLE_SIZE + TAIL_HEIGHT;
 
 const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, isReady = true}: Props) {
     // 로컬 placeholder(Image)도 iOS에서는 마커 스냅샷이 찍히는 시점보다 실제 페인트가 늦어서
@@ -49,7 +54,8 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
         setRebakeTick(0);
     }, [bubbleUrl, isReady]);
 
-    // 이미지가 실제로 그려졌다고 보고가 왔는지 (사진이면 FastImage, 없으면 빈 카드 기준)
+    // 사진이 최종적으로 다 그려졌는지 (사진이면 FastImage, 없으면 빈 카드 기준).
+    // rebakeTick 폴백 타이머를 멈출지 판단하는 용도 - 바닥 기본 이미지가 그려진 것만으론 "완료"가 아니다
     const painted = hasThumbnail ? thumbnailPainted : placeholderReady;
 
     // onLoad만으로는 네이티브가 마커를 비트맵으로 굽는 시점을 못 맞추는 경우가 있음
@@ -67,62 +73,64 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
         return null;
     }
 
-    // 혼잡도 있으면 색상, 없으면 null
-    // 응답에 bubble_color는 없어서 혼잡도 레벨로 매핑
-    const bubbleColor = place.congestion_level
-        ? CONGESTION_BUBBLE_COLOR[place.congestion_level]
-        : null;
+    // 혼잡도 있으면 그 단계의 색, 없으면 null (없을 때 색은 아래 기본값 border-strong)
+    // 응답에 색은 없어서 혼잡도 레벨로 매핑
     const congestionColor =
-        !monochrome && bubbleColor ? BUBBLE_COLOR_HEX[bubbleColor] : null;
+        !monochrome && place.congestion_level
+            ? CONGESTION_COLOR[place.congestion_level].bubbleStroke
+            : null;
 
     return (
         <NaverMapMarkerOverlay
             latitude={place.latitude}
             longitude={place.longitude}
-            width={BUBBLE_SIZE}
-            height={TOTAL_HEIGHT}
-            anchor={{x: 0.5, y: 1}}
+            width={MARKER_WIDTH}
+            height={MARKER_HEIGHT}
+            anchor={MARKER_ANCHOR}
             onTap={() => onPress(place)}>
-            {/* 마커 생김새가 바뀌면(사진 준비 여부/혼잡도 색/placeholder 로드 여부) key도 바뀌어야
-                네이티브 쪽이 새 마커로 인식함 - 라이브러리 문서 권장사항 */}
-            <View key={`${congestionColor ?? 'none'}-${isReady}-${hasThumbnail}-${placeholderReady}-${thumbnailPainted}-${rebakeTick}`} collapsable={false} style={styles.container}>
-                <View
-                    collapsable={false}
-                    style={[
-                        styles.bubble,
-                        {borderColor: congestionColor ?? colors.border.black},
-                    ]}>
-                    {hasThumbnail ? (
-                        <FastImage
-                            source={{
-                                uri: bubbleUrl,
-                                priority: FastImage.priority.high,
-                                cache: FastImage.cacheControl.immutable,
-                            }}
-                            style={styles.thumbnail}
-                            resizeMode={FastImage.resizeMode.cover}
-                            onLoad={() => setThumbnailPainted(true)}
-                        />
-                    ) : (
-                        // 로컬 placeholder는 RN Image로 - 마커는 네이티브가 비트맵으로 굽는데
-                        // FastImage로 넣으면 그려지기 전에 캡처돼서 버블 배경(회색)만 남음.
-                        // iOS는 로컬 이미지도 로드가 한 프레임 늦어서 첫 스냅샷엔 회색만 잡힐 수 있어,
-                        // onLoad 이후 key를 바꿔 다시 스냅샷 찍게 함
+            {/* 마커 생김새가 바뀌면 key도 바뀌어야 네이티브가 새 마커로 인식함 - 라이브러리 문서 권장사항.
+                placeholderReady와 thumbnailPainted를 둘 다 넣는 건 의도적이다:
+                바닥 기본 이미지가 그려졌을 때 한 번(회색 → 빈 카드), 사진이 그려졌을 때 또 한 번(빈 카드 → 사진) 구워야 한다.
+                painted 하나로 합치면 사진 있는 버블에서 기본 이미지 베이크가 통째로 스킵돼 회색으로 굳는다 */}
+            <View key={`${congestionColor ?? 'none'}-${isReady}-${hasThumbnail}-${placeholderReady}-${thumbnailPainted}-${rebakeTick}`} collapsable={false} style={styles.root}>
+                <BubbleShadow color={congestionColor} />
+                <View collapsable={false} style={styles.container}>
+                    <View
+                        collapsable={false}
+                        style={[
+                            styles.bubble,
+                            {borderColor: congestionColor ?? colors.border.inverse},
+                        ]}>
+                        {/* 기본 이미지를 항상 바닥에 깔아둔다 - 사진이 아직 안 그려진 첫 스냅샷에
+                            버블 배경색(회색)이 찍히는 걸 막는 용도. 사진이 있으면 바로 위 FastImage가 덮는다.
+                            로컬 에셋은 RN Image로 - FastImage로 넣으면 그려지기 전에 캡처돼서 회색만 남음 */}
                         <Image
                             source={EMPTY_THUMBNAIL}
                             style={styles.thumbnail}
                             resizeMode="cover"
                             onLoad={() => setPlaceholderReady(true)}
                         />
-                    )}
+                        {hasThumbnail && (
+                            <FastImage
+                                source={{
+                                    uri: bubbleUrl,
+                                    priority: FastImage.priority.high,
+                                    cache: FastImage.cacheControl.immutable,
+                                }}
+                                style={styles.thumbnail}
+                                resizeMode={FastImage.resizeMode.cover}
+                                onLoad={() => setThumbnailPainted(true)}
+                            />
+                        )}
+                    </View>
+                    {/* 꼬리: 버블 테두리와 항상 같은 색 */}
+                    <View
+                        style={[
+                            styles.tail,
+                            {borderTopColor: congestionColor ?? colors.border.inverse},
+                        ]}
+                    />
                 </View>
-                {/* 꼬리: 혼잡도 있으면 같은 색, 없으면 흰색 */}
-                <View
-                    style={[
-                        styles.tail,
-                        {borderTopColor: congestionColor ?? colors.border.black},
-                    ]}
-                />
             </View>
         </NaverMapMarkerOverlay>
     );
@@ -131,7 +139,15 @@ const LiveBubble = React.memo(function LiveBubble({place, onPress, monochrome, i
 export default LiveBubble;
 
 const styles = StyleSheet.create({
+    // 그림자 여백까지 포함한 마커 전체 - 크기가 마커에 선언한 width/height와 같아야 비트맵이 안 잘린다
+    root: {
+        width: MARKER_WIDTH,
+        height: MARKER_HEIGHT,
+    },
     container: {
+        position: 'absolute',
+        top: MARKER_PAD,
+        left: MARKER_PAD,
         width: BUBBLE_SIZE,
         height: TOTAL_HEIGHT,
         alignItems: 'center',
@@ -141,7 +157,8 @@ const styles = StyleSheet.create({
         height: BUBBLE_SIZE,
         borderRadius: radius.md,
         borderWidth: 2,
-        borderColor: colors.border.black,
+        // 혼잡도 색이 있으면 위에서 덮어씀 - 여긴 색이 없을 때의 기본값
+        borderColor: colors.border.inverse,
         backgroundColor: colors.surface.muted,
         overflow: 'hidden',
     },
@@ -160,7 +177,7 @@ const styles = StyleSheet.create({
         borderTopWidth: TAIL_HEIGHT,
         borderLeftColor: 'transparent',
         borderRightColor: 'transparent',
-        borderTopColor: colors.border.black,
+        borderTopColor: colors.border.inverse,
         marginTop: -1,
     },
 });

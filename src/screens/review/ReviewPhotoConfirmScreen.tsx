@@ -9,6 +9,7 @@ import {
   Dimensions,
   Platform,
   PanResponder,
+  Pressable,
 } from 'react-native';
 import {useNavigation, useRoute, CommonActions} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -21,6 +22,11 @@ import {radius} from '../../constants/radius';
 
 import IconArrowLeft from '../../assets/icons/IconArrowLeft';
 import ReviewExitModal from '../../components/review/ReviewExitModal';
+import BlurBrushSizeSlider, {
+  VIEW_WIDTH as BRUSH_SLIDER_VIEW_WIDTH,
+  VIEW_HEIGHT as BRUSH_SLIDER_VIEW_HEIGHT,
+  VIEW_BOTTOM_PADDING as BRUSH_SLIDER_BOTTOM_PADDING,
+} from '../../components/review/BlurBrushSizeSlider';
 
 import RNFS from 'react-native-fs';
 import {
@@ -46,6 +52,8 @@ type BlurPoint = {
   id: number;
   x: number;
   y: number;
+  // 칠한 시점의 브러쉬 크기. 나중에 크기를 바꿔도 이미 칠한 자국은 그대로 남아야 한다
+  radius: number;
 };
 
 const checkYellowIcon = require('../../assets/image/check_yellow.png');
@@ -71,7 +79,11 @@ const MAX_PHOTO_HEIGHT = px(570);
 const TOP_SECTION_HEIGHT = figmaY(129);
 const LOGO_TOP = figmaY(77);
 const TOOL_AREA_HEIGHT = px(120);
-const BRUSH_RADIUS = px(18);
+// 브러쉬 크기 5단계 (시안 blur-volume 00~100). 기본값은 기존 크기와 같은 가운데 단계
+const BRUSH_RADII = [px(10), px(14), px(18), px(24), px(32)];
+const DEFAULT_BRUSH_LEVEL = 2;
+// 시안: 슬라이더 쐐기 아래 끝과 하단 도구 버튼 윗변 사이 간격 (731.75 → 746)
+const BRUSH_SLIDER_GAP = 14.25;
 const ERASE_RADIUS = px(28);
 const AI_BUBBLE_HEIGHT = px(40);
 //const BLUR_SIGMA = 12;
@@ -105,6 +117,9 @@ export default function ReviewPhotoConfirmScreen() {
 
   const [blurPoints, setBlurPoints] = useState<BlurPoint[]>([]);
   const [selectedTool, setSelectedTool] = useState<'blur' | 'eraser'>('blur');
+  // 브러쉬 크기 조절 슬라이더가 열려 있는지. 열려 있는 동안 블러 버튼은 반투명해진다
+  const [isBrushSizeOpen, setIsBrushSizeOpen] = useState(false);
+  const [brushLevel, setBrushLevel] = useState(DEFAULT_BRUSH_LEVEL);
 
   const blurPointIdRef = useRef(0);
   const lastPointRef = useRef<{x: number; y: number} | null>(null);
@@ -256,29 +271,35 @@ const handleConfirm = async () => {
     setIsBlurMode(true);
   };
 
-  const addBlurPoint = useCallback((x: number, y: number) => {
-    if (lastPointRef.current) {
-      const dx = lastPointRef.current.x - x;
-      const dy = lastPointRef.current.y - y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+  const brushRadius = BRUSH_RADII[brushLevel];
 
-      if (distance < MIN_BRUSH_DISTANCE) {
-        return;
+  const addBlurPoint = useCallback(
+    (x: number, y: number) => {
+      if (lastPointRef.current) {
+        const dx = lastPointRef.current.x - x;
+        const dy = lastPointRef.current.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < MIN_BRUSH_DISTANCE) {
+          return;
+        }
       }
-    }
 
-    lastPointRef.current = {x, y};
+      lastPointRef.current = {x, y};
 
-    const newPoint: BlurPoint = {
-      id: blurPointIdRef.current,
-      x,
-      y,
-    };
+      const newPoint: BlurPoint = {
+        id: blurPointIdRef.current,
+        x,
+        y,
+        radius: brushRadius,
+      };
 
-    blurPointIdRef.current += 1;
+      blurPointIdRef.current += 1;
 
-    setBlurPoints(prev => [...prev, newPoint]);
-  }, []);
+      setBlurPoints(prev => [...prev, newPoint]);
+    },
+    [brushRadius],
+  );
 
   const eraseBlurPoint = useCallback((x: number, y: number) => {
     setBlurPoints(prev =>
@@ -392,7 +413,7 @@ const handleConfirm = async () => {
 
                 {blurPoints.map(point => {
                   const clipPath = Skia.Path.Make();
-                  clipPath.addCircle(point.x, point.y, BRUSH_RADIUS);
+                  clipPath.addCircle(point.x, point.y, point.radius);
 
                   return (
                     <Group key={point.id} clip={clipPath}>
@@ -472,19 +493,43 @@ const handleConfirm = async () => {
           </View>
         </View>
       ) : (
+        <>
+          {/* 슬라이더 바깥을 누르면 닫히고 블러 아이콘이 다시 또렷해진다.
+              툴바보다 먼저 그려서 툴바 버튼은 계속 눌리게 둔다 */}
+          {isBrushSizeOpen && (
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => setIsBrushSizeOpen(false)}
+            />
+          )}
+
+          {isBrushSizeOpen && (
+            <View style={styles.brushSliderWrap} pointerEvents="box-none">
+              <BlurBrushSizeSlider
+                level={brushLevel}
+                onChangeLevel={setBrushLevel}
+                width={px(BRUSH_SLIDER_VIEW_WIDTH)}
+                height={px(BRUSH_SLIDER_VIEW_HEIGHT)}
+              />
+            </View>
+          )}
+
         <View style={styles.blurToolSection}>
           <View style={styles.blurToolRow}>
             <View style={styles.leftToolGroup}>
               <TouchableOpacity
-                style={
+                style={[
                   selectedTool === 'blur'
                     ? styles.selectedCircleButton
-                    : styles.outlineCircleButton
-                }
+                    : styles.outlineCircleButton,
+                  // 크기 조절 중에는 반투명 (시안: 선택 후 바깥을 누르면 다시 화이트)
+                  isBrushSizeOpen && styles.translucentCircleButton,
+                ]}
                 activeOpacity={0.8}
                 onPress={() => {
                   setSelectedTool('blur');
                   setIsBlurMode(true);
+                  setIsBrushSizeOpen(true);
                 }}>
                 <Image
                   source={mdiBlurIcon}
@@ -506,6 +551,7 @@ const handleConfirm = async () => {
                 onPress={() => {
                   setSelectedTool('eraser');
                   setIsBlurMode(true);
+                  setIsBrushSizeOpen(false);
                 }}>
                 <Image
                   source={eraserIcon}
@@ -526,6 +572,7 @@ const handleConfirm = async () => {
             </TouchableOpacity>
           </View>
         </View>
+        </>
       )}
       <ReviewExitModal
         visible={exitModalVisible}
@@ -722,6 +769,24 @@ const styles = StyleSheet.create({
     tintColor: colors.text.basic,
   },
   // 선택되지 않은 원형 버튼
+  // 블러 버튼 바로 위에 세로로 선다 (블러 버튼은 blurToolRow 왼쪽 끝).
+  // 시안처럼 노브 중심 = 블러 버튼 중심, 쐐기 아래 끝은 버튼 위 14.25
+  brushSliderWrap: {
+    position: 'absolute',
+    left: (SCREEN_WIDTH - MAX_PHOTO_WIDTH) / 2,
+    bottom:
+      px(spacing['4xl']) +
+      px(40) +
+      px(BRUSH_SLIDER_GAP - BRUSH_SLIDER_BOTTOM_PADDING),
+    width: px(40),
+    alignItems: 'center',
+  },
+
+  // 크기 조절 중에는 반투명해져서 "지금 이 버튼을 조절하는 중"임을 보여준다
+  translucentCircleButton: {
+    opacity: 0.5,
+  },
+
   outlineCircleButton: {
     width: px(40),
     height: px(40),

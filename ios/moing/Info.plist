@@ -5,7 +5,7 @@
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>ko</string>
 	<key>CFBundleDisplayName</key>
 	<string>moing</string>
 	<key>CFBundleExecutable</key>
@@ -41,6 +41,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>KAKAO_APP_KEY</key>
 	<string>$(KAKAO_APP_KEY)</string>
+	<key>NMF_CLIENT_ID</key>
+	<string>$(NMF_CLIENT_ID)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>kakaokompassauth</string>
@@ -59,32 +61,20 @@
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>moing.co.kr</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>리뷰 사진 촬영을 위해 카메라 접근 권한이 필요합니다.</string>
+	<string>현장 사진을 촬영해 제보를 등록하는 데 사용합니다. 앱 내에서 촬영한 사진만 제보로 등록됩니다.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>내 주변 장소 탐색 및 이동 경로 기록을 위해 앱이 닫혀 있을 때도 위치 정보가 필요합니다.</string>
+	<string>현재 위치를 기준으로 주변 장소의 실시간 혼잡도를 보여주고, 후기 작성 시 선택한 장소에 실제로 있는지 확인하는 데 사용합니다. 백그라운드에서는 위치를 수집하지 않습니다.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>FullAccuracy</key>
-		<string>현재 위치를 기반으로 정확한 지도를 표시하고 길 안내를 제공하기 위해 정밀한 위치 정보가 필요합니다.</string>
+		<string>제보 작성 시 선택한 장소와의 거리를 정확히 확인하기 위해 정밀한 위치 정보가 필요합니다.</string>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>지도를 통해 현재 위치를 확인하고 주변 시설 정보를 제공받기 위해 위치 권한이 필요합니다.</string>
+	<string>현재 위치를 기준으로 주변 장소의 실시간 제보를 보여주고, 제보 작성 시 선택한 장소에 실제로 있는지 확인하는 데 사용합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>리뷰 사진 선택을 위해 사진 라이브러리 접근 권한이 필요합니다.</string>
+	<string>프로필 사진 설정을 위해 사진 라이브러리 접근 권한이 필요합니다.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>

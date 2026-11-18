@@ -9,6 +9,8 @@ export type MyProfile = {
   profile_url?: string | null;
   review_count: number;
   place_count: number;
+  // PRIVATE 조각까지 포함한 전체 개수. 타인 프로필 응답에는 없음
+  piece_count?: number;
   subscription_count: number;
   friend_count?: number;
 };

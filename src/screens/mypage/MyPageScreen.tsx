@@ -13,13 +13,26 @@ import {NaverMapViewRef} from '@mj-studio/react-native-naver-map';
 import {BottomSheetModal} from '@gorhom/bottom-sheet';
 
 import {colors} from '../../constants/colors';
-import ProfileHeaderCard from '../../components/mypage/ProfileHeaderCard';
+import {useActivePieces} from '../../hooks/useActivePieces';
+import PieceProfileHeader from '../../components/mypage/PieceProfileHeader';
 import ProfileActionButtons from '../../components/mypage/ProfileActionButtons';
 import MyMapRow from '../../components/mypage/MyMapRow';
 import RecentReviewSection from '../../components/mypage/RecentReviewSection';
 import ProfileShareModal from '../../components/mypage/ProfileShareModal';
 import {getMyProfile, getMyReviews, MyProfile, MyReview} from '../../api/mypage';
 import {changeReview, deleteReview} from '../../api/review';
+import {
+  countCollectionHintShown,
+  getCollectionHintState,
+  markCollectionHintSeen,
+  shouldShowCollectionHint,
+} from '../../storage/hintStorage';
+import {
+  getMyPieces,
+  updatePiecePositions,
+  type Piece,
+  type PiecePlacement,
+} from '../../api/piece';
 
 const REVIEW_PAGE_LIMIT = 20;
 const SCROLL_END_THRESHOLD = 120;
@@ -36,6 +49,13 @@ export default function MypageScreen() {
   const [isLoadingMoreReviews, setIsLoadingMoreReviews] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const isLoadingMoreRef = useRef(false);
+  const [allPieces, setPieces] = useState<Piece[]>([]);
+  const pieces = useActivePieces(allPieces);
+  // 화면에 들어올 때마다 조각이 다시 떨어져 쌓이는 애니메이션을 보여주려고 보드를 새로 마운트시킨다
+  const [boardRunId, setBoardRunId] = useState(0);
+
+  // 조각 도감 안내 말풍선. 기본값을 false로 둬야 이미 본 사용자에게 한 프레임 깜빡이지 않는다
+  const [showCollectionHint, setShowCollectionHint] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -79,12 +99,110 @@ export default function MypageScreen() {
     }
   }, [nextCursor]);
 
+  const loadPieces = useCallback(async () => {
+    try {
+      const data = await getMyPieces('board');
+
+      // 내 보드에는 PRIVATE 조각도 보여준다 - 안 그러면 숨긴 조각을 다시 찾아 되돌릴 방법이 없다
+      setPieces(data.pieces);
+    } catch (error) {
+      console.log('[조각 목록 조회 실패]', error);
+      setPieces([]);
+    } finally {
+      setBoardRunId(prev => prev + 1);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadProfile();
       loadRecentReviews();
-    }, [loadProfile, loadRecentReviews]),
+      loadPieces();
+    }, [loadProfile, loadRecentReviews, loadPieces]),
   );
+
+  // 안내용이라 MAX_COLLECTION_HINT_VIEWS번 보여주고 접는다.
+  // 도감을 눌렀다면 목적이 달성됐으므로 횟수와 무관하게 더 띄우지 않는다
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+
+      const resolveCollectionHint = async () => {
+        try {
+          const hintState = await getCollectionHintState();
+
+          if (cancelled) {
+            return;
+          }
+
+          if (!shouldShowCollectionHint(hintState)) {
+            setShowCollectionHint(false);
+            return;
+          }
+
+          setShowCollectionHint(true);
+          await countCollectionHintShown(hintState.shownCount);
+        } catch (error) {
+          // 읽기 실패로 안내가 영영 안 뜨는 것보다는 한 번 더 뜨는 쪽이 낫다
+          console.log('[조각 도감 안내 조회 실패]', error);
+
+          if (!cancelled) {
+            setShowCollectionHint(true);
+          }
+        }
+      };
+
+      resolveCollectionHint();
+
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+
+  const handlePressCollection = useCallback(() => {
+    setShowCollectionHint(false);
+
+    // 저장 실패해도 화면 전환은 막지 않는다 (다음에 말풍선이 한 번 더 뜰 뿐)
+    markCollectionHintSeen().catch(error => {
+      console.log('[조각 도감 안내 기록 실패]', error);
+    });
+
+    navigation.navigate('PieceEdit');
+  }, [navigation]);
+
+  const applyPlacements = useCallback((placements: PiecePlacement[]) => {
+    setPieces(prev =>
+      prev.map(piece => {
+        const placed = placements.find(p => p.piece_id === piece.id);
+
+        return placed
+          ? {
+              ...piece,
+              position_x: placed.position_x,
+              position_y: placed.position_y,
+              rotation: placed.rotation,
+              scale: placed.scale,
+            }
+          : piece;
+      }),
+    );
+  }, []);
+
+  // 보드가 중력 배치로 계산한 자리를 저장 (새 조각의 첫 배치, 크기가 바뀌어 다시 떨어진 조각, 드래그 후 재안착)
+  const handlePlacePieces = useCallback(
+    async (placements: PiecePlacement[]) => {
+      applyPlacements(placements);
+
+      try {
+        await updatePiecePositions(placements);
+      } catch (error) {
+        console.log('[조각 배치 저장 실패]', error);
+      }
+    },
+    [applyPlacements],
+  );
+
 
   // 이미 마이페이지인 상태에서 탭을 다시 누르면 맨 위로 (CustomTabBar가 활성 탭에서도 tabPress를 쏴줌)
   useEffect(() => {
@@ -133,7 +251,9 @@ export default function MypageScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    // 조각 보드가 상태바 아래까지 올라붙어야 해서 위쪽 세이프에어리어는 주지 않는다
+    // (보드 자체가 insets.top을 보고 자리를 잡음)
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background.white} />
 
       <ScrollView
@@ -143,12 +263,31 @@ export default function MypageScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={200}>
-        <ProfileHeaderCard
+        <PieceProfileHeader
           profile={profile}
           isProfileLoading={isProfileLoading}
+          pieces={pieces}
+          boardRunId={boardRunId}
           onPressBack={() => navigation.navigate('Tab', {screen: 'Home'})}
           onPressSettings={() => navigation.navigate('Setting')}
+          showCollectionHint={showCollectionHint}
+          onPressCollection={handlePressCollection}
           onPressFriends={() => navigation.navigate('FollowList')}
+          // 조각은 리뷰를 쓴 뒤에 모으는 흐름이라 리뷰 작성(촬영)부터 시작한다
+          onPressCollect={() =>
+            navigation.navigate('ReviewStack', {screen: 'ReviewCamera'})
+          }
+          onPlacePieces={handlePlacePieces}
+          onEditPiece={piece =>
+            navigation.navigate('PieceEdit', {
+              pieceId: piece.id,
+              imageUrl: piece.image_url,
+              name: piece.name,
+              placeName: piece.place.name,
+              createdAt: piece.created_at,
+              visibility: piece.visibility ?? 'PUBLIC',
+            })
+          }
         />
 
         <ProfileActionButtons

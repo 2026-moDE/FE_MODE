@@ -73,6 +73,49 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+/**
+ * iOS와 키를 공유한다. 원본은 ios/Config.xcconfig (gitignore 대상) 한 곳뿐이고,
+ * gradle이 이 값을 읽어 문자열 리소스로 생성한다. AndroidManifest가 참조하는
+ * naver_map_client_id / kakao_app_key / kakao_scheme 가 여기서 나온다.
+ */
+def sharedKeys = { ->
+    def props = new Properties()
+    def f = file("${rootDir}/../ios/Config.xcconfig")
+    if (f.exists()) {
+        f.eachLine { line ->
+            def clean = line.split("//")[0].trim()      // xcconfig 주석 제거
+            def idx = clean.indexOf("=")
+            if (idx > 0) {
+                props.setProperty(clean.substring(0, idx).trim(), clean.substring(idx + 1).trim())
+            }
+        }
+    }
+    return props
+}()
+
+def requireKey = { String name ->
+    def v = sharedKeys.getProperty(name)
+    if (!v) {
+        throw new GradleException(
+            "${name} 를 ios/Config.xcconfig 에서 찾을 수 없습니다. " +
+            "이 파일은 git에 올라가지 않으므로, 새로 클론한 경우 팀에서 받아 ios/Config.xcconfig 로 두세요. " +
+            "필요한 키: KAKAO_APP_KEY, NMF_CLIENT_ID")
+    }
+    return v
+}
+
+// 플레이스토어 업로드 키를 쓸 수 있는 환경인지. 4개가 다 있어야 한다.
+// 키스토어 파일은 .gitignore 라 git으로 안 오고, 비밀번호는 각자 ~/.gradle/gradle.properties 에 둔다
+// (android/gradle.properties 는 git에 추적되는 파일이라 거기 넣으면 비밀번호가 커밋된다).
+def uploadKeyProps = ['MOING_UPLOAD_STORE_FILE', 'MOING_UPLOAD_STORE_PASSWORD',
+                      'MOING_UPLOAD_KEY_ALIAS', 'MOING_UPLOAD_KEY_PASSWORD']
+def hasUploadKey = uploadKeyProps.every { project.hasProperty(it) }
+if (!hasUploadKey) {
+    logger.lifecycle("[moing] 업로드 키 설정이 없어 release 빌드도 debug 키로 서명됩니다. " +
+        "스토어 업로드용으로 빌드하려면 팀에서 moing-upload.keystore 와 비밀번호를 받아 " +
+        "~/.gradle/gradle.properties 에 ${uploadKeyProps.join(', ')} 를 설정하세요.")
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -83,8 +126,13 @@ android {
         applicationId "com.moing.app" //변경
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 4
+        versionName "1.0.1"
+
+        resValue "string", "naver_map_client_id", requireKey("NMF_CLIENT_ID")
+        resValue "string", "kakao_app_key", requireKey("KAKAO_APP_KEY")
+        // 카카오 로그인 리다이렉트 스킴은 "kakao" + 앱키 (iOS Info.plist 와 동일 규칙)
+        resValue "string", "kakao_scheme", "kakao" + requireKey("KAKAO_APP_KEY")
     }
     signingConfigs {
         debug {
@@ -93,15 +141,26 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // 업로드 키는 git에 없다(키스토어는 .gitignore, 비밀번호는 각자 ~/.gradle/gradle.properties).
+        // 그래서 "있을 때만" 선언한다 - 무조건 선언하면 값이 없는 사람은 configuration 단계에서
+        // MissingPropertyException이 나서 debug 빌드조차 못 한다
+        if (hasUploadKey) {
+            release {
+                storeFile file(MOING_UPLOAD_STORE_FILE)
+                storePassword MOING_UPLOAD_STORE_PASSWORD
+                keyAlias MOING_UPLOAD_KEY_ALIAS
+                keyPassword MOING_UPLOAD_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // 업로드 키가 있으면 그걸로 서명하고, 없으면 debug 키로 떨어진다.
+            // 후자로 만든 APK/AAB는 플레이스토어에 못 올리니 배포용은 키를 받아서 빌드할 것
+            signingConfig hasUploadKey ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -120,4 +179,8 @@ dependencies {
 
     // 구글 공식 Jetpack 이모지 피커 - EmojiKeyboardModule(안드로이드 쪽)에서 씀
     implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
+
+    // ML Kit 피사체 분리 - SubjectExtractorModule(조각 모으기 누끼)에서 씀.
+    // iOS의 Vision VNGenerateForegroundInstanceMaskRequest 대응. 모델은 Play 서비스가 내려준다.
+    implementation("com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1")
 }

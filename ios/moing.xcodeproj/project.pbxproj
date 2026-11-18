@@ -11,6 +11,7 @@
 		28190A493007C4BF0011052B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 28190A483007C4BF0011052B /* GoogleService-Info.plist */; };
 		2E2B6F045077CE2B34425853 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		3DC85D5A61A349B7B5840A30 /* Pretendard-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8CECC3B807B24798B4E93555 /* Pretendard-Bold.otf */; };
+		5E4553356A635F41D406C8A1 /* SubjectExtractorModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 036F6FFBF86AC55CFE3EB496 /* SubjectExtractorModule.m */; };
 		5FD54AF798494ED393E38929 /* Pretendard-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5FB1A353F08B4B1182616D83 /* Pretendard-Medium.otf */; };
 		6321FAC059678DD2217F9BCC /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 185849D64AD7803BAACD1428 /* AppIcon.icon */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
@@ -22,6 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		036F6FFBF86AC55CFE3EB496 /* SubjectExtractorModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = SubjectExtractorModule.m; path = moing/SubjectExtractorModule.m; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* moing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = moing.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = moing/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = moing/Info.plist; sourceTree = "<group>"; };
@@ -38,6 +40,7 @@
 		8CECC3B807B24798B4E93555 /* Pretendard-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Bold.otf"; path = "../src/assets/fonts/Pretendard-Bold.otf"; sourceTree = "<group>"; };
 		925D7C97C28C4CC69CB112A4 /* Pretendard-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Regular.otf"; path = "../src/assets/fonts/Pretendard-Regular.otf"; sourceTree = "<group>"; };
 		965A86F1CBF995D3F278CD25 /* Pods-moing.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-moing.debug.xcconfig"; path = "Target Support Files/Pods-moing/Pods-moing.debug.xcconfig"; sourceTree = "<group>"; };
+		9BA0BC9C27E8DCFF71BF41A0 /* SubjectExtractorModule.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = SubjectExtractorModule.h; path = moing/SubjectExtractorModule.h; sourceTree = "<group>"; };
 		AB23282459FAF6D589102FE2 /* Pretendard-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-SemiBold.ttf"; path = "../src/assets/fonts/Pretendard-SemiBold.ttf"; sourceTree = "<group>"; };
 		DF87524E3CEE6784A73C42E8 /* Pods-moing.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-moing.release.xcconfig"; path = "Target Support Files/Pods-moing/Pods-moing.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -67,6 +70,8 @@
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
 				756D33E8B0CD3759CFDB8795 /* EmojiKeyboardModule.h */,
 				3D87976B2AE97DEE041A65E2 /* EmojiKeyboardModule.m */,
+				9BA0BC9C27E8DCFF71BF41A0 /* SubjectExtractorModule.h */,
+				036F6FFBF86AC55CFE3EB496 /* SubjectExtractorModule.m */,
 			);
 			name = moing;
 			sourceTree = SOURCE_ROOT;
@@ -311,6 +316,7 @@
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
 				A8AD4FF44CCEC62DEBCC68F1 /* EmojiKeyboardModule.m in Sources */,
+				5E4553356A635F41D406C8A1 /* SubjectExtractorModule.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,7 +333,7 @@
 				CODE_SIGN_ENTITLEMENTS = moing/moing.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = CZ26P5Y37K;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = moing/Info.plist;
@@ -364,7 +370,7 @@
 				CODE_SIGN_ENTITLEMENTS = moing/moing.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = CZ26P5Y37K;
 				INFOPLIST_FILE = moing/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;

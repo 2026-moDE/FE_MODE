@@ -1,8 +1,6 @@
 import React from 'react';
 import {
   View,
-  Text,
-  Image,
   StyleSheet,
   StatusBar,
   Alert,
@@ -25,18 +23,12 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {getFcmToken} from '../../utils/fcm';
 
 import type {AuthStackParamList} from '../../types/navigation';
-import {typography} from '../../constants/typography';
 import {colors} from '../../constants/colors';
 import {gap} from '../../constants/spacing';
 import KakaoLoginButton from '../../components/auth/KakaoLoginButton';
 import GoogleLoginButton from '../../components/auth/GoogleLoginButton';
 import AppleLoginButton from '../../components/auth/AppleLoginButton';
-
-const logo = require('../../assets/image/logo_new.png');
-
-const LOGO_TOP = 139;
-const LOGO_WIDTH = 83;
-const LOGO_HEIGHT = 52;
+import OnboardingCarousel from '../../components/auth/OnboardingCarousel';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -52,7 +44,7 @@ export default function LoginScreen({navigation}: Props) {
       console.log('[1] 카카오 로그인 시작');
 
       const kakaoToken = await loginWithKakaoAccount();
-      console.log('[2] 카카오 토큰 획득:', kakaoToken.accessToken);
+      console.log('[2] 카카오 토큰 획득');
 
       const fcmToken = await getFcmToken();
 
@@ -215,21 +207,15 @@ export default function LoginScreen({navigation}: Props) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background.dark} />
 
-      <View style={styles.logoSection} pointerEvents="none">
-        <Image
-          source={logo}
-          tintColor={colors.brand.primary}
-          style={{width: LOGO_WIDTH, height: LOGO_HEIGHT, marginTop: LOGO_TOP}}
-          resizeMode="contain"
-        />
-
-        <Text style={styles.description}>실시간 장소 정보 공유 플랫폼, 모잉</Text>
+      {/* 온보딩 3장 좌우 캐러셀 (시안 온보딩-01~03) */}
+      <View style={styles.carouselSection}>
+        <OnboardingCarousel />
       </View>
 
       <View
         style={[
           styles.socialButtonGroup,
-          {paddingBottom: insets.bottom + 16},
+          {paddingBottom: insets.bottom + 20},
         ]}>
         <KakaoLoginButton
           onPress={handleKakaoLogin}
@@ -256,21 +242,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.dark,
   },
 
-  logoSection: {
-    alignItems: 'center',
-    gap: gap['2xl'],
+  // 시안 기준 카드 top 72 - 상태바 59 = 13
+  carouselSection: {
+    flex: 1,
+    paddingTop: 13,
   },
 
-  description: {
-    ...typography.b4,
-    color: colors.text.inverse,
-    textAlign: 'center',
-  },
-
+  // 시안: 페이지 점과 버튼 사이 40, 좌우 24
   socialButtonGroup: {
     width: '100%',
-    marginTop: 'auto',
-    paddingHorizontal: 16,
-    gap: 12,
+    marginTop: 40,
+    paddingHorizontal: gap['2xl'],
+    gap: gap.md,
   },
 });

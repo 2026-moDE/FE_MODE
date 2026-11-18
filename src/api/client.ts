@@ -3,7 +3,7 @@ import {getAccessToken} from '../storage/tokenStorage';
 import {refreshAccessTokenApi} from './auth';
 import {notifySessionExpired} from '../context/AuthContext';
 
-export const BASE_URL = 'http://moing.co.kr:8080';
+export const BASE_URL = 'https://api.moing.co.kr';
 
 type RetryRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
@@ -22,13 +22,12 @@ apiClient.interceptors.request.use(
   async config => {
     const token = await getAccessToken();
 
-    console.log('[API 요청 URL]', config.url);
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    console.log('[Authorization 헤더]', config.headers.Authorization);
+    // 토큰 전문은 찍지 않는다 - 붙었는지만 확인
+    console.log('[API 요청]', config.url, token ? '(인증 O)' : '(인증 X)');
 
     return config;
   },
