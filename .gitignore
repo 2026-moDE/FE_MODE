@@ -57,6 +57,10 @@ yarn-error.log
 
 # Bundle artifact
 *.jsbundle
+# 안드로이드 release 번들과 번들러가 복사해 넣는 drawable은 빌드 때 생성된다.
+# 커밋해두면 머지 충돌만 나므로 추적하지 않는다 (res/raw/keep.xml 같은 수동 리소스는 유지)
+android/app/src/main/assets/index.android.bundle
+android/app/src/main/res/drawable-*/
 
 # Ruby / CocoaPods
 **/Pods/
