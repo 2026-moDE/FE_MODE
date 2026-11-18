@@ -25,7 +25,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       KakaoSDK.initSDK(appKey: kakaoAppKey)
     }
 
-    NMFAuthManager.shared().ncpKeyId = "8hcvg54tuz"
+    // 안드로이드(build.gradle의 resValue)와 맞춰서 키를 소스에 두지 않는다.
+    // 값은 ios/Config.xcconfig(gitignore) → Info.plist 치환으로 들어온다
+    if let nmfClientId = Bundle.main.object(forInfoDictionaryKey: "NMF_CLIENT_ID") as? String,
+       !nmfClientId.isEmpty {
+      NMFAuthManager.shared().ncpKeyId = nmfClientId
+    }
 
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
